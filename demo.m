@@ -7,6 +7,8 @@
 %
 % See paper: 
 % https://www.biorxiv.org/content/early/2018/03/02/273128
+clear all
+clc
 %% Generate some synthetic data
 number_of_seqences = 3;
 T = 3000; % length of data to generate
@@ -16,8 +18,8 @@ NeuronNoise = 0.001; % probability of added noise in each bin
 SeqNoiseTime = zeros(number_of_seqences,1); % Jitter parameter = 0%
 SeqNoiseNeuron = 1.*ones(number_of_seqences,1); % Participation parameter = 100%
 neg = 0.2; % Proportion of negative indices in W
-[X, W, H, V_hat] = generate_data(T,Nneurons,Dt,NeuronNoise,SeqNoiseTime,SeqNoiseNeuron,0,0,0,0,neg,0);
-figure; SimpleWHPlot(W,H,X,0); title('generated data')
+[X, W, H, V_hat] = generate_data(T,Nneurons,Dt,NeuronNoise,SeqNoiseTime,SeqNoiseNeuron,0,0,neg,1);
+figure; SimpleWHPlot(W,H,X); title('generated data')
 
 %% Fit with seqNMF
 K = 5;
@@ -25,7 +27,26 @@ L = 50;
 lambda =.005;
 shg; clf
 display('Running FlexMF on simulated data (3 simulated sequences + noise)')
-[W_hat,H_hat,errors,loadings,power] = FlexMF(X,'K',K, 'L', L,'lambda', lambda);
+[W_hat,H_hat,errors,grads,loadings,power] = FlexMF(X,'K',K, 'L', L,'lambda', lambda, 'maxiter', 20);
+
+figure
+plot(grads(1,:))
+hold on
+plot(grads(2,:))
+legend('Reconstruction gradient over H','Regularization gradient over H')
+ylim([0,20])
+
+figure
+plot(grads(3,:))
+hold on
+plot(grads(4,:))
+legend('Reconstruction gradient over W','Regularization gradient over W')
+ylim([0,5])
+
+figure;
+plot(errors)
+title('Reconstruction Error')
+ylim([0,100])
 
 %% Look at factors
 figure; SimpleWHPlot(W,H); title('SeqNMF reconstruction')
