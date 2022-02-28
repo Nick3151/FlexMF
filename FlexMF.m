@@ -140,6 +140,7 @@ for iter = 1 : params.maxiter
     end
 %     toc
     H = H - etaH*dLdH;
+    H(H<0) = 0;
     
     if ~params.W_fixed
     % Update each W_l separately
