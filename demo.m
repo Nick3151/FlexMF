@@ -27,20 +27,26 @@ L = 50;
 lambda =.005;
 shg; clf
 display('Running FlexMF on simulated data (3 simulated sequences + noise)')
-[W_hat,H_hat,errors,grads,loadings,power] = FlexMF(X,'K',K, 'L', L,'lambda', lambda, 'maxiter', 20);
+[W_hat,H_hat,errors,grads,loadings,power] = FlexMF(X,'K',K, 'L', L,'lambda', lambda, 'maxiter', 20, 'lambdaL1W', .01, 'lambdaL1H', .01);
 
 figure
-plot(grads(1,:))
+plot(grads.grads_H_recon_all)
 hold on
-plot(grads(2,:))
-legend('Reconstruction gradient over H','Regularization gradient over H')
+plot(grads.grads_H_WXH_all)
+plot(grads.grads_H_HH_all)
+plot(grads.grads_H_L1H_all)
+legend('Reconstruction gradient over H','Regularization WXH gradient over H', ...
+    'Regularization HH gradient over H', 'Regularization L1H gradient over H')
 ylim([0,20])
 
 figure
-plot(grads(3,:))
+plot(grads.grads_W_recon_all)
 hold on
-plot(grads(4,:))
-legend('Reconstruction gradient over W','Regularization gradient over W')
+plot(grads.grads_W_WXH_all)
+plot(grads.grads_W_WW_all)
+plot(grads.grads_W_L1W_all)
+legend('Reconstruction gradient over W','Regularization WXH gradient over W', ...
+    'Regularization WW gradient over W', 'Regularization L1W gradient over W')
 ylim([0,5])
 
 figure;

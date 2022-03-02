@@ -56,7 +56,7 @@ function [W, H, errors,grads,loadings,power] = FlexMF(X, varargin)
 %
 % W                         NxKxL tensor containing factor exemplars
 % H                         KxT matrix containing factor timecourses
-% cost                      1x(#Iterations+1) vector containing 
+% errors                      1x(#Iterations+1) vector containing 
 %                               reconstruction error at each iteration. 
 %                               cost(1) is error before 1st iteration.
 % loadings                  1xK vector containing loading of each factor 
@@ -100,9 +100,13 @@ errors(1) = norm(X-Xhat, 'fro');
 
 W0 = zeros(N,K,L);
 grads_H_recon_all = [];
-grads_H_reg_all = [];
+grads_H_WXH_all = [];
+grads_H_HH_all = [];
+grads_H_L1H_all = [];
 grads_W_recon_all = [];
-grads_W_reg_all = [];
+grads_W_WXH_all = [];
+grads_W_WW_all = [];
+grads_W_L1W_all = [];
 for iter = 1 : params.maxiter
     tic
     fprintf('Iter %d\n', iter);
@@ -112,22 +116,37 @@ for iter = 1 : params.maxiter
          
     % Compute regularization terms for H update
     if params.lambda>0
-        dRdH = params.lambda.*(~eye(K))*conv2(WTX, smoothkernel, 'same');  
+        WTXS = conv2(WTX, smoothkernel, 'same');
+        WTXSHT = WTXS*H';
+        dRdH = params.lambda.*(~eye(K)).*sign(WTXSHT)*WTXS;  
     else 
         dRdH = 0; 
     end
     if params.lambdaOrthoH>0
-        dHHdH = params.lambdaOrthoH*(~eye(K))*conv2(H, smoothkernel, 'same');
+        HS = conv2(H, smoothkernel, 'same');
+        HSHT = HS*H';
+        dHHdH = params.lambdaOrthoH*(~eye(K)).*sign(HSHT)*HS;
     else
         dHHdH = 0;
     end
-    dLdH = WTXhat - WTX + dRdH + params.lambdaL1H + dHHdH; % include L1 sparsity, if specified
+    if params.lambdaL1H>0
+        dL1HdH = params.lambdaL1H*sign(H);
+    else
+        dL1HdH = 0;
+    end
+    dLdH = WTXhat - WTX + dRdH + dL1HdH + dHHdH; % include L1 sparsity, if specified
     grad_H_recon = mean(abs(WTXhat - WTX),'all');
-    grad_H_reg = mean(abs(dRdH),'all');
+    grad_H_WXH = mean(abs(dRdH),'all');
+    grad_H_HH = mean(abs(dHHdH),'all');
+    grad_H_L1H = mean(abs(dL1HdH),'all');
     fprintf('Reconstruction gradient over H: %f\n', grad_H_recon);
-    fprintf('Regularization gradient over H: %f\n', grad_H_reg);
+    fprintf('Regularization WXH gradient over H: %f\n', grad_H_WXH);
+    fprintf('Regularization HH gradient over H: %f\n', grad_H_HH);
+    fprintf('Regularization L1H gradient over H: %f\n', grad_H_L1H);
     grads_H_recon_all = [grads_H_recon_all grad_H_recon];
-    grads_H_reg_all = [grads_H_reg_all grad_H_reg];
+    grads_H_WXH_all = [grads_H_WXH_all grad_H_WXH];
+    grads_H_HH_all = [grads_H_HH_all grad_H_HH];
+    grads_H_L1H_all = [grads_H_L1H_all grad_H_L1H];
     
     % Update H using line search
 %     disp('line search on H')
@@ -135,7 +154,7 @@ for iter = 1 : params.maxiter
     alpha = 0.4;
     beta = 0.6;
     etaH = 1;
-    while helper.total_loss(W,H-etaH*dLdH,X,params.lambda) > helper.total_loss(W,H,X,params.lambda)-alpha*norm(dLdH,'fro')^2*etaH
+    while helper.total_loss(W,H-etaH*dLdH,X,params) > helper.total_loss(W,H,X,params)-alpha*norm(dLdH,'fro')^2*etaH
         etaH = beta*etaH;
     end
 %     toc
@@ -145,15 +164,25 @@ for iter = 1 : params.maxiter
     if ~params.W_fixed
     % Update each W_l separately
         grad_W_recon = [];
-        grad_W_reg = [];
+        grad_W_WXH = [];
+        grad_W_WW = [];
+        grad_W_L1W = [];
+        
         Xhat = helper.reconstruct(W, H); 
         mask = find(params.M == 0); % find masked (held-out) indices 
         X(mask) = Xhat(mask); % replace data at masked elements with reconstruction, so masked datapoints do not effect fit
+        
+        WTXSHT = WTXS*H';
         if params.lambdaOrthoW>0
             Wflat = sum(W,3);
         end
         if params.lambda>0 && params.useWupdate
             XS = conv2(X, smoothkernel, 'same'); 
+        end
+        if params.lambdaL1W>0
+            dL1WdW = params.lambdaL1W*sign(W);
+        else
+            dL1WdW = 0;
         end
         for l = 1 : L % could parallelize to speed up for long L
             % Compute terms for standard CNMF W update
@@ -163,18 +192,21 @@ for iter = 1 : params.maxiter
 
             % Compute regularization terms for W update
             if params.lambda>0 && params.useWupdate % Often get similar results with just H update, so option to skip W update
-                dRdW = params.lambda.*XS*(H_shifted')*(~eye(K)); 
+                dRdW = params.lambda.*XS*(H_shifted')*((~eye(K)).*sign(WTXSHT)); 
             else
                 dRdW = 0;
             end
             if params.lambdaOrthoW>0
-                dWWdW = params.lambdaOrthoW*Wflat*(~eye(K));
+                dWWdW = params.lambdaOrthoW*Wflat*(~eye(K)).*sign(Wflat'*Wflat);
             else
                 dWWdW = 0;
             end
-            dLdW = XhatHT - XHT + dRdW + params.lambdaL1W + dWWdW; % include L1 and Worthogonality sparsity, if specified
+            
+            dLdW = XhatHT - XHT + dRdW + squeeze(dL1WdW(:,:,l)) + dWWdW; % include L1 and Worthogonality sparsity, if specified
             grad_W_recon = [grad_W_recon mean(abs(XhatHT - XHT), 'all')];
-            grad_W_reg = [grad_W_reg mean(abs(dRdW), 'all')];
+            grad_W_WXH = [grad_W_WXH mean(abs(dRdW), 'all')];
+            grad_W_WW = [grad_W_WW mean(abs(dWWdW), 'all')];
+            grad_W_L1W = [grad_W_L1W mean(abs(squeeze(dL1WdW(:,:,l))), 'all')];
             
             % Update W using line search
 %             disp('line search on W')
@@ -182,7 +214,7 @@ for iter = 1 : params.maxiter
             alpha = 0.4;
             beta = 0.6;
             etaW = 1;
-            while helper.total_loss(W-etaW*dLdW,H,X,params.lambda) > helper.total_loss(W,H,X,params.lambda)-alpha*norm(dLdW,'fro')^2*etaW
+            while helper.total_loss(W-etaW*dLdW,H,X,params) > helper.total_loss(W,H,X,params)-alpha*norm(dLdW,'fro')^2*etaW
                 etaW = beta*etaW;
             end
 %             toc
@@ -190,9 +222,13 @@ for iter = 1 : params.maxiter
         end
     end
     fprintf('Reconstruction gradient over W: %f\n', mean(grad_W_recon));
-    fprintf('Regularization gradient over W: %f\n', mean(grad_W_reg));
+    fprintf('Regularization WXH gradient over W: %f\n', mean(grad_W_WXH));
+    fprintf('Regularization WW gradient over W: %f\n', mean(grad_W_WW));
+    fprintf('Regularization L1W gradient over W: %f\n', mean(grad_W_L1W));
     grads_W_recon_all = [grads_W_recon_all mean(grad_W_recon)];
-    grads_W_reg_all = [grads_W_reg_all mean(grad_W_reg)];
+    grads_W_WXH_all = [grads_W_WXH_all mean(grad_W_WXH)];
+    grads_W_WW_all = [grads_W_WW_all mean(grad_W_WW)];
+    grads_W_L1W_all = [grads_W_L1W_all mean(grad_W_L1W)];
     toc
     
     % Calculate cost for this iteration
@@ -236,7 +272,14 @@ for iter = 1 : params.maxiter
         break
     end
 end
-grads = [grads_H_recon_all; grads_H_reg_all; grads_W_recon_all; grads_W_reg_all];
+grads = struct('grads_H_recon_all', grads_H_recon_all, ...
+               'grads_H_WXH_all', grads_H_WXH_all, ...
+               'grads_H_HH_all', grads_H_HH_all, ...
+               'grads_H_L1H_all', grads_H_L1H_all, ...
+               'grads_W_recon_all', grads_W_recon_all, ...
+               'grads_W_WXH_all', grads_W_WXH_all, ...
+               'grads_W_WW_all', grads_W_WW_all, ...
+               'grads_W_L1W_all', grads_W_L1W_all);
    
 % Undo zeropadding by truncating X, Xhat and H
 X = X(:,L+1:end-L);
