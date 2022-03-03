@@ -1,6 +1,10 @@
 function loss = total_loss(W, H, X, params)
-    [N,K,L] = size(W);
     % Total loss function
+    [N,K,L] = size(W);
+    Xhat = helper.reconstruct(W, H); 
+    mask = find(params.M == 0); % find masked (held-out) indices 
+    X(mask) = Xhat(mask); 
+
     if params.lambda>0
         smoothkernel = ones(1,(2*L)-1);  % for factor competition
         WTX = helper.transconv(W, X);
@@ -37,5 +41,5 @@ function loss = total_loss(W, H, X, params)
     else
         RW = 0;
     end
-    loss = norm(helper.reconstruct(W, H)-X, 'fro')^2/2 + RWXH + RH + RW + RHH + RWW;
+    loss = norm(Xhat-X, 'fro')^2/2 + RWXH + RH + RW + RHH + RWW;
 end

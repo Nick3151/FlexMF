@@ -27,7 +27,7 @@ L = 50;
 lambda =.005;
 shg; clf
 display('Running FlexMF on simulated data (3 simulated sequences + noise)')
-[W_hat,H_hat,errors,grads,loadings,power] = FlexMF(X,'K',K, 'L', L,'lambda', lambda, 'maxiter', 20, 'lambdaL1W', .01, 'lambdaL1H', .01);
+[W_hat,H_hat,errors,grads,loadings,power] = FlexMF(X,'K',K, 'L', L,'lambda', lambda, 'maxiter', 20, 'lambdaL1W', 1, 'lambdaL1H', 1);
 
 figure
 plot(grads.grads_H_recon_all)

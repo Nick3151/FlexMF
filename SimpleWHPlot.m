@@ -1,4 +1,4 @@
-function SimpleWHPlot(W,H,Data, plotAll); 
+function SimpleWHPlot(W,H,Data, plotAll) 
 % plots seqNMF factors W and H
 % Also plots Data if provided, and reconstruction if data is not provided
 % plotAll=1 means plot all data
