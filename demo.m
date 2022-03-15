@@ -54,6 +54,14 @@ plot(errors)
 title('Reconstruction Error')
 ylim([0,100])
 
+figure;
+plot(grads.etaH_all)
+title('Line search step on H')
+
+figure;
+plot(grads.etaW_all)
+title('Line search step on W')
+
 %% Look at factors
 figure; SimpleWHPlot(W,H); title('SeqNMF reconstruction')
 figure; SimpleWHPlot(W,H,X); title('SeqNMF factors, with raw data')

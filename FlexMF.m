@@ -107,6 +107,8 @@ grads_W_recon_all = [];
 grads_W_WXH_all = [];
 grads_W_WW_all = [];
 grads_W_L1W_all = [];
+etaH_all = [];
+etaW_all = [];
 for iter = 1 : params.maxiter
     tic
     fprintf('Iter %d\n', iter);
@@ -160,6 +162,8 @@ for iter = 1 : params.maxiter
 %     toc
     H = H - etaH*dLdH;
     H(H<0) = 0;
+    fprintf('Line search step on H: %f\n', etaH);
+    etaH_all = [etaH_all etaH];
     
     if ~params.W_fixed
     % Update each W_l separately
@@ -167,6 +171,7 @@ for iter = 1 : params.maxiter
         grad_W_WXH = [];
         grad_W_WW = [];
         grad_W_L1W = [];
+        etaW_tmp = [];
         
         Xhat = helper.reconstruct(W, H); 
         mask = find(params.M == 0); % find masked (held-out) indices 
@@ -219,16 +224,19 @@ for iter = 1 : params.maxiter
             end
 %             toc
             W(:, :, l) = W(:, :, l) - etaW*dLdW;
+            etaW_tmp = [etaW_tmp etaW];
         end
     end
     fprintf('Reconstruction gradient over W: %f\n', mean(grad_W_recon));
     fprintf('Regularization WXH gradient over W: %f\n', mean(grad_W_WXH));
     fprintf('Regularization WW gradient over W: %f\n', mean(grad_W_WW));
     fprintf('Regularization L1W gradient over W: %f\n', mean(grad_W_L1W));
+    fprintf('Line search step on W: %f\n', mean(etaW_tmp));
     grads_W_recon_all = [grads_W_recon_all mean(grad_W_recon)];
     grads_W_WXH_all = [grads_W_WXH_all mean(grad_W_WXH)];
     grads_W_WW_all = [grads_W_WW_all mean(grad_W_WW)];
     grads_W_L1W_all = [grads_W_L1W_all mean(grad_W_L1W)];
+    etaW_all = [etaW_all mean(etaW_tmp)];
     toc
     
     % Calculate cost for this iteration
@@ -276,10 +284,12 @@ grads = struct('grads_H_recon_all', grads_H_recon_all, ...
                'grads_H_WXH_all', grads_H_WXH_all, ...
                'grads_H_HH_all', grads_H_HH_all, ...
                'grads_H_L1H_all', grads_H_L1H_all, ...
+               'etaH_all', etaH_all, ...
                'grads_W_recon_all', grads_W_recon_all, ...
                'grads_W_WXH_all', grads_W_WXH_all, ...
                'grads_W_WW_all', grads_W_WW_all, ...
-               'grads_W_L1W_all', grads_W_L1W_all);
+               'grads_W_L1W_all', grads_W_L1W_all, ...
+               'etaW_all', etaW_all);
    
 % Undo zeropadding by truncating X, Xhat and H
 X = X(:,L+1:end-L);
