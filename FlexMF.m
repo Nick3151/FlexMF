@@ -122,19 +122,19 @@ for iter = 1 : params.maxiter
         WTXSHT = WTXS*H';
         dRdH = params.lambda.*(~eye(K)).*sign(WTXSHT)*WTXS;  
     else 
-        dRdH = 0; 
+        dRdH = zeros(K,T); 
     end
     if params.lambdaOrthoH>0
         HS = conv2(H, smoothkernel, 'same');
         HSHT = HS*H';
         dHHdH = params.lambdaOrthoH*(~eye(K)).*sign(HSHT)*HS;
     else
-        dHHdH = 0;
+        dHHdH = zeros(K,T);
     end
     if params.lambdaL1H>0
         dL1HdH = params.lambdaL1H*sign(H);
     else
-        dL1HdH = 0;
+        dL1HdH = zeros(K,T);
     end
     dLdH = WTXhat - WTX + dRdH + dL1HdH + dHHdH; % include L1 sparsity, if specified
     grad_H_recon = mean(abs(WTXhat - WTX),'all');
@@ -177,7 +177,9 @@ for iter = 1 : params.maxiter
         mask = find(params.M == 0); % find masked (held-out) indices 
         X(mask) = Xhat(mask); % replace data at masked elements with reconstruction, so masked datapoints do not effect fit
         
-        WTXSHT = WTXS*H';
+        if params.lambda>0
+            WTXSHT = WTXS*H';
+        end
         if params.lambdaOrthoW>0
             Wflat = sum(W,3);
         end
@@ -187,7 +189,7 @@ for iter = 1 : params.maxiter
         if params.lambdaL1W>0
             dL1WdW = params.lambdaL1W*sign(W);
         else
-            dL1WdW = 0;
+            dL1WdW = zeros(N,K,L);
         end
         for l = 1 : L % could parallelize to speed up for long L
             % Compute terms for standard CNMF W update
@@ -199,12 +201,12 @@ for iter = 1 : params.maxiter
             if params.lambda>0 && params.useWupdate % Often get similar results with just H update, so option to skip W update
                 dRdW = params.lambda.*XS*(H_shifted')*((~eye(K)).*sign(WTXSHT)); 
             else
-                dRdW = 0;
+                dRdW = zeros(N,K);
             end
             if params.lambdaOrthoW>0
                 dWWdW = params.lambdaOrthoW*Wflat*(~eye(K)).*sign(Wflat'*Wflat);
             else
-                dWWdW = 0;
+                dWWdW = zeros(N,K);
             end
             
             dLdW = XhatHT - XHT + dRdW + squeeze(dL1WdW(:,:,l)) + dWWdW; % include L1 and Worthogonality sparsity, if specified

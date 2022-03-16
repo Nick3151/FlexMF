@@ -24,10 +24,10 @@ figure; SimpleWHPlot(W,H,X); title('generated data')
 %% Fit with seqNMF
 K = 5;
 L = 50;
-lambda =.005;
+lambda = 0;
 shg; clf
 display('Running FlexMF on simulated data (3 simulated sequences + noise)')
-[W_hat,H_hat,errors,grads,loadings,power] = FlexMF(X,'K',K, 'L', L,'lambda', lambda, 'maxiter', 20, 'lambdaL1W', 1, 'lambdaL1H', 1);
+[W_hat,H_hat,errors,grads,loadings,power] = FlexMF(X,'K',K, 'L', L,'lambda', lambda, 'maxiter', 100, 'lambdaL1W', 0, 'lambdaL1H', 0);
 
 figure
 plot(grads.grads_H_recon_all)

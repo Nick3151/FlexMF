@@ -4,9 +4,9 @@ function loss = total_loss(W, H, X, params)
     Xhat = helper.reconstruct(W, H); 
     mask = find(params.M == 0); % find masked (held-out) indices 
     X(mask) = Xhat(mask); 
+    smoothkernel = ones(1,(2*L)-1);  % for factor competition
 
     if params.lambda>0
-        smoothkernel = ones(1,(2*L)-1);  % for factor competition
         WTX = helper.transconv(W, X);
         RWXH = conv2(WTX, smoothkernel, 'same')*H';
         RWXH = params.lambda*(norm(RWXH(:),1)-norm(diag(RWXH),1));
