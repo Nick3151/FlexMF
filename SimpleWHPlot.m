@@ -91,8 +91,8 @@ set(gca, 'ColorOrder', kColors);
 plot(squeeze(sum(W,3)), 1:N,'>', 'markersize', 2.5);
 ylim([0 N+.1]+.5)
 axis tight
-xlims = xlim; 
-xlim([xlims(2)*.1 xlims(2)])
+% xlims = xlim; 
+% xlim([xlims(2)*.1 xlims(2)])
 set(gca, 'ydir', 'reverse')
 axis off
 %% plot H's

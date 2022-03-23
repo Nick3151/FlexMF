@@ -8,6 +8,7 @@
 % See paper: 
 % https://www.biorxiv.org/content/early/2018/03/02/273128
 clear all
+close all
 clc
 %% Generate some synthetic data
 number_of_seqences = 3;
@@ -19,15 +20,22 @@ SeqNoiseTime = zeros(number_of_seqences,1); % Jitter parameter = 0%
 SeqNoiseNeuron = 1.*ones(number_of_seqences,1); % Participation parameter = 100%
 neg = 0.2; % Proportion of negative indices in W
 [X, W, H, V_hat] = generate_data(T,Nneurons,Dt,NeuronNoise,SeqNoiseTime,SeqNoiseNeuron,0,0,neg,1);
-figure; SimpleWHPlot(W,H,X); title('generated data')
+figure; SimpleWHPlot(W,H,X); title('generated data','Fontsize',16)
+set(gcf,'position',[200,200,1200,900])
 
 %% Fit with seqNMF
 K = 5;
 L = 50;
 lambda = 0;
+lambdaL1H = 0.1;
+lambdaL1W = 0.1;
+lambdaOrthoW = 0.1;
+lambdaOrthoH = 0.1;
 shg; clf
 display('Running FlexMF on simulated data (3 simulated sequences + noise)')
-[W_hat,H_hat,errors,grads,loadings,power] = FlexMF(X,'K',K, 'L', L,'lambda', lambda, 'maxiter', 100, 'lambdaL1W', 0, 'lambdaL1H', 0);
+[W_hat,H_hat,errors,grads,loadings,power] = FlexMF(X,'K',K, 'L', L, 'maxiter', 50,...
+    'lambda', lambda, 'lambdaL1W', lambdaL1W, 'lambdaL1H', lambdaL1H, 'lambdaOrthoW', lambdaOrthoW, 'lambdaOrthoH', lambdaOrthoH);
+set(gcf,'position',[200,200,1200,900])
 
 figure
 plot(grads.grads_H_recon_all)
