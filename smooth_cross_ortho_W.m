@@ -1,5 +1,5 @@
 function y = smooth_cross_ortho_W(X, H, L, W, mode)
-% smooth cross orthogonal operator on H
+% smooth cross orthogonal operator on W
 [N, T] = size(X);
 [K, ~] = size(H);
 assert((size(H,2)==T), 'Dimensions do not match!')
@@ -18,6 +18,6 @@ switch mode
         smoothkernel = ones(1,(2*L)-1);
         SHT = conv2(H, smoothkernel, 'same')';
         for l = 1 : L
-            y(:,:,l) = circshift(X, [0,-l+1])'*SHT*W;
+            y(:,:,l) = circshift(X, [0,-l+1])*SHT*W';
         end
 end

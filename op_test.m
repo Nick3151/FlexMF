@@ -19,3 +19,6 @@ linop_test(op, 'R2R');
 
 op = @(W, mode)tensor_conv_W(H, N, L, W, mode);
 linop_test(op, 'R2R');
+
+op = @(W, mode)smooth_cross_ortho_W(X, H, L, W, mode);
+linop_test(op, 'R2R');
