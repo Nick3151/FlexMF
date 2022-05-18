@@ -22,6 +22,7 @@ end
 color_palet = [[0 .6 .3]; [.7 0 .7]; [1 .6 0];  [.1 .3 .9];  [1 .1 .1];  [0 .9 .3]; [.4 .2 .7]; [.7 .2 .1]; [.1 .8 1 ]; [1 .3 .7]; [.2 .8 .2]; [.7 .4 1]; [.9 .6 .4]; [0 .6 1]; [1 .1 .3]]; 
 color_palet = repmat(color_palet, ceil(K/size(color_palet,1)),1); 
 kColors = color_palet(1:K,:); 
+epsilon = 1e-4;
 %% set widths of subplots
 m = .1; % margin
 ww = .2; % width of W plot
@@ -56,7 +57,7 @@ end
 cmap_red = [ones(128,1),linspace(1,0,128)',linspace(1,0,128)'];
 cmap_blue = [linspace(0,1,128)',linspace(0,1,128)',ones(128,1)];
 cmap = [cmap_blue; cmap_red];
-maxValue = prctile(abs(WsToPlot),99,'all');
+maxValue = prctile(abs(WsToPlot),99,'all')+epsilon;
 clims = [-maxValue, maxValue]; % if all W's are empty this line will bug
 imagesc(WsToPlot, clims); 
 colormap(cmap)
@@ -69,13 +70,13 @@ axis off
 %% plot data
 axIm = subplot('Position', [m+ww m wdata hdata]);
 if plotData
-    maxValue = prctile(abs(Data),99,'all');
+    maxValue = prctile(abs(Data),99,'all')+epsilon;
     clims = [-maxValue, maxValue]; 
     imagesc(Data(:,indplot), clims);
     colormap(cmap)
 else
     toplot = helper.reconstruct(W,H(:,indplot));
-    maxValue = prctile(abs(toplot),99.9,'all');
+    maxValue = prctile(abs(toplot),99.9,'all')+epsilon;
     clims = [-maxValue, maxValue]; 
     imagesc(toplot,clims);
     colormap(cmap)

@@ -10,6 +10,8 @@
 clear all
 close all
 clc
+root = fileparts(pwd);
+addpath(fullfile(root, 'TFOCS'))
 %% Generate some synthetic data
 number_of_seqences = 3;
 T = 3000; % length of data to generate
@@ -29,50 +31,48 @@ L = 50;
 lambda = 0;
 lambdaL1H = 0.1;
 lambdaL1W = 0.1;
-lambdaOrthoW = 0.1;
-lambdaOrthoH = 0.1;
 shg; clf
 display('Running FlexMF on simulated data (3 simulated sequences + noise)')
-[W_hat,H_hat,errors,grads,loadings,power] = FlexMF(X,'K',K, 'L', L, 'maxiter', 50,...
-    'lambda', lambda, 'lambdaL1W', lambdaL1W, 'lambdaL1H', lambdaL1H, 'lambdaOrthoW', lambdaOrthoW, 'lambdaOrthoH', lambdaOrthoH);
+[W_hat,H_hat,errors,loadings,power] = FlexMF(X,'K',K, 'L', L, 'maxiter', 50,...
+    'lambda', lambda, 'lambdaL1W', lambdaL1W, 'lambdaL1H', lambdaL1H);
 set(gcf,'position',[200,200,1200,900])
 
-figure
-plot(grads.grads_H_recon_all)
-hold on
-plot(grads.grads_H_WXH_all)
-plot(grads.grads_H_HH_all)
-plot(grads.grads_H_L1H_all)
-legend('Reconstruction gradient over H','Regularization WXH gradient over H', ...
-    'Regularization HH gradient over H', 'Regularization L1H gradient over H')
-ylim([0,20])
-
-figure
-plot(grads.grads_W_recon_all)
-hold on
-plot(grads.grads_W_WXH_all)
-plot(grads.grads_W_WW_all)
-plot(grads.grads_W_L1W_all)
-legend('Reconstruction gradient over W','Regularization WXH gradient over W', ...
-    'Regularization WW gradient over W', 'Regularization L1W gradient over W')
-ylim([0,5])
-
+% figure
+% plot(grads.grads_H_recon_all)
+% hold on
+% plot(grads.grads_H_WXH_all)
+% plot(grads.grads_H_HH_all)
+% plot(grads.grads_H_L1H_all)
+% legend('Reconstruction gradient over H','Regularization WXH gradient over H', ...
+%     'Regularization HH gradient over H', 'Regularization L1H gradient over H')
+% ylim([0,20])
+% 
+% figure
+% plot(grads.grads_W_recon_all)
+% hold on
+% plot(grads.grads_W_WXH_all)
+% plot(grads.grads_W_WW_all)
+% plot(grads.grads_W_L1W_all)
+% legend('Reconstruction gradient over W','Regularization WXH gradient over W', ...
+%     'Regularization WW gradient over W', 'Regularization L1W gradient over W')
+% ylim([0,5])
+% 
 figure;
 plot(errors)
 title('Reconstruction Error')
-ylim([0,100])
-
-figure;
-plot(grads.etaH_all)
-title('Line search step on H')
-
-figure;
-plot(grads.etaW_all)
-title('Line search step on W')
+ylim([0,50])
+% 
+% figure;
+% plot(grads.etaH_all)
+% title('Line search step on H')
+% 
+% figure;
+% plot(grads.etaW_all)
+% title('Line search step on W')
 
 %% Look at factors
-figure; SimpleWHPlot(W,H); title('SeqNMF reconstruction')
-figure; SimpleWHPlot(W,H,X); title('SeqNMF factors, with raw data')
+figure; SimpleWHPlot(W_hat,H_hat); title('SeqNMF reconstruction')
+figure; SimpleWHPlot(W_hat,H_hat,X); title('SeqNMF factors, with raw data')
 
 %% Procedure for choosing K
 tic
