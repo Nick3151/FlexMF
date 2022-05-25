@@ -106,7 +106,7 @@ for ki = K:-1:1
     patch(Xs,Ys, kColors(K-ki+1,:), 'edgecolor', kColors(K-ki+1,:))
     hold on
 end
-ylim([0 dn*K+dn*3]);xlim([0 length(indplot)+1])
+ylim([0 dn*K+dn*3+epsilon]);xlim([0 length(indplot)+1])
 axis off
 %%
 if plotAll

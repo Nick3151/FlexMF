@@ -3,6 +3,7 @@ function W = updateW(W0, H, X, params)
 [~, T] = size(X);
 opts = tfocs;
 opts.maxIts = 500;
+
 if params.lambda > 0
     % Use smooth cross orthogonal panelty regularization
     % Apply unconstrained split Bregman method to solve 
@@ -18,13 +19,23 @@ if params.lambda > 0
     for i=1:max_iter
         % Step 1: Update W
         op_recon = @(W, mode)tensor_conv_W(H, N, L, W, mode);
-        op_recon_error = tfunc_scale(smooth_quad, 1, op_recon, -X);
+%         op_recon_error = tfunc_scale(smooth_quad, 1, op_recon, -X);
         op_reg = @(W, mode)smooth_cross_ortho_W(X, H, L, W, mode);
-        op_reg_error = tfunc_scale(smooth_quad(params.lambda), 1, op_reg, B-D);
-        op_smooth = tfunc_sum(op_recon_error, op_reg_error);
-        W = tfocs(op_smooth, [], [], W0, opts);
+%         op_reg_error = tfunc_scale(smooth_quad(params.lambda), 1, op_reg, B-D);
+%         op_smooth = tfunc_sum(op_recon_error, op_reg_error);
+        smoothF = {smooth_quad, smooth_quad(params.lambda)};
+        affineF = {op_recon, -X; op_reg, B-D};
+        W = tfocs(smoothF, affineF, [], W0, opts);
+        
+        % Plot to show progress
+        if params.showPlot 
+            Xhat = helper.reconstruct(W, H);
+            SimpleWHPlot(W, H, Xhat); 
+            drawnow
+        end
         
         if sqrt(sum((W-W0).^2, 'all')) < tol
+            fprintf('Step size tolerance of W reached\n')
             break
         end
         
@@ -32,7 +43,7 @@ if params.lambda > 0
         WTX = helper.transconv(W, X);
         WTXS = conv2(WTX, smoothkernel, 'same');
         WTXSHT = WTXS*H';
-        D = tfocs(smooth_quad(params.lambda), {1, -WTXSHT-B}, prox_l1(Q), D, opts);
+        D = tfocs(smooth_quad(params.lambda), {1, -WTXSHT-B}, prox_l1(Q), D);
         
         % Step 3: Update B
         B = B + WTXSHT - D;
@@ -42,9 +53,9 @@ if params.lambda > 0
 elseif params.lambdaL1W > 0
     % Solve LASSO
     op_recon = @(W, mode)tensor_conv_W(H, N, L, W, mode);
-    W = tfocs(smooth_quad, {op_recon,-X}, prox_l1(params.lambdaL1W), W0, opts);
+    W = tfocs(smooth_quad, {op_recon,-X}, prox_l1(params.lambdaL1W), W0);
 else
     % No regularization
     op_recon = @(W, mode)tensor_conv_W(H, N, L, W, mode);
-    W = tfocs(smooth_quad, {op_recon,-X}, [], W0, opts);
+    W = tfocs(smooth_quad, {op_recon,-X}, [], W0);
 end

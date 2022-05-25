@@ -28,9 +28,9 @@ set(gcf,'position',[200,200,1200,900])
 %% Fit with seqNMF
 K = 5;
 L = 50;
-lambda = 0;
-lambdaL1H = 0.1;
-lambdaL1W = 0.1;
+lambda = .2;
+lambdaL1H = 0;
+lambdaL1W = 0;
 shg; clf
 display('Running FlexMF on simulated data (3 simulated sequences + noise)')
 [W_hat,H_hat,errors,loadings,power] = FlexMF(X,'K',K, 'L', L, 'maxiter', 50,...
