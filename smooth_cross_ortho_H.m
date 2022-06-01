@@ -1,19 +1,13 @@
-function y = smooth_cross_ortho_H(W, X, H, mode)
+function y = smooth_cross_ortho_H(A, K, H, mode)
 % smooth cross orthogonal operator on H
-[N, K, L] = size(W);
-[~, T] = size(X);
-assert((size(X,1)==N), 'Dimensions do not match!')
+% A = WTXS or [WTXS; I]
+[M, T] = size(A);
+
 switch mode
     case 0
-        y = {[K,T], [K,K]};
+        y = {[K,T], [M,K]};
     case 1
-        WTX = helper.transconv(W, X);
-        smoothkernel = ones(1,(2*L)-1);
-        WTXS = conv2(WTX, smoothkernel, 'same');
-        y = WTXS*H';
+        y = A*H';
     case 2
-        WTX = helper.transconv(W, X);
-        smoothkernel = ones(1,(2*L)-1);
-        WTXS = conv2(WTX, smoothkernel, 'same');
-        y = H'* WTXS;
+        y = H'*A;
 end

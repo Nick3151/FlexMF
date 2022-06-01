@@ -8,19 +8,31 @@ if params.lambda > 0
     % Use smooth cross orthogonal panelty regularization
     % Apply unconstrained split Bregman method to solve 
     smoothkernel = ones(1,(2*L)-1);  % for factor competition
-    
-    B = zeros(K);
-    D = zeros(K);
-    Q = ones(K);
-    Q(1:K+1:end) = 0;   % off diagonal mask
+    WTX = helper.transconv(W, X);
+    WTXS = conv2(abs(WTX), smoothkernel, 'same');
+    if params.lambdaL1H > 0
+        A = [WTXS; eye(T)];
+        B = zeros(K+T,K);
+        D = zeros(K+T,K);
+        Q = ones(K+T,K);
+        for k = 1:K
+            Q(k,k) = 0;   % off diagonal mask
+        end
+    else
+        A = WTXS;
+        B = zeros(K);
+        D = zeros(K);
+        Q = ones(K);
+        Q(1:K+1:end) = 0;   % off diagonal mask
+    end
     
     tol = 1e-3;
-    max_iter = 10;
+    max_iter = 4;
     for i=1:max_iter
         % Step 1: Update H
         op_recon = @(H, mode)tensor_conv_H(W, T, H, mode);
 %         op_recon_error = tfunc_scale(smooth_quad, 1, op_recon, -X);
-        op_reg = @(H, mode)smooth_cross_ortho_H(W, X, H, mode);
+        op_reg = @(H, mode)smooth_cross_ortho_H(A, K, H, mode);
 %         op_reg_error = tfunc_scale(smooth_quad(params.lambda), 1, op_reg, B-D);
 %         op_smooth = tfunc_sum(op_recon_error, op_reg_error);
         smoothF = {smooth_quad, smooth_quad(params.lambda)};
@@ -40,22 +52,25 @@ if params.lambda > 0
         end
         
         % Step 2: Update D
-        WTX = helper.transconv(W, X);
-        WTXS = conv2(WTX, smoothkernel, 'same');
-        WTXSHT = WTXS*H';
-        D = tfocs(smooth_quad(params.lambda), {1, -WTXSHT-B}, prox_l1(Q), D);
+        AH = A*H';
+        D = tfocs(smooth_quad(params.lambda), {1, -AH-B}, prox_l1(Q), D);
         
         % Step 3: Update B
-        B = B + WTXSHT - D;
+        B = B + AH - D;
         H0 = H;
     end
-    
+%     op_recon = @(H, mode)tensor_conv_H(W, T, H, mode);
+%     op_reg = @(H, mode)smooth_cross_ortho_H(W, X, H, mode);
+%     epsilon = 100;
+%     opts.nonneg = true;
+%     H = solver_sBPDN_W(op_recon, op_reg, X, epsilon, 0, H0, [], opts);
+
 elseif params.lambdaL1H > 0
     % Solve LASSO
     op_recon = @(H, mode)tensor_conv_H(W, T, H, mode);
-    H = tfocs(smooth_quad, {op_recon,-X}, prox_l1pos(params.lambdaL1H), H0);
+    H = tfocs(smooth_quad, {op_recon,-X}, prox_l1pos(params.lambdaL1H), H0, opts);
 else
     % No regularization
     op_recon = @(H, mode)tensor_conv_H(W, T, H, mode);
-    H = tfocs(smooth_quad, {op_recon,-X}, [], H0);
+    H = tfocs(smooth_quad, {op_recon,-X}, [], H0, opts);
 end

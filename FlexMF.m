@@ -82,8 +82,8 @@ function [W, H, errors,loadings,power] = FlexMF(X, varargin)
 [X,N,T,K,L,params] = parse_seqNMF_params(X, varargin);
 
 %% initialize
-W0 = params.W_init;
-H0 = params.H_init;
+W_pre = params.W_init;
+H_pre = params.H_init;
 W = params.W_init;
 lasttime = 0;
 errors = zeros(params.maxiter, 1);
@@ -91,13 +91,19 @@ errors = zeros(params.maxiter, 1);
 for iter = 1 : params.maxiter
     tic
     fprintf('Iter %d\n', iter);
-    fprintf('Updating H\n');
-    H = updateH(W0, H0, X, params);
     
-    if ~params.W_fixed
-        fprintf('Updating W\n');
-        W = updateW(W0, H, X, params);      
-    end
+    fprintf('Updating W\n');
+%     W0 = max(W_pre(:))*rand(N, K, L);
+    W0 = W_pre;
+    H_tmp = H_pre + 0.05*max(H_pre(:))*rand(K,T); 
+    W = updateW(W0, H_pre, X, params);   
+    
+    fprintf('Updating H\n');
+%     H0 = max(H_pre(:))*rand(K,T); 
+    H0 = H_pre;
+    W_tmp = W + 0.05*max(W_pre(:))*rand(N, K, L);
+    H = updateH(W, H0, X, params);   
+
     toc
     
     % Calculate cost for this iteration
@@ -119,7 +125,7 @@ for iter = 1 : params.maxiter
     end 
     
     % Stopping criteria... Stop if reach maxiter or if change in cost function is less than the tolerance
-    if (iter == params.maxiter) || (norm(W(:)-W0(:)) < params.tolerance)
+    if (iter == params.maxiter) || (norm(W(:)-W_pre(:)) < params.tolerance)
         errors = errors(1 : iter);  % trim vector
         lasttime = 1; 
 %         if iter>1
@@ -135,8 +141,8 @@ for iter = 1 : params.maxiter
         drawnow
     end
     
-    W0 = W;
-    H0 = H;
+    W_pre = W;
+    H_pre = H;
     
     if lasttime
         break
@@ -199,7 +205,6 @@ end
         end
         if isnan(params.H_init)
             params.H_init = max(X(:))*rand(K,T)./(sqrt(T/3)); % normalize so frobenius norm of each row ~ 1
-            params.H_init(params.H_init<0) = 0;
         else
             params.H_init = [zeros(K,L),params.H_init,zeros(K,L)];
         end

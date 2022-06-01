@@ -10,8 +10,12 @@ H = rand(K, T);
 X = [zeros(N,L),X,zeros(N,L)];
 H = [zeros(K,L),H,zeros(K,L)];
 T = size(X, 2);
+smoothkernel = ones(1,(2*L)-1);  % for factor competition
+WTX = helper.transconv(W, X);
+WTXS = conv2(abs(WTX), smoothkernel, 'same');
+A = [WTXS; eye(T)];
 
-op = @(H, mode)smooth_cross_ortho_H(W, X, H, mode);
+op = @(H, mode)smooth_cross_ortho_H(A, K, H, mode);
 linop_test(op, 'R2R');
 
 op = @(H, mode)tensor_conv_H(W, T, H, mode);
