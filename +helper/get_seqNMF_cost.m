@@ -12,7 +12,7 @@ for l = 1 : L
 end   
 
 % Compute regularization terms for H update
-WTXSHT = (conv2(WTX, smoothkernel, 'same')*H'); 
+WTXSHT = (conv2(abs(WTX), smoothkernel, 'same')*H'); 
 WTXSHT = WTXSHT.*~eye(K);
 cost = sqrt(sum((X(:)-Xhat(:)).^2));
 %sqrt(sum((X(:)-Xhat(:)).^2)) + lambda.*norm(WTXSHT,1);

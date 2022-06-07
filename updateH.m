@@ -11,19 +11,19 @@ if params.lambda > 0
     WTX = helper.transconv(W, X);
     WTXS = conv2(abs(WTX), smoothkernel, 'same');
     if params.lambdaL1H > 0
-        A = [WTXS; eye(T)];
         B = zeros(K+T,K);
         D = zeros(K+T,K);
         Q = ones(K+T,K);
         for k = 1:K
             Q(k,k) = 0;   % off diagonal mask
         end
+        A = [WTXS; eye(T)];
     else
-        A = WTXS;
         B = zeros(K);
         D = zeros(K);
         Q = ones(K);
         Q(1:K+1:end) = 0;   % off diagonal mask
+        A = WTXS;
     end
     
     tol = 1e-3;
@@ -35,6 +35,7 @@ if params.lambda > 0
         op_reg = @(H, mode)smooth_cross_ortho_H(A, K, H, mode);
 %         op_reg_error = tfunc_scale(smooth_quad(params.lambda), 1, op_reg, B-D);
 %         op_smooth = tfunc_sum(op_recon_error, op_reg_error);
+        op_smooth = @(varargin)off_diag_frob_norm_sqr(params.lambda, Q, varargin{:});
         smoothF = {smooth_quad, smooth_quad(params.lambda)};
         affineF = {op_recon, -X; op_reg, B-D};
         H = tfocs(smoothF, affineF, proj_Rplus, H0, opts);
@@ -58,6 +59,8 @@ if params.lambda > 0
         % Step 3: Update B
         B = B + AH - D;
         H0 = H;
+        fprintf('reg=%f\n',sum(Q(:).*AH(:)));
+        fprintf('D=%f\n',sum(Q(:).*D(:)));
     end
 %     op_recon = @(H, mode)tensor_conv_H(W, T, H, mode);
 %     op_reg = @(H, mode)smooth_cross_ortho_H(W, X, H, mode);

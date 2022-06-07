@@ -1,4 +1,4 @@
-function [W, H, errors,loadings,power] = FlexMF(X, varargin)
+function [W, H, errors, loadings,power] = FlexMF(X, varargin)
 %
 % USAGE: 
 %
