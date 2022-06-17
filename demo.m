@@ -24,13 +24,15 @@ neg = 0.2; % Proportion of negative indices in W
 [X, W, H, V_hat] = generate_data(T,Nneurons,Dt,NeuronNoise,SeqNoiseTime,SeqNoiseNeuron,0,0,neg,1);
 figure; SimpleWHPlot(W,H,X); title('generated data','Fontsize',16)
 set(gcf,'position',[200,200,1200,900])
+nuc_norm = norm(svd(X),1);
+X = X/nuc_norm*size(X,1);
 
 %% Fit with seqNMF
 K = 5;
 L = 50;
-lambda = 1e-6;
+lambda = 1e-2;
 lambdaL1H = 0;
-lambdaL1W = .5;
+lambdaL1W = .1;
 shg; clf
 display('Running FlexMF on simulated data (3 simulated sequences + noise)')
 [W_hat,H_hat,errors,loadings,power] = FlexMF(X,'K',K, 'L', L, 'maxiter', 50,...
@@ -60,7 +62,7 @@ set(gcf,'position',[200,200,1200,900])
 figure;
 plot(errors)
 title('Reconstruction Error')
-ylim([0,50])
+ylim([0,10])
 % 
 % figure;
 % plot(grads.etaH_all)

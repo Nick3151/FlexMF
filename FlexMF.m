@@ -1,4 +1,4 @@
-function [W, H, errors, loadings,power] = FlexMF(X, varargin)
+function [W, H, errors, loadings, power] = FlexMF(X, varargin)
 %
 % USAGE: 
 %
@@ -95,7 +95,7 @@ for iter = 1 : params.maxiter
     fprintf('Updating W\n');
 %     W0 = max(W_pre(:))*rand(N, K, L);
     W0 = W_pre;
-    H_tmp = H_pre + 0.05*max(H_pre(:))*rand(K,T); 
+%     H_tmp = H_pre + 0.05*max(H_pre(:))*rand(K,T); 
     W = updateW(W0, H_pre, X, params);   
     
     fprintf('Updating H\n');
