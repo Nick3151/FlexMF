@@ -1,9 +1,16 @@
 function H = updateH(W, H0, X, params)
 [N, K, L] = size(W);
 [~, T] = size(X);
-opts = tfocs;
+opts_default = tfocs;
+opts = opts_default;
 opts.maxIts = 500;
-% opts.tol = 1e-6;
+opts.tol = 1e-6;
+opts.restart = 50;
+if ~params.showPlot 
+    opts_default.printEvery = 0;
+    opts.printEvery = 0;
+end
+% ops.alg = 'N83';
 
 if params.lambda > 0
     % Use smooth cross orthogonal panelty regularization
@@ -27,9 +34,8 @@ if params.lambda > 0
         A = WTXS;
     end
     
-    alpha = 1e-3;
-    tol = 1e-3;
-    max_iter = 5;
+    tol_H = 1e-3;
+    max_iter = 20;
     for i=1:max_iter
         % Step 1: Update H
         op_recon = @(H, mode)tensor_conv_H(W, T, H, mode);
@@ -38,7 +44,7 @@ if params.lambda > 0
 %         op_reg_error = tfunc_scale(smooth_quad(params.lambda), 1, op_reg, B-D);
 %         op_smooth = tfunc_sum(op_recon_error, op_reg_error);
 %         op_smooth = @(varargin)off_diag_frob_norm_sqr(params.lambda, Q, varargin{:});
-        smoothF = {smooth_quad, smooth_quad(alpha)};
+        smoothF = {smooth_quad, smooth_quad(params.alpha)};
         affineF = {op_recon, -X; op_reg, B-D};
         H = tfocs(smoothF, affineF, proj_Rplus, H0, opts);
         
@@ -49,22 +55,27 @@ if params.lambda > 0
             drawnow
         end
         
-        fprintf('dH=%f\n',sqrt(sum((H-H0).^2, 'all')));
-        if sqrt(sum((H-H0).^2, 'all')) < tol
+        dH = sqrt(mean((H(:)-H0(:)).^2));
+        if dH < tol_H
             fprintf('Step size tolerance of H reached\n')
             break
         end
         
         % Step 2: Update D
         AH = A*H';
-        D = tfocs(smooth_quad(alpha), {1, -AH-B}, prox_l1(params.lambda*Q), D);
+        D = tfocs(smooth_quad(params.alpha), {1, -AH-B}, prox_l1(params.lambda*Q), D, opts_default);
         
         % Step 3: Update B
         B = B + AH - D;
+        
+        if params.showPlot 
+            fprintf('dH=%f\n',dH);
+            fprintf('reg=%f\n',sum(Q(:).*AH(:)));
+            fprintf('D=%f\n',sum(Q(:).*D(:)));
+            fprintf('B=%f\n',sum(Q(:).*B(:)));
+        end
+        
         H0 = H;
-        fprintf('reg=%f\n',sum(Q(:).*AH(:)));
-        fprintf('D=%f\n',sum(Q(:).*D(:)));
-        fprintf('B=%f\n',sum(Q(:).*B(:)));
     end
 %     op_recon = @(H, mode)tensor_conv_H(W, T, H, mode);
 %     op_reg = @(H, mode)smooth_cross_ortho_H(W, X, H, mode);
@@ -75,9 +86,9 @@ if params.lambda > 0
 elseif params.lambdaL1H > 0
     % Solve LASSO
     op_recon = @(H, mode)tensor_conv_H(W, T, H, mode);
-    H = tfocs(smooth_quad, {op_recon,-X}, prox_l1pos(params.lambdaL1H), H0, opts);
+    H = tfocs(smooth_quad, {op_recon,-X}, prox_l1pos(params.lambdaL1H), H0, opts_default);
 else
     % No regularization
     op_recon = @(H, mode)tensor_conv_H(W, T, H, mode);
-    H = tfocs(smooth_quad, {op_recon,-X}, [], H0, opts);
+    H = tfocs(smooth_quad, {op_recon,-X}, proj_Rplus, H0, opts_default);
 end

@@ -3,6 +3,10 @@ function W = updateW(W0, H, X, params)
 [~, T] = size(X);
 opts = tfocs;
 opts.maxIts = 500;
+opts.tol = 1e-6;
+if ~params.showPlot 
+    opts.printEvery = 0;
+end
 
 % if params.lambda > 0
 %     % Use smooth cross orthogonal panelty regularization
@@ -57,5 +61,5 @@ if params.lambdaL1W > 0
 else
     % No regularization
     op_recon = @(W, mode)tensor_conv_W(H, N, L, W, mode);
-    W = tfocs(smooth_quad, {op_recon,-X}, [], W0, opts);
+    W = tfocs(smooth_quad, {op_recon,-X}, proj_Rplus, W0, opts);
 end

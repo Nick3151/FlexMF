@@ -1,4 +1,4 @@
-function [cost,regularization,WTX] = get_seqNMF_cost(X,W,H)
+function [cost,regularization,WTX] = get_FlexMF_cost(X,W,H)
 
 [N,K,L] = size(W);
 [~,T] = size(H);

@@ -1,4 +1,4 @@
-function [W, H, errors, loadings, power] = FlexMF(X, varargin)
+function [W, H, cost, loadings, power] = FlexMF(X, varargin)
 %
 % USAGE: 
 %
@@ -55,7 +55,7 @@ function [W, H, errors, loadings, power] = FlexMF(X, varargin)
 %
 % W                         NxKxL tensor containing factor exemplars
 % H                         KxT matrix containing factor timecourses
-% errors                      1x(#Iterations+1) vector containing 
+% cost                      1x(#Iterations+1) vector containing 
 %                               reconstruction error at each iteration. 
 %                               cost(1) is error before 1st iteration.
 % loadings                  1xK vector containing loading of each factor 
@@ -85,11 +85,26 @@ function [W, H, errors, loadings, power] = FlexMF(X, varargin)
 W_pre = params.W_init;
 H_pre = params.H_init;
 W = params.W_init;
+
+Xhat = helper.reconstruct(W_pre, H_pre); 
+mask = find(params.M == 0); % find masked (held-out) indices 
+X(mask) = Xhat(mask); % replace data at masked elements with reconstruction, so masked datapoints do not effect fit
+
 lasttime = 0;
-errors = zeros(params.maxiter, 1);
+cost = zeros(params.maxiter+1, 1);
+cost(1) = sqrt(mean((X(:)-Xhat(:)).^2));
 
 for iter = 1 : params.maxiter
-    tic
+    % Stopping criteria... Stop if reach maxiter or if change in cost function is less than the tolerance
+    if (iter == params.maxiter) || ((iter>5) && (dW < params.tolerance))
+        cost = cost(1 : iter+1);  % trim vector
+        lasttime = 1; 
+%         if iter>1
+%             params.lambda = 0; % Do one final CNMF iteration (no regularization, just prioritize reconstruction)
+%         end
+    end
+    
+%     tic
     fprintf('Iter %d\n', iter);
     
     fprintf('Updating W\n');
@@ -104,13 +119,7 @@ for iter = 1 : params.maxiter
     W_tmp = W + 0.05*max(W_pre(:))*rand(N, K, L);
     H = updateH(W, H0, X, params);   
 
-    toc
-    
-    % Calculate cost for this iteration
-    Xhat = helper.reconstruct(W, H);    
-    mask = find(params.M == 0); % find masked (held-out) indices 
-    X(mask) = Xhat(mask); % replace data at masked elements with reconstruction, so masked datapoints do not effect fit
-    errors(iter) = norm(X-Xhat, 'fro');
+%     toc
     
     % Shift to center factors
     if params.shift
@@ -124,14 +133,13 @@ for iter = 1 : params.maxiter
         W(:, :, l) = W(:, :, l) * diag(norms);
     end 
     
-    % Stopping criteria... Stop if reach maxiter or if change in cost function is less than the tolerance
-    if (iter == params.maxiter) || (norm(W(:)-W_pre(:)) < params.tolerance)
-        errors = errors(1 : iter);  % trim vector
-        lasttime = 1; 
-%         if iter>1
-%             params.lambda = 0; % Do one final CNMF iteration (no regularization, just prioritize reconstruction)
-%         end
-    end
+    % Calculate cost for this iteration
+    Xhat = helper.reconstruct(W, H);    
+    mask = find(params.M == 0); % find masked (held-out) indices 
+    X(mask) = Xhat(mask); % replace data at masked elements with reconstruction, so masked datapoints do not effect fit
+    cost(iter+1) = sqrt(mean((X(:)-Xhat(:)).^2));
+    dW = sqrt(mean((W(:)-W_pre(:)).^2));
+    fprintf('dW=%f\n', dW);
     
     % Plot to show progress
     if params.showPlot 
@@ -175,9 +183,10 @@ end
         addOptional(p,'K',10);
         addOptional(p,'L',100);
         addOptional(p,'lambda',.01);
+        addOptional(p,'alpha',1e-3);
         addOptional(p,'showPlot',1);
         addOptional(p,'maxiter',100);
-        addOptional(p,'tolerance',-Inf);
+        addOptional(p,'tolerance',1e-3);
         addOptional(p,'shift',1);
         addOptional(p,'lambdaL1W',0);
         addOptional(p,'lambdaL1H',0);

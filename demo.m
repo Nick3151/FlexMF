@@ -30,47 +30,106 @@ X = X/nuc_norm*size(X,1);
 %% Fit with seqNMF
 K = 5;
 L = 50;
-lambda = 1e-2;
+lambda = 1e-4;
+alpha = 1e-3;
 lambdaL1H = 0;
 lambdaL1W = .1;
 shg; clf
 display('Running FlexMF on simulated data (3 simulated sequences + noise)')
-[W_hat,H_hat,errors,loadings,power] = FlexMF(X,'K',K, 'L', L, 'maxiter', 50,...
-    'lambda', lambda, 'lambdaL1W', lambdaL1W, 'lambdaL1H', lambdaL1H);
+tic
+[W_hat,H_hat,cost,loadings,power] = FlexMF(X,'K',K, 'L', L, 'maxiter', 50,...
+    'lambda', lambda, 'alpha', alpha, 'lambdaL1W', lambdaL1W, 'lambdaL1H', lambdaL1H);
+toc
 set(gcf,'position',[200,200,1200,900])
-
-% figure
-% plot(grads.grads_H_recon_all)
-% hold on
-% plot(grads.grads_H_WXH_all)
-% plot(grads.grads_H_HH_all)
-% plot(grads.grads_H_L1H_all)
-% legend('Reconstruction gradient over H','Regularization WXH gradient over H', ...
-%     'Regularization HH gradient over H', 'Regularization L1H gradient over H')
-% ylim([0,20])
-% 
-% figure
-% plot(grads.grads_W_recon_all)
-% hold on
-% plot(grads.grads_W_WXH_all)
-% plot(grads.grads_W_WW_all)
-% plot(grads.grads_W_L1W_all)
-% legend('Reconstruction gradient over W','Regularization WXH gradient over W', ...
-%     'Regularization WW gradient over W', 'Regularization L1W gradient over W')
-% ylim([0,5])
 % 
 figure;
-plot(errors)
+plot(cost(2:end))
 title('Reconstruction Error')
-ylim([0,10])
-% 
-% figure;
-% plot(grads.etaH_all)
-% title('Line search step on H')
-% 
-% figure;
-% plot(grads.etaW_all)
-% title('Line search step on W')
+
+%% Procedure for choosing lambda
+nLambdas = 9; % increase if you're patient
+nAlphas = 9;
+K = 5; 
+L = 50;
+lambdas = sort([logspace(-1,-5,nLambdas)], 'ascend'); 
+alphas = sort([logspace(-1,-5,nAlphas)], 'ascend'); 
+loadings = zeros(nLambdas, nAlphas, K);
+regularization = zeros(nLambdas, nAlphas);
+costs = zeros(nLambdas, nAlphas); 
+times = zeros(nLambdas, nAlphas); 
+
+for li = 1:length(lambdas)
+    for ai = 1:length(alphas)
+        tic
+        [W, H, ~,loadings(li,ai,:),power]= FlexMF(X,'K',K,'L',L, 'maxiter', 50,...
+            'lambdaL1W', .1, 'lambda', lambdas(li), 'alpha', alphas(ai), 'showPlot', 0); 
+
+        [costs(li,ai),regularization(li,ai),~] = helper.get_FlexMF_cost(X,W,H);
+        display(['Testing lambda ' num2str(li) '/' num2str(length(lambdas))])
+        display(['Testing alpha ' num2str(ai) '/' num2str(length(alphas))])
+        time = toc
+        times(li,ai) = time;
+    end
+end
+save('choose_lambda.mat', 'costs', 'regularization', 'times', 'loadings',...
+    'lambdas', 'alphas')
+%% plot costs as a function of lambda
+load choose_lambda.mat;
+windowSize = 3; 
+b = (1/windowSize)*ones(1,windowSize);
+a = 1;
+sel = logical(alphas==1e-3);
+Rs = filtfilt(b,a,regularization(:,sel)); 
+minRs = prctile(regularization(:,sel),10); maxRs= prctile(regularization(:,sel),90);
+Rs = (Rs-minRs)/(maxRs-minRs); 
+R = (regularization(:,sel)-minRs)/(maxRs-minRs); 
+Cs = filtfilt(b,a,costs(:,sel)); 
+minCs =  prctile(costs(:,sel),10); maxCs =  prctile(costs(:,sel),90); 
+Cs = (Cs -minCs)/(maxCs-minCs); 
+C = (costs(:,sel) -minCs)/(maxCs-minCs); 
+
+figure; clf; hold on
+plot(lambdas,Rs, 'b')
+plot(lambdas,Cs,'r')
+scatter(lambdas, R, 'b', 'markerfacecolor', 'flat');
+scatter(lambdas, C, 'r', 'markerfacecolor', 'flat');
+xlabel('Lambda'); ylabel('Cost (au)')
+set(legend('Correlation cost', 'Reconstruction cost'), 'Box', 'on')
+set(gca, 'xscale', 'log', 'ytick', [], 'color', 'none')
+set(gca,'color','none','tickdir','out','ticklength', [0.025, 0.025])
+title('alpha=1e-3')
+
+minRs = min(regularization(:)); maxRs= max(regularization(:));
+R = (regularization-minRs)/(maxRs-minRs);  
+minCs =  min(costs(:)); maxCs =  max(costs(:)); 
+C = (costs-minCs)/(maxCs-minCs); 
+nAlphas = length(alphas);
+nLambdas = length(lambdas);
+
+figure;
+set(gcf,'position',[200,200,900,900])
+marginX = 0.1;
+marginY = 0.1;
+for li = 1:nLambdas
+    for ai = 1:nAlphas
+        subplot('Position', [marginX+(ai-1)*(1-marginX)/nAlphas, (nLambdas-li)*(1-marginY)/nLambdas, (1-marginX)/nAlphas, (1-marginY)/nLambdas]);
+        b = bar([R(li,ai), C(li,ai)],'FaceColor','flat');
+        b.CData(2,:) = [1 0 0];
+        set(gca,'YLim',[0,1],'XTick',[],'YTick',[])
+    end
+end
+dim_Lambdas = [zeros(nLambdas,1), (nLambdas-1:-1:0)'*(1-marginY)/nLambdas,... 
+    (1-marginX)/nAlphas*ones(nLambdas,1), (1-marginY)/nLambdas*ones(nLambdas,1)];
+dim_Alphas = [marginX+(0:nAlphas-1)'*(1-marginX)/nAlphas, (1-marginY)*ones(nAlphas,1),...
+    (1-marginX)/nAlphas*ones(nAlphas,1), (1-marginY)/nLambdas*ones(nAlphas,1)];
+for li = 1:nLambdas
+    annotation('textbox',dim_Lambdas(li,:),'String',sprintf('\\lambda=%0.3e',lambdas(li)),...
+        'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none')
+end
+for ai = 1:nAlphas
+    annotation('textbox',dim_Alphas(ai,:),'String',sprintf('\\alpha=%0.3e',alphas(ai)),...
+        'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none')
+end
 
 %% Look at factors
 figure; SimpleWHPlot(W_hat,H_hat); title('SeqNMF reconstruction')
@@ -89,7 +148,7 @@ for k = 1:10
     end
     inds = nchoosek(1:numfits,2);
     for i = 1:size(inds,1) % consider using parfor for larger numfits
-            Diss(i,k) = helper.DISSX(Hs{inds(i,1),k},Ws{inds(i,1),k},Hs{inds(i,2),k},Ws{inds(i,2),k});
+        Diss(i,k) = helper.DISSX(Hs{inds(i,1),k},Ws{inds(i,1),k},Hs{inds(i,2),k},Ws{inds(i,2),k});
     end
     
 end
@@ -161,6 +220,8 @@ for li = 1:length(lambdas)
     [cost(li),regularization(li),~] = helper.get_seqNMF_cost(X,W,H);
     display(['Testing lambda ' num2str(li) '/' num2str(length(lambdas))])
 end
+
+
 %% plot costs as a function of lambda
 windowSize = 3; 
 b = (1/windowSize)*ones(1,windowSize);
