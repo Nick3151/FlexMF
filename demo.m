@@ -131,6 +131,27 @@ for ai = 1:nAlphas
         'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none')
 end
 
+% Plot running times
+figure;
+set(gcf,'position',[200,200,900,900])
+imagesc(times)
+set(gca, 'Position', [0.1 0.1 0.7 0.7], 'XTickLabel', [], 'YTickLabel', []);
+colorbar('Position', [0.85 0.1 0.05 0.7]);
+dim_Lambdas = [0.1-0.7/nAlphas*ones(nLambdas,1), 0.1+(nLambdas-1:-1:0)'*0.7/nLambdas,... 
+    0.7/nAlphas*ones(nLambdas,1), 0.7/nLambdas*ones(nLambdas,1)];
+dim_Alphas = [0.1+(0:nAlphas-1)'*0.7/nAlphas, 0.8*ones(nAlphas,1),...
+    0.7/nAlphas*ones(nLambdas,1), 0.7/nLambdas*ones(nLambdas,1)];
+for li = 1:nLambdas
+    annotation('textbox',dim_Lambdas(li,:),'String',sprintf('\\lambda=%0.2e',lambdas(li)),...
+        'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none')
+end
+for ai = 1:nAlphas
+    annotation('textbox',dim_Alphas(ai,:),'String',sprintf('\\alpha=%0.2e',alphas(ai)),...
+        'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none')
+end
+annotation('textbox',[0.1 0.85 0.8 0.1],'String', 'Running time(s)', 'FontSize', 16, 'FontWeight', 'bold',...
+        'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none')
+
 %% Look at factors
 figure; SimpleWHPlot(W_hat,H_hat); title('SeqNMF reconstruction')
 figure; SimpleWHPlot(W_hat,H_hat,X); title('SeqNMF factors, with raw data')
