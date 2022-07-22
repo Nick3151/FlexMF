@@ -27,7 +27,7 @@ set(gcf,'position',[200,200,1200,900])
 nuc_norm = norm(svd(X),1);
 X = X/nuc_norm*size(X,1);
 
-%% Fit with seqNMF
+%% Fit with FlexMF
 K = 5;
 L = 50;
 lambda = 1e-4;
@@ -75,6 +75,36 @@ save('choose_lambda.mat', 'costs', 'regularization', 'times', 'loadings',...
     'lambdas', 'alphas')
 %% plot costs as a function of lambda
 load choose_lambda.mat;
+nLambdas = length(lambdas); 
+nAlphas = length(alphas);
+regularization = regularization.*repmat(lambdas', 1, nAlphas);
+maxRs= max(regularization(:));
+
+figure;
+set(gcf,'position',[200,200,900,900])
+marginX = 0.1;
+marginY = 0.1;
+for li = 1:nLambdas
+    for ai = 1:nAlphas
+        subplot('Position', [marginX+(ai-1)*(1-marginX)/nAlphas, (nLambdas-li)*(1-marginY)/nLambdas, (1-marginX)/nAlphas, (1-marginY)/nLambdas]);
+        b = bar([regularization(li,ai), costs(li,ai)],'FaceColor','flat');
+        b.CData(2,:) = [1 0 0];
+        set(gca,'YLim',[0,maxRs],'XTick',[],'YTick',[])
+    end
+end
+dim_Lambdas = [zeros(nLambdas,1), (nLambdas-1:-1:0)'*(1-marginY)/nLambdas,... 
+    (1-marginX)/nAlphas*ones(nLambdas,1), (1-marginY)/nLambdas*ones(nLambdas,1)];
+dim_Alphas = [marginX+(0:nAlphas-1)'*(1-marginX)/nAlphas, (1-marginY)*ones(nAlphas,1),...
+    (1-marginX)/nAlphas*ones(nAlphas,1), (1-marginY)/nLambdas*ones(nAlphas,1)];
+for li = 1:nLambdas
+    annotation('textbox',dim_Lambdas(li,:),'String',sprintf('\\lambda=%0.3e',lambdas(li)),...
+        'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none')
+end
+for ai = 1:nAlphas
+    annotation('textbox',dim_Alphas(ai,:),'String',sprintf('\\alpha=%0.3e',alphas(ai)),...
+        'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none')
+end     
+
 windowSize = 3; 
 b = (1/windowSize)*ones(1,windowSize);
 a = 1;
