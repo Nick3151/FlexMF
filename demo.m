@@ -31,7 +31,7 @@ X = X/nuc_norm*size(X,1);
 K = 5;
 L = 50;
 lambda = 1e-4;
-alpha = 1e-3;
+alpha = 1e-1;
 lambdaL1H = 0;
 lambdaL1W = .1;
 shg; clf
@@ -45,6 +45,7 @@ set(gcf,'position',[200,200,1200,900])
 figure;
 plot(cost(2:end))
 title('Reconstruction Error')
+score = helper.similarity(W, H, W_hat, H_hat);
 
 %% Procedure for choosing lambda
 nLambdas = 9; % increase if you're patient
@@ -57,22 +58,28 @@ loadings = zeros(nLambdas, nAlphas, K);
 regularization = zeros(nLambdas, nAlphas);
 costs = zeros(nLambdas, nAlphas); 
 times = zeros(nLambdas, nAlphas); 
+scores = zeros(nLambdas, nAlphas); 
+W_hats = cell(nLambdas, nAlphas);
+H_hats = cell(nLambdas, nAlphas);
 
 for li = 1:length(lambdas)
     for ai = 1:length(alphas)
         tic
-        [W, H, ~,loadings(li,ai,:),power]= FlexMF(X,'K',K,'L',L, 'maxiter', 50,...
+        [W_hat, H_hat, ~,loadings(li,ai,:),power]= FlexMF(X,'K',K,'L',L, 'maxiter', 50,...
             'lambdaL1W', .1, 'lambda', lambdas(li), 'alpha', alphas(ai), 'showPlot', 0); 
 
-        [costs(li,ai),regularization(li,ai),~] = helper.get_FlexMF_cost(X,W,H);
+        [costs(li,ai),regularization(li,ai),~] = helper.get_FlexMF_cost(X,W_hat,H_hat);
         display(['Testing lambda ' num2str(li) '/' num2str(length(lambdas))])
         display(['Testing alpha ' num2str(ai) '/' num2str(length(alphas))])
         time = toc
         times(li,ai) = time;
+        W_hats{li,ai} = W_hat;
+        H_hats{li,ai} = H_hat;
+        scores(li,ai) = helper.similarity(W, H, W_hat, H_hat);
     end
 end
 save('choose_lambda.mat', 'costs', 'regularization', 'times', 'loadings',...
-    'lambdas', 'alphas')
+    'lambdas', 'alphas', 'W_hats', 'H_hats', 'scores')
 %% plot costs as a function of lambda
 load choose_lambda.mat;
 nLambdas = length(lambdas); 
@@ -161,7 +168,7 @@ for ai = 1:nAlphas
         'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none')
 end
 
-% Plot running times
+%% Plot running times and scores
 figure;
 set(gcf,'position',[200,200,900,900])
 imagesc(times)
@@ -180,6 +187,26 @@ for ai = 1:nAlphas
         'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none')
 end
 annotation('textbox',[0.1 0.85 0.8 0.1],'String', 'Running time(s)', 'FontSize', 16, 'FontWeight', 'bold',...
+        'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none')
+    
+figure;
+set(gcf,'position',[200,200,900,900])
+imagesc(scores)
+set(gca, 'Position', [0.1 0.1 0.7 0.7], 'XTickLabel', [], 'YTickLabel', []);
+colorbar('Position', [0.85 0.1 0.05 0.7]);
+dim_Lambdas = [0.1-0.7/nAlphas*ones(nLambdas,1), 0.1+(nLambdas-1:-1:0)'*0.7/nLambdas,... 
+    0.7/nAlphas*ones(nLambdas,1), 0.7/nLambdas*ones(nLambdas,1)];
+dim_Alphas = [0.1+(0:nAlphas-1)'*0.7/nAlphas, 0.8*ones(nAlphas,1),...
+    0.7/nAlphas*ones(nLambdas,1), 0.7/nLambdas*ones(nLambdas,1)];
+for li = 1:nLambdas
+    annotation('textbox',dim_Lambdas(li,:),'String',sprintf('\\lambda=%0.2e',lambdas(li)),...
+        'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none')
+end
+for ai = 1:nAlphas
+    annotation('textbox',dim_Alphas(ai,:),'String',sprintf('\\alpha=%0.2e',alphas(ai)),...
+        'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none')
+end
+annotation('textbox',[0.1 0.85 0.8 0.1],'String', 'Similarity score', 'FontSize', 16, 'FontWeight', 'bold',...
         'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none')
 
 %% Look at factors

@@ -95,8 +95,14 @@ cost = zeros(params.maxiter+1, 1);
 cost(1) = sqrt(mean((X(:)-Xhat(:)).^2));
 
 for iter = 1 : params.maxiter
+    fprintf('Iter %d\n', iter);
+    if iter > 5
+        dcost = cost(iter) - mean(cost((iter-5):(iter-1)));
+        fprintf('dcost=%f\n', dcost);
+    end
     % Stopping criteria... Stop if reach maxiter or if change in cost function is less than the tolerance
-    if (iter == params.maxiter) || ((iter>5) && (dW < params.tolerance))
+    % if (iter == params.maxiter) || ((iter>5) && (dW < params.tolerance))
+    if (iter == params.maxiter) || ((iter>5) && (abs(dcost) < params.tolerance))
         cost = cost(1 : iter+1);  % trim vector
         lasttime = 1; 
 %         if iter>1
@@ -105,7 +111,6 @@ for iter = 1 : params.maxiter
     end
     
 %     tic
-    fprintf('Iter %d\n', iter);
     
     fprintf('Updating W\n');
 %     W0 = max(W_pre(:))*rand(N, K, L);
@@ -138,8 +143,8 @@ for iter = 1 : params.maxiter
     mask = find(params.M == 0); % find masked (held-out) indices 
     X(mask) = Xhat(mask); % replace data at masked elements with reconstruction, so masked datapoints do not effect fit
     cost(iter+1) = sqrt(mean((X(:)-Xhat(:)).^2));
-    dW = sqrt(mean((W(:)-W_pre(:)).^2));
-    fprintf('dW=%f\n', dW);
+%     dW = sqrt(mean((W(:)-W_pre(:)).^2));
+%     fprintf('dW=%f\n', dW);
     
     % Plot to show progress
     if params.showPlot 
