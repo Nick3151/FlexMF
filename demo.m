@@ -47,39 +47,6 @@ plot(cost(2:end))
 title('Reconstruction Error')
 score = helper.similarity(W, H, W_hat, H_hat);
 
-%% Procedure for choosing lambda
-nLambdas = 9; % increase if you're patient
-nAlphas = 9;
-K = 5; 
-L = 50;
-lambdas = sort([logspace(-1,-5,nLambdas)], 'ascend'); 
-alphas = sort([logspace(-1,-5,nAlphas)], 'ascend'); 
-loadings = zeros(nLambdas, nAlphas, K);
-regularization = zeros(nLambdas, nAlphas);
-costs = zeros(nLambdas, nAlphas); 
-times = zeros(nLambdas, nAlphas); 
-scores = zeros(nLambdas, nAlphas); 
-W_hats = cell(nLambdas, nAlphas);
-H_hats = cell(nLambdas, nAlphas);
-
-for li = 1:length(lambdas)
-    for ai = 1:length(alphas)
-        tic
-        [W_hat, H_hat, ~,loadings(li,ai,:),power]= FlexMF(X,'K',K,'L',L, 'maxiter', 50,...
-            'lambdaL1W', .1, 'lambda', lambdas(li), 'alpha', alphas(ai), 'showPlot', 0); 
-
-        [costs(li,ai),regularization(li,ai),~] = helper.get_FlexMF_cost(X,W_hat,H_hat);
-        display(['Testing lambda ' num2str(li) '/' num2str(length(lambdas))])
-        display(['Testing alpha ' num2str(ai) '/' num2str(length(alphas))])
-        time = toc
-        times(li,ai) = time;
-        W_hats{li,ai} = W_hat;
-        H_hats{li,ai} = H_hat;
-        scores(li,ai) = helper.similarity(W, H, W_hat, H_hat);
-    end
-end
-save('choose_lambda.mat', 'costs', 'regularization', 'times', 'loadings',...
-    'lambdas', 'alphas', 'W_hats', 'H_hats', 'scores')
 %% plot costs as a function of lambda
 load choose_lambda.mat;
 nLambdas = length(lambdas); 
