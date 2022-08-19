@@ -13,6 +13,8 @@ SeqNoiseTime = zeros(number_of_seqences,1); % Jitter parameter = 0%
 SeqNoiseNeuron = 1.*ones(number_of_seqences,1); % Participation parameter = 100%
 neg = 0.2; % Proportion of negative indices in W
 [X, W, H, V_hat] = generate_data(T,Nneurons,Dt,NeuronNoise,SeqNoiseTime,SeqNoiseNeuron,0,0,neg,1);
+nuc_norm = norm(svd(X),1);
+X = X/nuc_norm*size(X,1);
 
 %% Procedure for choosing lambda
 nLambdas = 9; % increase if you're patient
