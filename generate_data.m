@@ -46,17 +46,23 @@ H = zeros(K,T);
 % end
 nn = K*1000; % make smaller
 if stretch > 0
-    stretches = randi(stretch,nn,1);
+    stretches = randi([-stretch, stretch],nn,1);
 else
     stretches = zeros(nn,1);
+end
+
+if seed == 0
+    rng shuffle
+else
+    rng(seed)
 end
 
 % time courses with a minimum gap.
 temp = [];
 for j = 1:nn
     % need to fix this to work for stretches = 0
-    %temp = [temp;randi(100,1,1)+max(lseq)+stretches(ii)];
-    temp = [temp;randi(100,1,1)+(max(lseq)/max(Dt)*(max(Dt)+stretches(ii)))];
+    temp = [temp;randi(100,1,1)+max(lseq)];
+%     temp = [temp;randi(100,1,1)+(max(lseq)/max(Dt)*(max(Dt)+stretches(ii)))];
 end
 temp = cumsum(temp);
 
@@ -77,8 +83,8 @@ H = H(:,1:T);
 leng = (max(lseq)/max(Dt)*(max(Dt)+stretch));
 L = leng+150;
 W = zeros(N,K,L);
-H(:,T-(2*(max(lseq)/max(Dt)*(max(Dt)+(stretch)))):T) = 0;
-%H(:,end-300:end) = 0;
+% H(:,T-(2*(max(lseq)/max(Dt)*(max(Dt)+(stretch)))):T) = 0;
+H(:,T-(2*(max(lseq))):T) = 0;
 [~,T] = size(H);
 V_hat = zeros(N,T);
 
@@ -90,19 +96,15 @@ for ii = 1:K % go through each factor
     ind = find(H(ii,:));
     
     % neg: proportion of negative indices
-    if neg > 0
-        neg_indices = (rand(N,L) < neg);
-    else
-        neg_indices = zeros(N,L);
-    end
+    neg_indices = (rand(1,length(neurons{ii})) < neg);
     
     Dt_temp = Dt(ii);
     Wi = zeros(N,L);          
-    temp = eye(length(neurons{ii}));  
+    temp = ones(1,length(neurons{ii}));
+    temp(neg_indices) = -temp(neg_indices);
     temp2 = zeros(length(neurons{ii}),Dt_temp*Nneurons(ii));
-    temp2(:,1:Dt_temp:Dt_temp*Nneurons(ii)) = temp;    
+    temp2(:,1:Dt_temp:Dt_temp*Nneurons(ii)) = diag(temp);    
     Wi(neurons{ii},50:49+size(temp2,2)) = temp2;  
-    Wi(neg_indices) = -Wi(neg_indices);
     W(:,ii,:) = Wi;
     
     for jj = 1:sum(H(ii,:)) % go through each iteration of the sequence
@@ -113,9 +115,8 @@ for ii = 1:K % go through each factor
             Dt_temp = Dt(ii)+Hs{ii}(jj);%+(randi(stretch))
             %*(-1+(2*(rand(1)>0.5))); If you want compression as well   
             tempW = zeros(N,L);          
-            temp = eye(length(neurons{ii}));
             temp2 = zeros(length(neurons{ii}),Dt_temp*Nneurons(ii));
-            temp2(:,1:Dt_temp:Dt_temp*Nneurons(ii)) = temp;    
+            temp2(:,1:Dt_temp:Dt_temp*Nneurons(ii)) = diag(temp);    
             tempW(neurons{ii},50:49+size(temp2,2)) = temp2;  
         else 
             tempW = Wi;      
