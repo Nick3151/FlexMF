@@ -1,5 +1,7 @@
 clear all
 close all
+root = fileparts(pwd);
+addpath(fullfile(root, 'TFOCS'))
 %% Generate some synthetic data with temporal jittering or time warping
 number_of_seqences = 3;
 T = 800; % length of data to generate
@@ -9,7 +11,7 @@ NeuronNoise = 0.001; % probability of added noise in each bin
 SeqNoiseTime = 0.25*ones(number_of_seqences,1); % Jitter parameter = 25%
 SeqNoiseNeuron = 1.*ones(number_of_seqences,1); % Participation parameter = 100%
 stretch = 2; % stretch should be less than Dt
-neg = 0.2;
+neg = 0;
 bin = 0;
 [X, W, H, ~] = generate_data(T,Nneurons,Dt,NeuronNoise,zeros(number_of_seqences,1),SeqNoiseNeuron,0,bin,neg,1);
 [Xwarp, Wwarp, Hwarp, ~] = generate_data(T,Nneurons,Dt,NeuronNoise,zeros(number_of_seqences,1),SeqNoiseNeuron,stretch,bin,neg,1);
@@ -23,3 +25,11 @@ figure; SimpleWHPlot(Wwarp(:,:,range),Hwarp,Xwarp); title('generated data warpin
 set(gcf,'position',[200,200,1600,900])
 figure; SimpleWHPlot(Wjit(:,:,range),Hjit,Xjit); title('generated data jittering','Fontsize',16)
 set(gcf,'position',[200,200,1600,900])
+
+%% Compute EMD
+mu = 1;
+N = size(X,1);
+A = @(Y, mode)Beckmann_UOT_constraint(N+1, T, Y, mode);
+W = @(Y, mode)Beckmann_UOT_obj(N+1, T, mu, Y, mode);
+b = Xwarp-X;
+[Y, out] = solver_sBPDN_W(A,W,b,0,0);
