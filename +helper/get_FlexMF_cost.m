@@ -1,4 +1,4 @@
-function [cost,regularization,WTX] = get_FlexMF_cost(X,W,H)
+function [recon_err, reg_cross, reg_W, reg_H] = get_FlexMF_cost(X,W,H)
 
 [N,K,L] = size(W);
 [~,T] = size(H);
@@ -14,8 +14,10 @@ end
 % Compute regularization terms for H update
 WTXSHT = (conv2(abs(WTX), smoothkernel, 'same')*H'); 
 WTXSHT = WTXSHT.*~eye(K);
-cost = sqrt(sum((X(:)-Xhat(:)).^2));
+recon_err = sqrt(sum((X(:)-Xhat(:)).^2));
 %sqrt(sum((X(:)-Xhat(:)).^2)) + lambda.*norm(WTXSHT,1);
-regularization = norm(WTXSHT(:),1);
+reg_cross = norm(WTXSHT(:),1);
+reg_W = norm(W(:),1);
+reg_H = norm(H(:),1);
 
 end

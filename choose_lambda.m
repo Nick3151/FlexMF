@@ -24,8 +24,10 @@ L = 50;
 lambdas = sort([logspace(-1,-5,nLambdas)], 'ascend'); 
 alphas = sort([logspace(-1,-5,nAlphas)], 'ascend'); 
 loadings = zeros(nLambdas, nAlphas, K);
-regularization = zeros(nLambdas, nAlphas);
-costs = zeros(nLambdas, nAlphas); 
+reg_crosses = zeros(nLambdas, nAlphas);
+reg_Ws = zeros(nLambdas, nAlphas);
+reg_Hs = zeros(nLambdas, nAlphas);
+recon_errors = zeros(nLambdas, nAlphas); 
 times = zeros(nLambdas, nAlphas); 
 scores = zeros(nLambdas, nAlphas); 
 W_hats = cell(nLambdas, nAlphas);
@@ -37,7 +39,7 @@ for li = 1:length(lambdas)
         [W_hat, H_hat, ~,loadings(li,ai,:),power]= FlexMF(X,'K',K,'L',L, 'maxiter', 50,...
             'lambdaL1W', .1, 'lambda', lambdas(li), 'alpha', alphas(ai), 'showPlot', 0); 
 
-        [costs(li,ai),regularization(li,ai),~] = helper.get_FlexMF_cost(X,W_hat,H_hat);
+        [recon_errors(li,ai),reg_crosses(li,ai),reg_Ws(li,ai),reg_Hs(li,ai)] = helper.get_FlexMF_cost(X,W_hat,H_hat);
         display(['Testing lambda ' num2str(li) '/' num2str(length(lambdas))])
         display(['Testing alpha ' num2str(ai) '/' num2str(length(alphas))])
         time = toc
@@ -47,5 +49,5 @@ for li = 1:length(lambdas)
         scores(li,ai) = helper.similarity(W, H, W_hat, H_hat);
     end
 end
-save('choose_lambda.mat', 'costs', 'regularization', 'times', 'loadings',...
+save('choose_lambda.mat', 'recon_errors', 'reg_crosses', 'reg_Ws', 'reg_Hs', 'times', 'loadings',...
     'lambdas', 'alphas', 'W_hats', 'H_hats', 'scores')

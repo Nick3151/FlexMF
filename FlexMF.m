@@ -191,7 +191,7 @@ end
         addOptional(p,'alpha',1e-3);
         addOptional(p,'showPlot',1);
         addOptional(p,'maxiter',100);
-        addOptional(p,'tolerance',1e-3);
+        addOptional(p,'tolerance',1e-4);
         addOptional(p,'shift',1);
         addOptional(p,'lambdaL1W',0);
         addOptional(p,'lambdaL1H',0);

@@ -30,8 +30,8 @@ X = X/nuc_norm*size(X,1);
 %% Fit with FlexMF
 K = 5;
 L = 50;
-lambda = 1e-4;
-alpha = 1e-1;
+lambda = 0.016;
+alpha = 4.6e-4;
 lambdaL1H = 0;
 lambdaL1W = .1;
 shg; clf
@@ -45,6 +45,10 @@ set(gcf,'position',[200,200,1200,900])
 figure;
 plot(cost(2:end))
 title('Reconstruction Error')
+[recon_error, reg_cross, reg_W, reg_H] = helper.get_FlexMF_cost(X,W_hat,H_hat);
+reg_cross = reg_cross*lambda;
+reg_W = reg_W*lambdaL1W;
+reg_H = reg_H*lambdaL1H;
 score = helper.similarity(W, H, W_hat, H_hat);
 
 %% Look at factors
