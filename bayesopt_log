@@ -1,24 +1,24 @@
 Optimization completed.
 MaxObjectiveEvaluations of 30 reached.
 Total function evaluations: 30
-Total elapsed time: 4712.3378 seconds
-Total objective function evaluation time: 4700.549
+Total elapsed time: 4714.611 seconds
+Total objective function evaluation time: 4699.4901
 
 Best observed feasible point:
-     lambda     lambdaL1W      alpha   
-    ________    _________    __________
+     lambda      lambdaL1W      alpha   
+    _________    _________    __________
 
-    0.016226    0.099978     0.00046345
+    0.0086287    0.021076     0.00076433
 
-Observed objective function value = 1.0154
-Estimated objective function value = 1.0166
-Function evaluation time = 177.1595
+Observed objective function value = 1.0003
+Estimated objective function value = 1
+Function evaluation time = 184.9625
 
 Best estimated feasible point (according to models):
-     lambda     lambdaL1W      alpha   
-    ________    _________    __________
+     lambda      lambdaL1W      alpha   
+    _________    _________    __________
 
-    0.016226    0.099978     0.00046345
+    0.0086287    0.021076     0.00076433
 
-Estimated objective function value = 1.0166
-Estimated function evaluation time = 137.4167
+Estimated objective function value = 1
+Estimated function evaluation time = 160.0317

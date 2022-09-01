@@ -30,10 +30,10 @@ X = X/nuc_norm*size(X,1);
 %% Fit with FlexMF
 K = 5;
 L = 50;
-lambda = 0.016;
-alpha = 4.6e-4;
+lambda = 0.0086;
+alpha = 0.00076;
 lambdaL1H = 0;
-lambdaL1W = .1;
+lambdaL1W = 0.021;
 shg; clf
 display('Running FlexMF on simulated data (3 simulated sequences + noise)')
 tic
