@@ -13,5 +13,5 @@ recon_error = recon_error/2 + epsilon;
 reg_cross = reg_cross*lambda + epsilon;
 reg_W = reg_W*lambdaL1W + epsilon;
 reg_H = reg_H*lambdaL1H + epsilon;
-score = (recon_error+reg_cross+reg_W)/(3*(recon_error*reg_cross*reg_W)^(1/3));
+score = (recon_error^3 + reg_cross^3 + reg_W^3)/3 / ((recon_error+reg_cross+reg_W)/3)^3;
 end
