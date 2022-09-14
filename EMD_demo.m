@@ -27,9 +27,36 @@ figure; SimpleWHPlot(Wjit(:,:,range),Hjit,Xjit); title('generated data jittering
 set(gcf,'position',[200,200,1600,900])
 
 %% Compute EMD
-mu = 1;
+opts_default = tfocs_SCD;
+opts = opts_default;
+opts.continuation = 1;
+opts.tol = 1e-4;
+opts.stopCrit = 4;
+opts.maxIts = 5000;
+
+mu = 1e6;
 N = size(X,1);
 A = @(Y, mode)Beckmann_UOT_constraint(N+1, T, Y, mode);
 W = @(Y, mode)Beckmann_UOT_obj(N+1, T, mu, Y, mode);
 b = Xwarp-X;
-[Y, out] = solver_sBPDN_W(A,W,b,0,0);
+[Y, out] = solver_sBPDN_W(A,W,b,0,1,[],[],opts);
+
+R = Y(2:N+1,:);
+M = Y(1,:);
+figure;
+ax_res = subplot('Position', [0.05, 0.25, 0.8, 0.7]);
+imagesc(R)
+title('R', 'FontSize', 14)
+set(ax_res, 'XTickLabel', [], 'YTickLabel', []);
+colorbar('Position', [0.9 0.05 0.05 0.9]);
+ax_flux = subplot('Position', [0.05, 0.05, 0.8, 0.15]);
+plot(Y(1,:))
+title('M', 'FontSize', 14)
+set(ax_flux, 'FontSize',12);
+set(gcf,'position',[200,200,1600,900])
+
+figure;
+plot(out.f)
+title('out.f')
+
+emd = norm(M(:),1)+mu*norm(R(:),1)
