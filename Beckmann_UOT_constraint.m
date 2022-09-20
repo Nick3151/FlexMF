@@ -1,19 +1,19 @@
-function y = Beckmann_UOT_constraint(K, T, X, mode)
+function y = Beckmann_UOT_constraint(N, T, X, mode)
 % The linear operator for the constraint of unbalanced EMD
-% X = [M^T; R]
-% A(X) = [DM';DM';...;DM']-R
-% A*(y) = [sum_i(yi*D);y1;y2;...;yk]
+% X = [M; R] size 2N*T
+% A(X) = MD'-R
+% A*(y) = [YD;-Y]
 % divergence matrix
 D = eye(T) - diag(ones(T-1,1),-1);
 switch mode
     case 0
-        y = {[K,T], [K-1,T]};
+        y = {[2*N,T], [N,T]};
     case 1
-        M = X(1,:)';
-        R = X(2:end,:);
-        y = repmat((D*M)', K-1, 1)-R;
+        M = X(1:N,:);
+        R = X(N+1:end,:);
+        y = M*D'-R;
     case 2
-        y = zeros(K, T);
-        y(1, :) = sum(X,1)*D;
-        y(2:end, :) = -X;
+        y = zeros(2*N, T);
+        y(1:N,:) = X*D;
+        y(N+1:end,:) = -X;
 end

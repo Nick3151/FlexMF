@@ -2,20 +2,22 @@ clear all
 close all
 root = fileparts(pwd);
 addpath(fullfile(root, 'TFOCS'))
+rmpath(genpath(fullfile(root, 'seqNMF-master')));
+addpath(genpath(fullfile(root, 'FlexMF')));
 %% Generate some synthetic data with temporal jittering or time warping
 number_of_seqences = 3;
 T = 800; % length of data to generate
 Nneurons = 10*ones(number_of_seqences,1); % number of neurons in each sequence
 Dt = 3.*ones(number_of_seqences,1); % gap between each member of the sequence
 NeuronNoise = 0.001; % probability of added noise in each bin
-SeqNoiseTime = 0.25*ones(number_of_seqences,1); % Jitter parameter = 25%
+SeqNoiseTime = 5*ones(number_of_seqences,1); % Jitter std
 SeqNoiseNeuron = 1.*ones(number_of_seqences,1); % Participation parameter = 100%
 stretch = 2; % stretch should be less than Dt
 neg = 0;
 bin = 0;
 [X, W, H, ~] = generate_data(T,Nneurons,Dt,NeuronNoise,zeros(number_of_seqences,1),SeqNoiseNeuron,0,bin,neg,1);
 [Xwarp, Wwarp, Hwarp, ~] = generate_data(T,Nneurons,Dt,NeuronNoise,zeros(number_of_seqences,1),SeqNoiseNeuron,stretch,bin,neg,1);
-[Xjit, Wjit, Hjit, ~] = generate_data(T,Nneurons,Dt,NeuronNoise,SeqNoiseNeuron,SeqNoiseNeuron,0,bin,neg,1);
+[Xjit, Wjit, Hjit, ~] = generate_data(T,Nneurons,Dt,NeuronNoise,SeqNoiseTime,SeqNoiseNeuron,0,bin,neg,1);
 L = size(W,3);
 range = round(L/2)-25:round(L/2)+35;
 
@@ -30,29 +32,31 @@ set(gcf,'position',[200,200,1600,900])
 opts_default = tfocs_SCD;
 opts = opts_default;
 opts.continuation = 1;
-opts.tol = 1e-4;
+opts.tol = 1e-6;
 opts.stopCrit = 4;
 opts.maxIts = 5000;
 
 mu = 1e6;
 N = size(X,1);
-A = @(Y, mode)Beckmann_UOT_constraint(N+1, T, Y, mode);
-W = @(Y, mode)Beckmann_UOT_obj(N+1, T, mu, Y, mode);
-b = Xwarp-X;
+A = @(Y, mode)Beckmann_UOT_constraint(N, T, Y, mode);
+W = @(Y, mode)Beckmann_UOT_obj(N, T, mu, Y, mode);
+% b = Xwarp-X;
+b = Xjit-X;
 [Y, out] = solver_sBPDN_W(A,W,b,0,1,[],[],opts);
 
-R = Y(2:N+1,:);
-M = Y(1,:);
+M = Y(1:N,:);
+R = Y(N+1:2*N,:);
 figure;
-ax_res = subplot('Position', [0.05, 0.25, 0.8, 0.7]);
+ax_res = subplot('Position', [0.05, 0.55, 0.8, 0.4]);
 imagesc(R)
-title('R', 'FontSize', 14)
+title('R', 'FontSize', 16)
 set(ax_res, 'XTickLabel', [], 'YTickLabel', []);
-colorbar('Position', [0.9 0.05 0.05 0.9]);
-ax_flux = subplot('Position', [0.05, 0.05, 0.8, 0.15]);
-plot(Y(1,:))
-title('M', 'FontSize', 14)
-set(ax_flux, 'FontSize',12);
+colorbar('Position', [0.9 0.55 0.05 0.4], 'FontSize', 14);
+ax_flux = subplot('Position', [0.05, 0.05, 0.8, 0.4]);
+imagesc(M)
+title('M', 'FontSize', 16)
+set(ax_flux, 'XTickLabel', [], 'YTickLabel', []);
+colorbar('Position', [0.9 0.05 0.05 0.4], 'FontSize', 14);
 set(gcf,'position',[200,200,1600,900])
 
 figure;
@@ -60,3 +64,50 @@ plot(out.f)
 title('out.f')
 
 emd = norm(M(:),1)+mu*norm(R(:),1)
+
+% Check constraint
+D = eye(T) - diag(ones(T-1,1),-1);
+C = M*D'-R-b;
+figure;
+imagesc(C)
+set(gca, 'XTickLabel', [], 'YTickLabel', []);
+colorbar
+
+%% EMD vs different levels of jittering
+number_of_seqences = 3;
+T = 800; % length of data to generate
+Nneurons = 10*ones(number_of_seqences,1); % number of neurons in each sequence
+Dt = 3.*ones(number_of_seqences,1); % gap between each member of the sequence
+NeuronNoise = 0.001; % probability of added noise in each bin
+SeqNoiseNeuron = 1.*ones(number_of_seqences,1); % Participation parameter = 100%
+neg = 0;
+bin = 0;
+[X, W, H, ~] = generate_data(T,Nneurons,Dt,NeuronNoise,zeros(number_of_seqences,1),SeqNoiseNeuron,0,bin,neg,1);
+L = size(W,3);
+
+opts_default = tfocs_SCD;
+opts = opts_default;
+opts.continuation = 1;
+opts.tol = 1e-6;
+opts.stopCrit = 4;
+opts.maxIts = 5000;
+
+mu = 1e6;
+N = size(X,1);
+A = @(Y, mode)Beckmann_UOT_constraint(N, T, Y, mode);
+W = @(Y, mode)Beckmann_UOT_obj(N, T, mu, Y, mode);
+
+for j=1:5
+    SeqNoiseTime = j*ones(number_of_seqences,1); % Jitter std
+    [Xjit, Wjit, Hjit, ~] = generate_data(T,Nneurons,Dt,NeuronNoise,SeqNoiseTime,SeqNoiseNeuron,0,bin,neg,1);
+    b = Xjit-X;
+    [Y, out] = solver_sBPDN_W(A,W,b,0,1,[],[],opts);
+    M = Y(1:N,:);
+    R = Y(N+1:2*N,:);
+    EMDs(j) = norm(M(:),1)+mu*norm(R(:),1);
+end
+
+figure;
+plot(1:5, EMDs)
+ylabel('EMD')
+xlabel('Jitter SD')
