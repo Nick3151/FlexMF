@@ -20,7 +20,7 @@ Dt = 3.*ones(number_of_seqences,1); % gap between each member of the sequence
 NeuronNoise = 0.001; % probability of added noise in each bin
 SeqNoiseTime = zeros(number_of_seqences,1); % Jitter parameter = 0%
 SeqNoiseNeuron = 1.*ones(number_of_seqences,1); % Participation parameter = 100%
-neg = 0.2; % Proportion of negative indices in W
+neg = 0; % Proportion of negative indices in W
 [X, W, H, V_hat] = generate_data(T,Nneurons,Dt,NeuronNoise,SeqNoiseTime,SeqNoiseNeuron,0,0,neg,1);
 figure; SimpleWHPlot(W,H,X); title('generated data','Fontsize',16)
 set(gcf,'position',[200,200,1200,900])
@@ -30,15 +30,16 @@ X = X/nuc_norm*size(X,1);
 %% Fit with FlexMF
 K = 5;
 L = 50;
-lambda = 0.002122;
-alpha = 1.6652e-05;
+lambda = 0.012077;
+alpha = 0.00023;
 lambdaL1H = 0;
-lambdaL1W = 0.024848;
+lambdaL1W = 0;
+
 shg; clf
 display('Running FlexMF on simulated data (3 simulated sequences + noise)')
 tic
 [W_hat,H_hat,cost,loadings,power] = FlexMF(X,'K',K, 'L', L, 'maxiter', 50,...
-    'lambda', lambda, 'alpha', alpha, 'lambdaL1W', lambdaL1W, 'lambdaL1H', lambdaL1H);
+    'lambda', lambda, 'alpha', alpha, 'lambdaL1W', lambdaL1W, 'lambdaL1H', lambdaL1H, 'neg_prop', neg);
 toc
 set(gcf,'position',[200,200,1200,900])
 % 
@@ -52,8 +53,10 @@ reg_H = reg_H*lambdaL1H;
 score = helper.similarity(W, H, W_hat, H_hat);
 
 %% Look at factors
-figure; SimpleWHPlot(W_hat,H_hat); title('SeqNMF reconstruction')
-figure; SimpleWHPlot(W_hat,H_hat,X); title('SeqNMF factors, with raw data')
+figure; SimpleWHPlot(W_hat,H_hat); title('FlexMF reconstruction')
+set(gcf,'position',[200,200,1200,900])
+figure; SimpleWHPlot(W_hat,H_hat,X); title('FlexMF factors, with raw data')
+set(gcf,'position',[200,200,1200,900])
 
 %% Procedure for choosing K
 tic

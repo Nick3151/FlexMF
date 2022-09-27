@@ -11,8 +11,10 @@ Dt = 3.*ones(number_of_seqences,1); % gap between each member of the sequence
 NeuronNoise = 0.001; % probability of added noise in each bin
 SeqNoiseTime = zeros(number_of_seqences,1); % Jitter parameter = 0%
 SeqNoiseNeuron = 1.*ones(number_of_seqences,1); % Participation parameter = 100%
-neg = 0.2; % Proportion of negative indices in W
+neg = 0; % Proportion of negative indices in W
 [X, W, H, V_hat] = generate_data(T,Nneurons,Dt,NeuronNoise,SeqNoiseTime,SeqNoiseNeuron,0,0,neg,1);
+figure; SimpleWHPlot(W,H,X); title('generated data','Fontsize',16)
+set(gcf,'position',[200,200,1200,900])
 nuc_norm = norm(svd(X),1);
 X = X/nuc_norm*size(X,1);
 
@@ -37,7 +39,7 @@ for li = 1:length(lambdas)
     for ai = 1:length(alphas)
         tic
         [W_hat, H_hat, ~,loadings(li,ai,:),power]= FlexMF(X,'K',K,'L',L, 'maxiter', 50,...
-            'lambdaL1W', .1, 'lambda', lambdas(li), 'alpha', alphas(ai), 'showPlot', 0); 
+            'lambda', lambdas(li), 'alpha', alphas(ai), 'neg_prop', neg, 'showPlot', 0); 
 
         [recon_errors(li,ai),reg_crosses(li,ai),reg_Ws(li,ai),reg_Hs(li,ai)] = helper.get_FlexMF_cost(X,W_hat,H_hat);
         display(['Testing lambda ' num2str(li) '/' num2str(length(lambdas))])

@@ -11,7 +11,7 @@ Dt = 3.*ones(number_of_seqences,1); % gap between each member of the sequence
 NeuronNoise = 0.001; % probability of added noise in each bin
 SeqNoiseTime = zeros(number_of_seqences,1); % Jitter parameter = 0%
 SeqNoiseNeuron = 1.*ones(number_of_seqences,1); % Participation parameter = 100%
-neg = 0.2; % Proportion of negative indices in W
+neg = 0; % Proportion of negative indices in W
 [X, W, H, V_hat] = generate_data(T,Nneurons,Dt,NeuronNoise,SeqNoiseTime,SeqNoiseNeuron,0,0,neg,1);
 nuc_norm = norm(svd(X),1);
 X = X/nuc_norm*size(X,1);
@@ -20,8 +20,12 @@ X = X/nuc_norm*size(X,1);
 K = 5;
 L = 50;
 lambdaL1H = 0;
-lambda_var = optimizableVariable('lambda', [1e-4, 1e-1], 'Transform', 'log');
+lambda_var = optimizableVariable('lambda', [1e-5, 1e-1], 'Transform', 'log');
 lambdaW_var = optimizableVariable('lambdaL1W', [1e-3, 1], 'Transform', 'log');
 alpha_var = optimizableVariable('alpha', [1e-6, 1e-2], 'Transform', 'log');
-fun = @(x)compute_error_balance_score(X,K,L,x.lambda,lambdaL1H,x.lambdaL1W,x.alpha);
-results = bayesopt(fun, [lambda_var,lambdaW_var,alpha_var],'AcquisitionFunctionName','expected-improvement-plus','UseParallel',true, 'MaxObjectiveEvaluations',100)
+
+% fun = @(x)compute_error_balance_score_3d(X,K,L,x.lambda,x.lambdaL1W,x.alpha);
+% results = bayesopt(fun, [lambda_var,lambdaW_var,alpha_var],'AcquisitionFunctionName','expected-improvement-plus','UseParallel',true, 'MaxObjectiveEvaluations',100)
+
+fun = @(x)compute_error_balance_score_2d(X,K,L,x.lambda,x.alpha);
+results = bayesopt(fun, [lambda_var,alpha_var],'AcquisitionFunctionName','expected-improvement-plus','UseParallel',true, 'MaxObjectiveEvaluations',100)

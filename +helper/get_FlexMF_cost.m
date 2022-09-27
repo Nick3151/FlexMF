@@ -14,7 +14,7 @@ end
 % Compute regularization terms for H update
 WTXSHT = (conv2(abs(WTX), smoothkernel, 'same')*H'); 
 WTXSHT = WTXSHT.*~eye(K);
-recon_err = sqrt(sum((X(:)-Xhat(:)).^2));
+recon_err = sum((X(:)-Xhat(:)).^2)/2;
 %sqrt(sum((X(:)-Xhat(:)).^2)) + lambda.*norm(WTXSHT,1);
 reg_cross = norm(WTXSHT(:),1);
 reg_W = norm(W(:),1);

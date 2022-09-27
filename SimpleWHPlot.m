@@ -17,6 +17,16 @@ else
     plotData = 1; 
 end
 
+if any(W(:)<0)
+    neg = true;
+    cmap_red = [ones(128,1),linspace(1,0,128)',linspace(1,0,128)'];
+    cmap_blue = [linspace(0,1,128)',linspace(0,1,128)',ones(128,1)];
+    cmap = [cmap_blue; cmap_red];
+else
+    neg = false;
+    cmap = flipud(gray);
+end
+
 [N,K,L] = size(W); 
 [~,T] = size(H);
 color_palet = [[0 .6 .3]; [.7 0 .7]; [1 .6 0];  [.1 .3 .9];  [1 .1 .1];  [0 .9 .3]; [.4 .2 .7]; [.7 .2 .1]; [.1 .8 1 ]; [1 .3 .7]; [.2 .8 .2]; [.7 .4 1]; [.9 .6 .4]; [0 .6 1]; [1 .1 .3]]; 
@@ -24,12 +34,12 @@ color_palet = repmat(color_palet, ceil(K/size(color_palet,1)),1);
 kColors = color_palet(1:K,:); 
 epsilon = 1e-4;
 %% set widths of subplots
-m = .1; % margin
-ww = .2; % width of W plot
-wwflat = .05; % width of Wflat plot
-hh = .25; % height of H plot
+m = .05; % margin
+ww = min(.001*L*K, .25); % width of W plot
+% wwflat = .05; % width of Wflat plot
+hh = .05*K; % height of H plot
 hdata = 1-hh-2*m; 
-wdata = 1-ww-wwflat-2*m; 
+wdata = 1-ww-2*m; 
 sep = ceil(L*.1); 
 
 %% crop data, unless plotAll
@@ -54,11 +64,13 @@ for ki = 1:K
     XsToPlot(:,ki) = [(L+sep)*(ki-1)+1 (L+sep)*(ki-1)+1 (L+sep)*(ki-1)+L];
 end
 
-cmap_red = [ones(128,1),linspace(1,0,128)',linspace(1,0,128)'];
-cmap_blue = [linspace(0,1,128)',linspace(0,1,128)',ones(128,1)];
-cmap = [cmap_blue; cmap_red];
 maxValue = prctile(abs(WsToPlot),99,'all')+epsilon;
-clims = [-maxValue, maxValue]; % if all W's are empty this line will bug
+if neg
+    clims = [-maxValue, maxValue]; 
+else 
+    clims = [0, maxValue]; 
+end
+
 imagesc(WsToPlot, clims); 
 colormap(cmap)
 
@@ -71,13 +83,21 @@ axis off
 axIm = subplot('Position', [m+ww m wdata hdata]);
 if plotData
     maxValue = prctile(abs(Data),99,'all')+epsilon;
-    clims = [-maxValue, maxValue]; 
+    if neg
+        clims = [-maxValue, maxValue]; 
+    else 
+        clims = [0, maxValue]; 
+    end
     imagesc(Data(:,indplot), clims);
     colormap(cmap)
 else
     toplot = helper.reconstruct(W,H(:,indplot));
     maxValue = prctile(abs(toplot),99.9,'all')+epsilon;
-    clims = [-maxValue, maxValue]; 
+    if neg
+        clims = [-maxValue, maxValue]; 
+    else 
+        clims = [0, maxValue]; 
+    end
     imagesc(toplot,clims);
     colormap(cmap)
 end
@@ -85,17 +105,17 @@ set(gca,'ydir','reverse')
 hold on; plot([0 0 length(indplot)+1], [N 0 0]+.5, 'k')
 xlim([0 length(indplot)+1]);ylim([0 N+.1]+.5)
 axis off
-%% plot Wflat (collapse out L dimension of W)
-axWflat = subplot('Position', [m+ww+wdata m wwflat hdata]);
-hold on
-set(gca, 'ColorOrder', kColors); 
-plot(squeeze(sum(W,3)), 1:N,'>', 'markersize', 2.5);
-ylim([0 N+.1]+.5)
-axis tight
-% xlims = xlim; 
-% xlim([xlims(2)*.1 xlims(2)])
-set(gca, 'ydir', 'reverse')
-axis off
+% %% plot Wflat (collapse out L dimension of W)
+% axWflat = subplot('Position', [m+ww+wdata m wwflat hdata]);
+% hold on
+% set(gca, 'ColorOrder', kColors); 
+% plot(squeeze(sum(W,3)), 1:N,'>', 'markersize', 2.5);
+% ylim([0 N+.1]+.5)
+% axis tight
+% % xlims = xlim; 
+% % xlim([xlims(2)*.1 xlims(2)])
+% set(gca, 'ydir', 'reverse')
+% axis off
 %% plot H's
 axH = subplot('Position', [m+ww m+hdata wdata hh]);
 Hrescaled = repmat(squeeze(sum(sum(abs(W),1),3))',1,T).*H; % rescale by approximate loading
@@ -110,6 +130,6 @@ ylim([0 dn*K+dn*3+epsilon]);xlim([0 length(indplot)+1])
 axis off
 %%
 if plotAll
-      linkaxes([axIm axW axWflat], 'y'); linkaxes([axIm axH], 'x');
+      linkaxes([axIm axW], 'y'); linkaxes([axIm axH], 'x');
 end
 
