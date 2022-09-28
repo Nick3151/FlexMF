@@ -1,4 +1,4 @@
-function [data,W,H,V_hat] = generate_data(T,Nneurons,Dt,NeuronNoise,SeqNoiseTime,SeqNoiseNeuron,stretch,bin,neg,seed)
+function [data,W,H,V_hat] = generate_data(T,Nneurons,Dt,NeuronNoise,SeqNoiseTime,SeqNoiseNeuron,gap,stretch,bin,neg,seed)
 %rng(2001)
 if seed == 0
     rng shuffle
@@ -16,6 +16,7 @@ additional_neurons = 0;
 % NeuronNoise = 0.01; % the noise in a neurons firing rate
 % SeqNoiseTime = [0.2,0.2,0.1,0.1]; % the noise in the sequence aka jitter (p of each neuron jittered 1 dt)
 % SeqNoiseNeuron = [0.95,0.95,0.95,0.95]; % the probability that a neuron participates in a given seq
+% gap = 100;  % the maximum gap between sequences
 % T = 1000;
 % Share = []; % the propotion of the chain that is shared in other sequences
 %% Calculate useful things
@@ -61,7 +62,7 @@ end
 temp = [];
 for j = 1:nn
     % need to fix this to work for stretches = 0
-    temp = [temp;randi(100,1,1)+max(lseq)];
+    temp = [temp;randi(gap,1,1)+max(lseq)];
 %     temp = [temp;randi(100,1,1)+(max(lseq)/max(Dt)*(max(Dt)+stretches(ii)))];
 end
 temp = cumsum(temp);
@@ -69,7 +70,7 @@ temp = cumsum(temp);
 %indx = randi(nseq,nn,1);
 indx = ones(1000,1)';
 for ii = 2:K
-    indx = [indx,ii*ones(nn/K,1)'];
+    indx = [indx,ii*ones(1000,1)'];
 end
 indx = indx(randperm(nn));
 for ii = 1:K

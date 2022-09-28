@@ -20,8 +20,9 @@ Dt = 3.*ones(number_of_seqences,1); % gap between each member of the sequence
 NeuronNoise = 0.001; % probability of added noise in each bin
 SeqNoiseTime = zeros(number_of_seqences,1); % Jitter parameter = 0%
 SeqNoiseNeuron = 1.*ones(number_of_seqences,1); % Participation parameter = 100%
+gap = 200; % maximum gap between sequences
 neg = 0; % Proportion of negative indices in W
-[X, W, H, V_hat] = generate_data(T,Nneurons,Dt,NeuronNoise,SeqNoiseTime,SeqNoiseNeuron,0,0,neg,1);
+[X, W, H, V_hat] = generate_data(T,Nneurons,Dt,NeuronNoise,SeqNoiseTime,SeqNoiseNeuron,gap,0,0,neg,1);
 figure; SimpleWHPlot(W,H,X); title('generated data','Fontsize',16)
 set(gcf,'position',[200,200,1200,900])
 nuc_norm = norm(svd(X),1);
