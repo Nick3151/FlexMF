@@ -1,34 +1,34 @@
-function SimpleWHPlot(W,H,Data, plotAll) 
-% plots seqNMF factors W and H
+function SimpleWHPlot(W, H, trials, frames, neg, Data, plotAll) 
+% plots factors W and H with trials
 % Also plots Data if provided, and reconstruction if data is not provided
 % plotAll=1 means plot all data
 % plotAll=0 means crop data so it's on the same timescale as W's 
 % Emily Mackevicius 2/3/2018
+% Adapted by Liang Xiang
 
 clf
 
 % set(gcf, 'color', 'w');
-if nargin < 4
+if nargin < 7
     plotAll = 1;
 end
-if nargin < 3 || size(Data,2)==0
+if nargin < 6 || size(Data,2)==0
     plotData = 0;
 else
     plotData = 1; 
 end
 
-if any(W(:)<0)
-    neg = true;
+if neg
     cmap_red = [ones(128,1),linspace(1,0,128)',linspace(1,0,128)'];
     cmap_blue = [linspace(0,1,128)',linspace(0,1,128)',ones(128,1)];
     cmap = [cmap_blue; cmap_red];
 else
-    neg = false;
     cmap = flipud(gray);
 end
 
 [N,K,L] = size(W); 
 [~,T] = size(H);
+assert(trials*frames==T, 'Dimensions do not match!')
 color_palet = [[0 .6 .3]; [.7 0 .7]; [1 .6 0];  [.1 .3 .9];  [1 .1 .1];  [0 .9 .3]; [.4 .2 .7]; [.7 .2 .1]; [.1 .8 1 ]; [1 .3 .7]; [.2 .8 .2]; [.7 .4 1]; [.9 .6 .4]; [0 .6 1]; [1 .1 .3]]; 
 color_palet = repmat(color_palet, ceil(K/size(color_palet,1)),1); 
 kColors = color_palet(1:K,:); 
@@ -101,8 +101,15 @@ else
     imagesc(toplot,clims);
     colormap(cmap)
 end
+
+hold on
+if plotAll
+    for trial=1:trials
+        xline(trial*frames, 'LineWidth', 2);
+    end
+end
 set(gca,'ydir','reverse')
-hold on; plot([0 0 length(indplot)+1], [N 0 0]+.5, 'k')
+plot([0 0 length(indplot)+1], [N 0 0]+.5, 'k')
 xlim([0 length(indplot)+1]);ylim([0 N+.1]+.5)
 axis off
 % %% plot Wflat (collapse out L dimension of W)

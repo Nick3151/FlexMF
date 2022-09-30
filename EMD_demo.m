@@ -13,11 +13,12 @@ NeuronNoise = 0.001; % probability of added noise in each bin
 SeqNoiseTime = 5*ones(number_of_seqences,1); % Jitter std
 SeqNoiseNeuron = 1.*ones(number_of_seqences,1); % Participation parameter = 100%
 stretch = 2; % stretch should be less than Dt
+gap = 100;
 neg = 0;
 bin = 0;
-[X, W, H, ~] = generate_data(T,Nneurons,Dt,NeuronNoise,zeros(number_of_seqences,1),SeqNoiseNeuron,0,bin,neg,1);
-[Xwarp, Wwarp, Hwarp, ~] = generate_data(T,Nneurons,Dt,NeuronNoise,zeros(number_of_seqences,1),SeqNoiseNeuron,stretch,bin,neg,1);
-[Xjit, Wjit, Hjit, ~] = generate_data(T,Nneurons,Dt,NeuronNoise,SeqNoiseTime,SeqNoiseNeuron,0,bin,neg,1);
+[X, W, H, ~] = generate_data(T,Nneurons,Dt,NeuronNoise,zeros(number_of_seqences,1),SeqNoiseNeuron,gap,0,bin,neg,1);
+[Xwarp, Wwarp, Hwarp, ~] = generate_data(T,Nneurons,Dt,NeuronNoise,zeros(number_of_seqences,1),SeqNoiseNeuron,gap,stretch,bin,neg,1);
+[Xjit, Wjit, Hjit, ~] = generate_data(T,Nneurons,Dt,NeuronNoise,SeqNoiseTime,SeqNoiseNeuron,gap,0,bin,neg,1);
 L = size(W,3);
 range = round(L/2)-25:round(L/2)+35;
 

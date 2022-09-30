@@ -63,7 +63,7 @@ temp = [];
 for j = 1:nn
     % need to fix this to work for stretches = 0
     temp = [temp;randi(gap,1,1)+max(lseq)];
-%     temp = [temp;randi(100,1,1)+(max(lseq)/max(Dt)*(max(Dt)+stretches(ii)))];
+%     temp = [temp;randi(gap,1,1)+(max(lseq)/max(Dt)*(max(Dt)+stretches(ii)))];
 end
 temp = cumsum(temp);
 
@@ -82,7 +82,7 @@ H = H(:,1:T);
 %% Make Data using noise parameters in the reconstruction
 %leng = max(Dt)+ max(lseq) + (stretch)*max(lseq); 
 leng = (max(lseq)/max(Dt)*(max(Dt)+stretch));
-L = leng+150;
+L = max(lseq)+150;
 W = zeros(N,K,L);
 % H(:,T-(2*(max(lseq)/max(Dt)*(max(Dt)+(stretch)))):T) = 0;
 H(:,T-(2*(max(lseq))):T) = 0;
@@ -114,8 +114,9 @@ for ii = 1:K % go through each factor
                    
         if stretch > 0 % change the dt for each instance
             Dt_temp = Dt(ii)+Hs{ii}(jj);%+(randi(stretch))
-            %*(-1+(2*(rand(1)>0.5))); If you want compression as well   
-            tempW = zeros(N,L);          
+            %*(-1+(2*(rand(1)>0.5))); If you want compression as well  
+            L_temp = leng+150;
+            tempW = zeros(N,L_temp);          
             temp2 = zeros(length(neurons{ii}),Dt_temp*Nneurons(ii));
             temp2(:,1:Dt_temp:Dt_temp*Nneurons(ii)) = diag(temp);    
             tempW(neurons{ii},50:49+size(temp2,2)) = temp2;  
