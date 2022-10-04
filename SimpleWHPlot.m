@@ -1,4 +1,4 @@
-function SimpleWHPlot(W, H, trials, frames, neg, Data, plotAll) 
+function SimpleWHPlot(W, H, trials, frames, is_significant, neg, Data, plotAll) 
 % plots factors W and H with trials
 % Also plots Data if provided, and reconstruction if data is not provided
 % plotAll=1 means plot all data
@@ -9,16 +9,16 @@ function SimpleWHPlot(W, H, trials, frames, neg, Data, plotAll)
 clf
 
 % set(gcf, 'color', 'w');
-if nargin < 7
+if nargin < 8
     plotAll = 1;
 end
-if nargin < 6 || size(Data,2)==0
+if nargin < 7 || size(Data,2)==0
     plotData = 0;
 else
     plotData = 1; 
 end
 
-if neg
+if nargin < 6 || neg
     cmap_red = [ones(128,1),linspace(1,0,128)',linspace(1,0,128)'];
     cmap_blue = [linspace(0,1,128)',linspace(0,1,128)',ones(128,1)];
     cmap = [cmap_blue; cmap_red];
@@ -28,7 +28,17 @@ end
 
 [N,K,L] = size(W); 
 [~,T] = size(H);
-assert(trials*frames==T, 'Dimensions do not match!')
+if ~isempty(trials) || ~isempty(frames)
+    assert(trials*frames==T, 'Dimensions of trials do not match!')
+    plotTrials = 1;
+end
+
+if isempty(is_significant)
+    is_significant = zeros(1,K);
+else
+    assert(length(is_significant)==K, 'Dimensions of is_significant do not match!')
+end
+
 color_palet = [[0 .6 .3]; [.7 0 .7]; [1 .6 0];  [.1 .3 .9];  [1 .1 .1];  [0 .9 .3]; [.4 .2 .7]; [.7 .2 .1]; [.1 .8 1 ]; [1 .3 .7]; [.2 .8 .2]; [.7 .4 1]; [.9 .6 .4]; [0 .6 1]; [1 .1 .3]]; 
 color_palet = repmat(color_palet, ceil(K/size(color_palet,1)),1); 
 kColors = color_palet(1:K,:); 
@@ -79,6 +89,15 @@ xlim([1 K*(L+sep)]);ylim([0 N+.1]+.5)
 set(gca, 'ydir', 'reverse')
 axis off
 
+%% Plot significance of each factor
+pos = [(m+(0:K-1)/K*ww)', repmat(m+hdata,K,1), repmat(ww/K,K,1), repmat(0.05,K,1)];
+for k=1:K
+    if is_significant(k)
+        annotation('textbox', pos(k,:), 'string', '*', 'HorizontalAlignment', 'center', 'VerticalAlignment', 'bottom',...
+            'Color', kColors(k,:), 'LineStyle', 'none', 'FontWeight', 'bold', 'FontSize', 14)
+    end
+end
+
 %% plot data
 axIm = subplot('Position', [m+ww m wdata hdata]);
 if plotData
@@ -103,8 +122,10 @@ else
 end
 
 hold on
-if plotAll
-    for trial=1:trials
+if plotTrials
+    trial_start = ceil(indplot(1)/frames);
+    trial_end = floor(indplot(end)/frames);
+    for trial=trial_start:trial_end
         xline(trial*frames, 'LineWidth', 2);
     end
 end
