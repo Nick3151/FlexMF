@@ -31,6 +31,8 @@ end
 if ~isempty(trials) || ~isempty(frames)
     assert(trials*frames==T, 'Dimensions of trials do not match!')
     plotTrials = 1;
+else
+    plotTrials = 0;
 end
 
 if isempty(is_significant)

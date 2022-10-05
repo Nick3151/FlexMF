@@ -149,7 +149,7 @@ for iter = 1 : params.maxiter
     % Plot to show progress
     if params.showPlot 
         Xhat = helper.reconstruct(W, H);
-        SimpleWHPlot(W, H, Xhat); 
+        SimpleWHPlot(W, H, [], [], [], params.neg_prop, Xhat); 
         title(sprintf('iteration #%i',iter));
         drawnow
     end

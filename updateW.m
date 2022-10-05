@@ -37,7 +37,7 @@ if params.neg_prop==0 && params.lambda > 0
         % Plot to show progress
         if params.showPlot 
             Xhat = helper.reconstruct(W, H);
-            SimpleWHPlot(W, H, Xhat); 
+            SimpleWHPlot(W, H, [], [], [], 0, Xhat); 
             drawnow
         end
         
