@@ -42,6 +42,7 @@ function [W, H, cost, loadings, power] = FlexMF(X, varargin)
 % 'showPlot'        1                                   Plot every iteration? no=0
 % 'maxiter'         100                                 Maximum # iterations to run
 % 'tolerance'       -Inf                                Stop if improved less than this;  Set to -Inf to always run maxiter
+% 'alg'             'N83'                               Algorithm
 % 'shift'           1                                   Shift factors to center; Helps avoid local minima
 % 'lambdaL1W'       0                                   L1 sparsity parameter; Increase to make W's more sparse
 % 'lambdaL1H'       0                                   L1 sparsity parameter; Increase to make H's more sparse
@@ -192,6 +193,7 @@ end
         addOptional(p,'showPlot',1);
         addOptional(p,'maxiter',100);
         addOptional(p,'tolerance',1e-4);
+        addOptional(p,'alg','N83');
         addOptional(p,'shift',1);
         addOptional(p,'lambdaL1W',0);
         addOptional(p,'lambdaL1H',0);

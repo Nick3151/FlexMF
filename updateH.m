@@ -4,8 +4,9 @@ function H = updateH(W, H0, X, params)
 opts_default = tfocs;
 opts = opts_default;
 opts.maxIts = 500;
-opts.tol = 1e-6;
+opts.tol = 1e-4;
 opts.restart = 50;
+opts.alg = 'N83';
 if ~params.showPlot 
     opts_default.printEvery = 0;
     opts.printEvery = 0;
@@ -35,7 +36,7 @@ if params.lambda > 0
     end
     
     tol_H = 1e-3;
-    max_iter = 20;
+    max_iter = 10;
     for i=1:max_iter
         % Step 1: Update H
         op_recon = @(H, mode)tensor_conv_H(W, T, H, mode);

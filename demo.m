@@ -23,7 +23,7 @@ SeqNoiseNeuron = 1.*ones(number_of_seqences,1); % Participation parameter = 100%
 gap = 200; % maximum gap between sequences
 neg = 0; % Proportion of negative indices in W
 [X, W, H, V_hat] = generate_data(T,Nneurons,Dt,NeuronNoise,SeqNoiseTime,SeqNoiseNeuron,gap,0,0,neg,1);
-figure; SimpleWHPlot(W,H,X); title('generated data','Fontsize',16)
+figure; SimpleWHPlot(W,H,[], [], [], neg, X); title('generated data','Fontsize',16)
 set(gcf,'position',[200,200,1200,900])
 nuc_norm = norm(svd(X),1);
 X = X/nuc_norm*size(X,1);
