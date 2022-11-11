@@ -128,7 +128,7 @@ if plotTrials
     trial_start = ceil(indplot(1)/frames);
     trial_end = floor(indplot(end)/frames);
     for trial=trial_start:trial_end
-        xline(trial*frames, 'LineWidth', 2);
+        xline(trial*frames-indplot(1)+1, 'LineWidth', 2);
     end
 end
 set(gca,'ydir','reverse')
