@@ -10,7 +10,7 @@ clf
 
 % set(gcf, 'color', 'w');
 if nargin < 8
-    plotAll = 1;
+    plotAll = 0;
 end
 if nargin < 7 || size(Data,2)==0
     plotData = 0;
