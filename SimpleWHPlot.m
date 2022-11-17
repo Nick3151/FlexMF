@@ -47,9 +47,9 @@ kColors = color_palet(1:K,:);
 epsilon = 1e-4;
 %% set widths of subplots
 m = .05; % margin
-ww = min(.001*L*K, .25); % width of W plot
+ww = min(.05*K, .25); % width of W plot
 % wwflat = .05; % width of Wflat plot
-hh = .05*K; % height of H plot
+hh = max(.05*K, .2); % height of H plot
 hdata = 1-hh-2*m; 
 wdata = 1-ww-2*m; 
 sep = ceil(L*.1); 
