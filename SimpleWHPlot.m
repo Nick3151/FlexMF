@@ -86,7 +86,7 @@ end
 imagesc(WsToPlot, clims); 
 colormap(cmap)
 
-plot(XsToPlot,YsToPlot);
+plot(XsToPlot,YsToPlot, 'LineWidth', 2);
 xlim([1 K*(L+sep)]);ylim([0 N+.1]+.5)
 set(gca, 'ydir', 'reverse')
 axis off
@@ -132,7 +132,7 @@ if plotTrials
     end
 end
 set(gca,'ydir','reverse')
-plot([0 0 length(indplot)+1], [N 0 0]+.5, 'k')
+plot([0 0 length(indplot)+1], [N 0 0]+.5, 'k', 'LineWidth', 2)
 xlim([0 length(indplot)+1]);ylim([0 N+.1]+.5)
 axis off
 % %% plot Wflat (collapse out L dimension of W)
