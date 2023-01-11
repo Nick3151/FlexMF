@@ -68,12 +68,12 @@ for n = 1:nnull
         end
     end
     WTX = helper.transconv(W,Xnull);
-    if n<5
-        SimpleXplot(Xnull, trials, frames, 0);
-        set(gcf,'position',[200,200,1600,900])
-        figure; histogram(WTX(1,:),'FaceColor','k')
-        set(gca,'yscale','log')
-    end
+%     if n<5
+%         SimpleXplot(Xnull, trials, frames, 0);
+%         set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
+%         figure; histogram(WTX(1,:),'FaceColor','k')
+%         set(gca,'yscale','log')
+%     end
     % Get skewness of each
     skewnull(:,n) = skewness(WTX,1,2);
 end
@@ -85,6 +85,11 @@ for k = 1:K
     % Assign pvals from skewness
     pvals(k) = (1+sum(skewnull(k,:)>skew(k)))/nnull;
 end
+% figure;
+% histogram(skewnull(1,:))
+% hold on
+% xline(skew(1), 'Color', 'r', 'Linewidth', 2);
+
 allpvals(indempty) = Inf; 
 allpvals(~indempty) = pvals; 
 pvals = allpvals;
