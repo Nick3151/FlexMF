@@ -1,4 +1,4 @@
-function score = similarity(W1,H1,W2,H2)
+function [score, frac_good] = similarity(W1,H1,W2,H2)
 % Measure the similarity between two factorizations 
 % by matching each factor
 %%
@@ -37,17 +37,20 @@ end
 % S(S<0) = eps;
 %%
 temp = S;
-num = 0;
+corr = 0;
+num_good = 0;
 K = min(size(X1,2), size(X2,2));
 % Matching each non-zero factor to all the factors of another reconstruction
 for ii = 1:K
     [r,c]= find(temp == max(temp(:)));
     maximum = temp(r(1), c(1));
-    num = num + maximum;
+    corr = corr + maximum;
+    num_good = num_good + (maximum>0.9);
     temp(r(1),:) = 0;
     temp(:,c(1)) = 0;
 
 end
-score = num/(K+eps);
+score = corr/(K+eps);
+frac_good = num_good/(K+eps);
 % score(isnan(score)) = 0;
 end
