@@ -1,8 +1,8 @@
 function SimpleWHPlot_trials(W, H, is_significant, neg, Data, plotAll) 
 % plots factors W and H with trials
 % W: N x K x L
-% H: K x T
-% Data: N x L x T
+% H: K x Trials
+% Data: N x L x Trials
 % Also plots Data if provided, and reconstruction if data is not provided
 % plotAll=1 means plot all data
 % plotAll=0 means crop data so it's on the same timescale as W's 
@@ -30,7 +30,7 @@ else
 end
 
 [N,K,L] = size(W); 
-[~,T] = size(H);
+[~,Trials] = size(H);
 
 if isempty(is_significant)
     is_significant = zeros(1,K);
@@ -53,10 +53,10 @@ sep = ceil(L*.1);
 
 %% crop data, unless plotAll
 if plotAll
-    indplot = 1:T*L;
+    indplot = 1:Trials*L;
 else
     indplot = (1:ceil((K*(L+sep))/ww*wdata)); % so that data and W's are on same scale
-    indplot(indplot>T*L) = [];
+    indplot(indplot>Trials*L) = [];
 end
 
 
@@ -100,10 +100,10 @@ end
 %% plot data
 axIm = subplot('Position', [m+ww m wdata hdata]);
 if plotData
-    assert(isequal(size(Data), [N,L,T]), 'Dimensions of X do not match!')
+    assert(isequal(size(Data), [N,L,Trials]), 'Dimensions of X do not match!')
     maxValue = prctile(abs(Data),99,'all')+epsilon;
-    DataToPlot = zeros(N,T*L);
-    for t=1:T
+    DataToPlot = zeros(N,Trials*L);
+    for t=1:Trials
         DataToPlot(:,(t-1)*L+1:t*L) = squeeze(Data(:,:,t));
     end
 
@@ -115,10 +115,10 @@ if plotData
     imagesc(DataToPlot(:,indplot), clims);
     colormap(cmap)
 else
-    DataToPlot = zeros(N,T*L);
-    for t=1:T
+    DataToPlot = zeros(N,Trials*L);
+    for t=1:Trials
         for k=1:K
-            DataToPlot(:,(t-1)*L+1:t*L) = DataToPlot(:,(t-1)*L+1:t*L) + suqeeze(W(:,k,:))*H(k,t);
+            DataToPlot(:,(t-1)*L+1:t*L) = DataToPlot(:,(t-1)*L+1:t*L) + squeeze(W(:,k,:))*H(k,t);
         end
     end
 
@@ -155,8 +155,8 @@ axis off
 % axis off
 %% plot H's
 axH = subplot('Position', [m+ww m+hdata wdata hh]);
-HToPlot = zeros(K,T*L);
-HToPlot(:,1:L:T*L) = H;
+HToPlot = zeros(K,Trials*L);
+HToPlot(:,1:L:Trials*L) = H;
 dn = max(HToPlot(:)); 
 for ki = K:-1:1
     Xs = [1 1:length(indplot) length(indplot)]; 

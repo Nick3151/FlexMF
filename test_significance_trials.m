@@ -58,13 +58,14 @@ skewnull = zeros(K,nnull);
 
 % Normalize each row
 % X = bsxfun(@rdivide, TestData, sum(TestData,2));
+X = TestData;
 
 for n = 1:nnull
     % Make a null dataset,shuffle data in each trial
     Xnull = zeros(N,T);
     for k = 1:K
         for trial = 1:trials
-            X_tmp = TestData(:,(trial-1)*frames+1:trial*frames)';            
+            X_tmp = X(:,(trial-1)*frames+1:trial*frames)';            
             Xnull(:,(trial-1)*frames+1:trial*frames) = reshape(X_tmp(randperm(N*frames)), [N,frames]);
         end
     end
