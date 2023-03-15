@@ -1,4 +1,4 @@
-function [data,W,H,X_hat] = generate_data_trials(Trials, Length, Nmotifs, Nneurons, Magnitudes, Dt, noise, jitter, participation, warp, bin, neg, seed)
+function [data,W,H,X_hat] = generate_data_trials(Trials, Length, Nmotifs, Nneurons, Magnitudes, Dt, noise, jitter, participation, warp, len_spikes, dynamic, neg, seed)
 % Generate data based on trials
 if seed == 0
     rng shuffle
@@ -20,7 +20,8 @@ additional_neurons = 0;
 % jitter = zeros(number_of_seqences,1); % Jitter time std
 % participation = 1.*ones(number_of_seqences,1); % Participation probability = 100%
 % warp = 0; % the maximum warping time
-% bin = 0; % Binary data or not
+% len_spikes = 20; The time of continuous firing
+% dynamic = 1; if transient dynamics is being simulated
 % neg = 0; % Proportion of negative indices in W
 
 %% Calculate useful things
@@ -76,7 +77,7 @@ for k = 1:K % go through each factor
     l = Dt_temp*Nneurons(k);
     temp2 = zeros(length(neurons{k}),l);
     temp2(:,1:Dt_temp:l) = diag(temp);    
-    Wk(neurons{k},ceil((Length-l)/2):ceil((Length-l)/2)-1+l) = temp2;  
+    Wk(neurons{k},(1:l)+2*max(jitter)) = temp2;  
     W(:,k,:) = Wk;
 
     for j = 1:Nmotifs(k) % go through each iteration of the sequence
@@ -87,7 +88,7 @@ for k = 1:K % go through each factor
             tempW = zeros(N,Length);          
             temp2 = zeros(length(neurons{k}),l);
             temp2(:,1:Dt_temp:l) = diag(temp);    
-            tempW(neurons{k},ceil((Length-l)/2):ceil((Length-l)/2)-1+l) = temp2;  
+            tempW(neurons{k},(1:l)+2*max(jitter)) = temp2;  
         else 
             tempW = Wk;      
         end
@@ -107,27 +108,43 @@ for k = 1:K % go through each factor
 
 end
 
-%% could add indepent noise later
+%% Add indepent noise
 X_noise = (rand(size(X_hat))<noise);
-X_hat = X_hat + (~X_hat).*X_noise;
-X_hat(isnan(X_hat)) = 0;
-%%
-%data = V_hat;
-if ~bin
-    filtbio = exp(-(1:30)/10); 
-    data = zeros(N,Length,Trials);
-    for t = 1:Trials
-        data(:,:,t) = conv2(squeeze(X_hat(:,:,t)),filtbio,'same');
-    end
-else
-    data = X_hat;
+
+%% Continuous firing
+if isempty(len_spikes)
+    len_spikes = 1;
 end
 
-if ~bin
-    for k = 1:K
-        W(:,k,:) = conv2(squeeze(W(:,k,:)),filtbio,'same');
-    end
+for t = 1:Trials
+    X_hat_tmp = conv2(squeeze(X_hat(:,:,t)), ones(1,len_spikes));
+    X_hat(:,:,t) = X_hat_tmp(:,1:Length);
 end
+
+for k = 1:K
+    W_tmp = conv2(squeeze(W(:,k,:)), ones(1,len_spikes));
+    W(:,k,:) = W_tmp(:,1:Length);
+end
+
+X = X_hat + (~X_hat).*X_noise;
+X(isnan(X)) = 0;
+
+%% Include calcimu dynamic
+if dynamic
+    filtbio = exp(-(0:8)/4); 
+    data = zeros(N,Length,Trials);
+    for t = 1:Trials
+        data_tmp = conv2(squeeze(X(:,:,t)),filtbio);
+        data(:,:,t) = data_tmp(:,1:Length);
+    end
+    for k = 1:K
+        W_tmp= conv2(squeeze(W(:,k,:)),filtbio);
+        W(:,k,:) = W_tmp(:,1:Length);
+    end
+else
+    data = X;
+end
+
 rng shuffle
 
 end
