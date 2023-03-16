@@ -90,7 +90,7 @@ for i = 1:nnull
         end
     end
     % Get skewness of each
-    skewnull(:,n) = skewness(WTX,1,2);
+    skewnull(:,i) = skewness(WTX,1,2);
 end
 
 WTX = helper.transconv(W,X); 

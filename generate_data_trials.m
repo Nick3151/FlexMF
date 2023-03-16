@@ -27,9 +27,12 @@ additional_neurons = 0;
 %% Calculate useful things
 N = sum(Nneurons)+additional_neurons; % Total number of neurons
 K = length(Nmotifs); % The number of motifs
-lmotif = Dt.*Nneurons; % the length of each motif
-
-lseq_warp = (max(lmotif)/max(Dt)*(max(Dt)+warp)); % warping motif length
+lmotif = Dt.*Nneurons+1; % the length of each motif
+if Dt>0
+    lseq_warp = (max(lmotif)/max(Dt)*(max(Dt)+warp)); % warping motif length
+else
+    lseq_warp = 1;
+end
 assert(lseq_warp<=Length, 'Sequence length must be less than or equal to the length of each trial!')
 
 j = 1;
@@ -74,21 +77,30 @@ for k = 1:K % go through each factor
     Wk = zeros(N,Length);          
     temp = ones(1,Nneurons(k));
     temp(neg_indices) = -temp(neg_indices);
-    l = Dt_temp*Nneurons(k);
-    temp2 = zeros(length(neurons{k}),l);
-    temp2(:,1:Dt_temp:l) = diag(temp);    
-    Wk(neurons{k},(1:l)+2*max(jitter)) = temp2;  
+    if Dt_temp > 0
+        l = Dt_temp*Nneurons(k);
+        temp2 = zeros(length(neurons{k}),l);
+        temp2(:,1:Dt_temp:l) = diag(temp);
+        Wk(neurons{k},(1:l)+2*max(jitter)) = temp2;  
+    else
+        Wk(neurons{k},1+2*max(jitter)) = temp';
+    end
+    
     W(:,k,:) = Wk;
 
     for j = 1:Nmotifs(k) % go through each iteration of the sequence
                    
         if warp > 0 % change the dt for each instance
+            tempW = zeros(N,Length); 
             Dt_temp = Dt(k)+Hs{k}(j); 
-            l = Dt_temp*Nneurons(k);
-            tempW = zeros(N,Length);          
-            temp2 = zeros(length(neurons{k}),l);
-            temp2(:,1:Dt_temp:l) = diag(temp);    
-            tempW(neurons{k},(1:l)+2*max(jitter)) = temp2;  
+            if Dt_temp > 0
+                l = Dt_temp*Nneurons(k);         
+                temp2 = zeros(length(neurons{k}),l);
+                temp2(:,1:Dt_temp:l) = diag(temp);    
+                tempW(neurons{k},(1:l)+2*max(jitter)) = temp2;  
+            else
+                tempW(neurons{k},1+2*max(jitter)) = temp';
+            end
         else 
             tempW = Wk;      
         end
