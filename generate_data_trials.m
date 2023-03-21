@@ -1,4 +1,4 @@
-function [data,W,H,X_hat] = generate_data_trials(Trials, Length, Nmotifs, Nneurons, Magnitudes, Dt, noise, jitter, participation, warp, len_spikes, dynamic, neg, seed)
+function [data,W,H,X_hat,motif_ind] = generate_data_trials(Trials, Length, Nmotifs, Nneurons, Magnitudes, Dt, noise, jitter, participation, warp, len_spikes, dynamic, overlap, neg, seed)
 % Generate data based on trials
 if seed == 0
     rng shuffle
@@ -22,6 +22,7 @@ additional_neurons = 0;
 % warp = 0; % the maximum warping time
 % len_spikes = 20; The time of continuous firing
 % dynamic = 1; if transient dynamics is being simulated
+% overlap = 1; if temporal overlap between different motifs is allowed
 % neg = 0; % Proportion of negative indices in W
 
 %% Calculate useful things
@@ -47,16 +48,31 @@ H = zeros(K,Trials);
 Hs = cell(K,1);
 
 motif_ind = cell(K,1); % Index of trials in which motif occurs
-for k = 1:K
-    motif_ind{k} = randperm(Trials, Nmotifs(k));
-    if warp > 0
-        Hs{k} = randi([-warp, warp],Nmotifs(k),1);
-    else
-        Hs{k} = zeros(Nmotifs(k),1);
-    end
-    H(k, motif_ind{k}) = ones(1,Nmotifs(k))*Magnitudes(k);
-end
 
+if overlap
+    for k = 1:K
+        motif_ind{k} = randperm(Trials, Nmotifs(k));
+        if warp > 0
+            Hs{k} = randi([-warp, warp],Nmotifs(k),1);
+        else
+            Hs{k} = zeros(Nmotifs(k),1);
+        end
+        H(k, motif_ind{k}) = ones(1,Nmotifs(k))*Magnitudes(k);
+    end
+else
+    assert(sum(Nmotifs)<=Trials, 'Do not have enough trials!')
+    motif_inds_all = randperm(Trials, sum(Nmotifs));
+    inds_tmp = [0,cumsum(Nmotifs)];
+    for  k=1:K
+        motif_ind{k} = motif_inds_all(inds_tmp(k)+1:inds_tmp(k+1));
+        if warp > 0
+            Hs{k} = randi([-warp, warp],Nmotifs(k),1);
+        else
+            Hs{k} = zeros(Nmotifs(k),1);
+        end
+        H(k, motif_ind{k}) = ones(1,Nmotifs(k))*Magnitudes(k);
+    end
+end
 
 %% Make W and X_hat
 if seed == 0
