@@ -46,7 +46,7 @@ W(:,indempty,:) = []; % Delete factors that meet the above critera
 [~,T] = size(TestData);
 assert(trials*frames==T, 'Dimensions of trials do not match!')
 
-if nargin < 5
+if nargin < 5 || isempty(plot)
     plot = 0;
 end
 
