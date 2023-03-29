@@ -100,3 +100,13 @@ end
 
 save('simulate_results.mat', "H_hats_FlexMF", 'W_hats_FlexMF', 'is_significant_FlexMF', 'pvals_FlexMF', 'loadings_FlexMF',...
     'loadings_SeqNMF', 'W_hats_SeqNMF', 'H_hats_SeqNMF', "pvals_SeqNMF", "is_significant_SeqNMF", 'Ws', 'Hs')
+
+%% Compare results
+load('simulate_results.mat')
+
+i = 1;
+W = Ws{i};
+W_hat_SeqNMF = W_hats_SeqNMF{i};
+W_hat_FlexMF = W_hats_FlexMF{i};
+[coeff_SeqNMF, ids_SeqNMF] = helper.similarity_W(W, W_hat_SeqNMF);
+[coeff_FlexMF, ids_FlexNMF] = helper.similarity_W(W, W_hat_FlexNMF);
