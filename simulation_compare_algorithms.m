@@ -86,7 +86,7 @@ for i=1:nSim
     [pvals_SeqNMF(i,:),is_significant_SeqNMF(i,:)] = test_significance_trials(TestData, cv.TestSize(1), L, W_hat,[],p);
     W_hats_SeqNMF{i} = W_hat;
     H_hats_SeqNMF{i} = H_hat;
-    display(['SeqNMF run ' num2str(i) '/' num2str(nIter)])
+    display(['SeqNMF run ' num2str(i) '/' num2str(nSim)])
 
     % Run SeqNMF with Bregman Iteration
     [W_hat, H_hat, ~,loadings_FlexMF(i,:),power]= FlexMF(TrainingData,'K',K,'L',L,...
@@ -95,7 +95,7 @@ for i=1:nSim
     [pvals_FlexMF(i,:),is_significant_FlexMF(i,:)] = test_significance_trials(TestData, cv.TestSize(1), L, W_hat,[],p);
     W_hats_FlexMF{i} = W_hat;
     H_hats_FlexMF{i} = H_hat;
-    display(['FlexMF run ' num2str(i) '/' num2str(nIter)])
+    display(['FlexMF run ' num2str(i) '/' num2str(nSim)])
 end
 
 save('simulate_results.mat', "H_hats_FlexMF", 'W_hats_FlexMF', 'is_significant_FlexMF', 'pvals_FlexMF', 'loadings_FlexMF',...
@@ -109,4 +109,4 @@ W = Ws{i};
 W_hat_SeqNMF = W_hats_SeqNMF{i};
 W_hat_FlexMF = W_hats_FlexMF{i};
 [coeff_SeqNMF, ids_SeqNMF] = helper.similarity_W(W, W_hat_SeqNMF);
-[coeff_FlexMF, ids_FlexNMF] = helper.similarity_W(W, W_hat_FlexNMF);
+[coeff_FlexMF, ids_FlexMF] = helper.similarity_W(W, W_hat_FlexMF);
