@@ -78,4 +78,6 @@ for ii = 1:min(K,Khat)
 
 end
 
+coeffs(~coeffs) = [];
+ids(~ids) = [];
 end

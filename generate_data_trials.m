@@ -1,4 +1,4 @@
-function [data,W,H,X_hat,motif_ind] = generate_data_trials(Trials, Length, Nmotifs, Nneurons, Magnitudes, Dt, noise, jitter, participation, warp, len_spikes, dynamic, overlap, neg, seed)
+function [data,W,H,X_hat,motif_ind] = generate_data_trials(Trials, Length, Nmotifs, Nneurons, Magnitudes, Dt, noise, jitter, participation, warp, len_burst, dynamic, overlap, neg, seed)
 % Generate data based on trials
 if seed == 0
     rng shuffle
@@ -20,7 +20,7 @@ additional_neurons = 0;
 % jitter = zeros(number_of_seqences,1); % Jitter time std
 % participation = 1.*ones(number_of_seqences,1); % Participation probability = 100%
 % warp = 0; % the maximum warping time
-% len_spikes = 20; The time of continuous firing
+% len_burst = 20; The time of continuous firing
 % dynamic = 1; if transient dynamics is being simulated
 % overlap = 1; if temporal overlap between different motifs is allowed
 % neg = 0; % Proportion of negative indices in W
@@ -140,17 +140,17 @@ end
 X_noise = (rand(size(X_hat))<noise);
 
 %% Continuous firing
-if isempty(len_spikes)
-    len_spikes = 1;
+if isempty(len_burst)
+    len_burst = 1;
 end
 
 for t = 1:Trials
-    X_hat_tmp = conv2(squeeze(X_hat(:,:,t)), ones(1,len_spikes));
+    X_hat_tmp = conv2(squeeze(X_hat(:,:,t)), ones(1,len_burst));
     X_hat(:,:,t) = X_hat_tmp(:,1:Length);
 end
 
 for k = 1:K
-    W_tmp = conv2(squeeze(W(:,k,:)), ones(1,len_spikes));
+    W_tmp = conv2(squeeze(W(:,k,:)), ones(1,len_burst));
     W(:,k,:) = W_tmp(:,1:Length);
 end
 
