@@ -44,7 +44,9 @@ if params.neg_prop==0 && params.lambda > 0
         
         dW = sqrt(mean((W(:)-W0(:)).^2));
         if dW < tol_W
-            fprintf('Step size tolerance of W reached\n')
+            if params.verbal
+                fprintf('Step size tolerance of W reached\n')
+            end
             break
         end
         
@@ -57,7 +59,7 @@ if params.neg_prop==0 && params.lambda > 0
         % Step 3: Update B
         B = B + WTXSHT - D;
 
-        if params.showPlot 
+        if params.verbal
             fprintf('dW=%f\n',dW);
             fprintf('reg=%f\n',sum(Q(:).*WTXSHT(:)));
             fprintf('D=%f\n',sum(Q(:).*D(:)));

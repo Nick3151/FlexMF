@@ -58,7 +58,9 @@ if params.lambda > 0
         
         dH = sqrt(mean((H(:)-H0(:)).^2));
         if dH < tol_H
-            fprintf('Step size tolerance of H reached\n')
+            if params.verbal
+                fprintf('Step size tolerance of H reached\n')
+            end
             break
         end
         
@@ -69,7 +71,7 @@ if params.lambda > 0
         % Step 3: Update B
         B = B + AH - D;
         
-        if params.showPlot 
+        if params.verbal
             fprintf('dH=%f\n',dH);
             fprintf('reg=%f\n',sum(Q(:).*AH(:)));
             fprintf('D=%f\n',sum(Q(:).*D(:)));

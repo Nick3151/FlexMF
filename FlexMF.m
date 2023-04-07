@@ -96,10 +96,14 @@ cost = zeros(params.maxiter+1, 1);
 cost(1) = sqrt(mean((X(:)-Xhat(:)).^2));
 
 for iter = 1 : params.maxiter
-    fprintf('Iter %d\n', iter);
+    if params.verbal
+        fprintf('Iter %d\n', iter);
+    end
     if iter > 5
         dcost = cost(iter) - mean(cost((iter-5):(iter-1)));
-        fprintf('dcost=%f\n', dcost);
+        if params.verbal
+            fprintf('dcost=%f\n', dcost);
+        end
     end
     % Stopping criteria... Stop if reach maxiter or if change in cost function is less than the tolerance
     % if (iter == params.maxiter) || ((iter>5) && (dW < params.tolerance))
@@ -112,14 +116,17 @@ for iter = 1 : params.maxiter
     end
     
 %     tic
-    
-    fprintf('Updating W\n');
+    if params.verbal
+        fprintf('Updating W\n');
+    end
 %     W0 = max(W_pre(:))*rand(N, K, L);
     W0 = W_pre;
 %     H_tmp = H_pre + 0.05*max(H_pre(:))*rand(K,T); 
     W = updateW(W0, H_pre, X, params);   
     
-    fprintf('Updating H\n');
+    if params.verbal
+        fprintf('Updating H\n');
+    end
 %     H0 = max(H_pre(:))*rand(K,T); 
     H0 = H_pre;
     W_tmp = W + 0.05*max(W_pre(:))*rand(N, K, L);
@@ -191,6 +198,7 @@ end
         addOptional(p,'lambda',.01);
         addOptional(p,'alpha',1e-3);
         addOptional(p,'showPlot',1);
+        addOptional(p,'verbal',1);
         addOptional(p,'maxiter',100);
         addOptional(p,'tolerance',1e-4);
         addOptional(p,'alg','N83');

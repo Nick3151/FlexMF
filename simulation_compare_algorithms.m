@@ -44,7 +44,7 @@ H_hats_FlexMF = H_hats_SeqNMF;
 Ws = W_hats_SeqNMF;
 Hs = H_hats_SeqNMF;
 
-parpool(100)
+parpool(48)
 parfor i=1:nSim
     tic
     [X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Magnitudes, Dt, noise, jitter, participation, warp, len_burst, dynamic, overlap, neg, seeds(i));
@@ -91,7 +91,7 @@ parfor i=1:nSim
 
     % Run SeqNMF with Bregman Iteration
     [W_hat, H_hat, ~,loadings_FlexMF{i},power]= FlexMF(TrainingData,'K',K,'L',L,...
-            'lambda', lambda, 'alpha', alpha, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0); 
+            'lambda', lambda, 'alpha', alpha, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
     p = .05;
     [pvals_FlexMF{i},is_significant_FlexMF{i}] = test_significance_trials(TestData, cv.TestSize(1), L, W_hat,[],p);
     W_hats_FlexMF{i} = W_hat;
@@ -185,7 +185,7 @@ parfor i=1:nSim
 
     % Run SeqNMF with Bregman Iteration
     [W_hat, H_hat, ~,loadings_FlexMF{i,1},power]= FlexMF(TrainingData,'K',K,'L',L,...
-            'lambda', lambda, 'alpha', alpha, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0); 
+            'lambda', lambda, 'alpha', alpha, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
     p = .05;
     [pvals_FlexMF{i,1},is_significant_FlexMF{i,1}] = test_significance_trials(TestData, cv.TestSize(1), L, W_hat,[],p);
     W_hats_FlexMF{i,1} = W_hat;
@@ -243,7 +243,7 @@ parfor i=1:nSim
 
     % Run SeqNMF with Bregman Iteration
     [W_hat, H_hat, ~,loadings_FlexMF{i,2},power]= FlexMF(TrainingData,'K',K,'L',L,...
-            'lambda', lambda, 'alpha', alpha, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0); 
+            'lambda', lambda, 'alpha', alpha, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
     p = .05;
     [pvals_FlexMF{i,2},is_significant_FlexMF{i,2}] = test_significance_trials(TestData, cv.TestSize(1), L, W_hat,[],p);
     W_hats_FlexMF{i,2} = W_hat;
@@ -301,7 +301,7 @@ parfor i=1:nSim
 
     % Run SeqNMF with Bregman Iteration
     [W_hat, H_hat, ~,loadings_FlexMF{i,3},power]= FlexMF(TrainingData,'K',K,'L',L,...
-            'lambda', lambda, 'alpha', alpha, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0); 
+            'lambda', lambda, 'alpha', alpha, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
     p = .05;
     [pvals_FlexMF{i,3},is_significant_FlexMF{i,3}] = test_significance_trials(TestData, cv.TestSize(1), L, W_hat,[],p);
     W_hats_FlexMF{i,3} = W_hat;
@@ -397,7 +397,7 @@ for j=1:length(participation_rates)
     
         % Run SeqNMF with Bregman Iteration
         [W_hat, H_hat, ~,loadings_FlexMF{i,j},power]= FlexMF(TrainingData,'K',K,'L',L,...
-                'lambda', lambda, 'alpha', alpha, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0); 
+                'lambda', lambda, 'alpha', alpha, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
         p = .05;
         [pvals_FlexMF{i,j},is_significant_FlexMF{i,j}] = test_significance_trials(TestData, cv.TestSize(1), L, W_hat,[],p);
         W_hats_FlexMF{i,j} = W_hat;
