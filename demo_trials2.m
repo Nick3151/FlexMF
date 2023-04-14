@@ -19,9 +19,9 @@ K = 10;
 Nneurons = 5*ones(K, 1); % the number of neurons in each motif
 Magnitudes = ones(K, 1); % the activation magnitudes of each motif
 Dt = 3.*ones(K,1); % gap between each member of the motif
-noise = 0.01; % probability of added noise in each bin
-jitter = 0*ones(K,1); % Jitter time std
-participation = .7.*ones(K,1); % Participation probability = 100%
+noise = 0.001; % probability of added noise in each bin
+jitter = 2*ones(K,1); % Jitter time std
+participation = 1.*ones(K,1); % Participation probability = 100%
 warp = 0; % the maximum warping time
 len_spike = 20; % Continuous firing time
 dynamic = 1; % Consider calcium dynamics or not
@@ -117,7 +117,7 @@ lambdaL1W = 0;
 figure;
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 [What, Hhat, ~,loadings,power]= seqNMF(TrainingData,'K',K,'L',L,...
-            'lambdaL1W', lambdaL1W, 'lambda', lambda, 'maxiter', 500, 'showPlot', 1); 
+            'lambdaL1W', lambdaL1W, 'lambda', lambda, 'maxiter', 100, 'showPlot', 1); 
 
 [recon_error_SeqNMF, reg_cross, reg_W, reg_H] = helper.get_FlexMF_cost(TrainingData,What,Hhat);
 reg_cross_SeqNMF = reg_cross*lambda;

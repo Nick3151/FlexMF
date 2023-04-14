@@ -1,3 +1,5 @@
+% Significance test of ground truth factor vs number of occurrences in the
+% data
 clear all
 close all
 clc
@@ -405,7 +407,7 @@ f1 = figure; hold on
 ax1 = gca;
 f2 = figure; hold on
 ax2 = gca;
-for j=1:length(jitter_stds)
+for j=1:length(warp_levels)
     parfor i=1:nsim
         warp = warp_levels(j);
         [X, W, H, X_hat, ~] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Magnitudes, Dt, noise, jitter, participation, warp, len_spike, dynamic, overlap, neg, seeds(i));

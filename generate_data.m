@@ -1,4 +1,4 @@
-function [data,W,H,V_hat] = generate_data(T,Nneurons,Dt,NeuronNoise,SeqNoiseTime,SeqNoiseNeuron,gap,stretch,bin,neg,seed)
+function [data,W,H,V_hat] = generate_data(T,Nneurons,Dt,noise,jitter,participation,gap,warp,bin,neg,seed)
 %rng(2001)
 if seed == 0
     rng shuffle
@@ -13,10 +13,11 @@ additional_neurons = 0;
 % Nneurons = [5,15,10,8]; % the number of neurons in each sequence
 % Dt = [2,1,3,3]; % the number of time steps between each neuron in the sequence
 % Pseq = []; % the probability of the sequence occuring
-% NeuronNoise = 0.01; % the noise in a neurons firing rate
-% SeqNoiseTime = [0.2,0.2,0.1,0.1]; % the noise in the sequence aka jitter (p of each neuron jittered 1 dt)
-% SeqNoiseNeuron = [0.95,0.95,0.95,0.95]; % the probability that a neuron participates in a given seq
+% noise = 0.01; % the noise in a neurons firing rate
+% jitter = [0.2,0.2,0.1,0.1]; % Jitter time std
+% participation = [0.95,0.95,0.95,0.95]; % the probability that a neuron participates in a given seq
 % gap = 100;  % the maximum gap between sequences
+% warp = 0; % the maximum warping time
 % T = 1000;
 % Share = []; % the propotion of the chain that is shared in other sequences
 %% Calculate useful things
@@ -46,8 +47,8 @@ H = zeros(K,T);
 %       
 % end
 nn = K*1000; % make smaller
-if stretch > 0
-    stretches = randi([-stretch, stretch],nn,1);
+if warp > 0
+    stretches = randi([-warp, warp],nn,1);
 else
     stretches = zeros(nn,1);
 end
@@ -81,8 +82,8 @@ H = H(:,1:T);
 
 %% Make Data using noise parameters in the reconstruction
 %leng = max(Dt)+ max(lseq) + (stretch)*max(lseq); 
-leng = (max(lseq)/max(Dt)*(max(Dt)+stretch));
-L = max(lseq)+150;
+leng = (max(lseq)/max(Dt)*(max(Dt)+warp));
+L = max(lseq)+20;
 W = zeros(N,K,L);
 % H(:,T-(2*(max(lseq)/max(Dt)*(max(Dt)+(stretch)))):T) = 0;
 H(:,T-(2*(max(lseq))):T) = 0;
@@ -103,37 +104,39 @@ for ii = 1:K % go through each factor
     Wi = zeros(N,L);          
     temp = ones(1,length(neurons{ii}));
     temp(neg_indices) = -temp(neg_indices);
-    temp2 = zeros(length(neurons{ii}),Dt_temp*Nneurons(ii));
+    l = Dt_temp*Nneurons(ii);
+    temp2 = zeros(length(neurons{ii}),l);
     temp2(:,1:Dt_temp:Dt_temp*Nneurons(ii)) = diag(temp);    
-    Wi(neurons{ii},50:49+size(temp2,2)) = temp2;  
+    Wi(neurons{ii},(1:l)+2*max(jitter)) = temp2;  
     W(:,ii,:) = Wi;
     
     for jj = 1:sum(H(ii,:)) % go through each iteration of the sequence
         tempH = zeros(1,size(H,2));
         tempH(ind(jj)) = 1;
                    
-        if stretch > 0 % change the dt for each instance
+        if warp > 0 % change the dt for each instance
             Dt_temp = Dt(ii)+Hs{ii}(jj);%+(randi(stretch))
             %*(-1+(2*(rand(1)>0.5))); If you want compression as well  
-            L_temp = leng+150;
-            tempW = zeros(N,L_temp);          
-            temp2 = zeros(length(neurons{ii}),Dt_temp*Nneurons(ii));
-            temp2(:,1:Dt_temp:Dt_temp*Nneurons(ii)) = diag(temp);    
-            tempW(neurons{ii},50:49+size(temp2,2)) = temp2;  
+            l = Dt_temp*Nneurons(ii);  
+            tempW = zeros(N,leng);      
+            
+            temp2 = zeros(length(neurons{ii}),l);
+            temp2(:,1:Dt_temp:l) = diag(temp);    
+            tempW(neurons{ii},(1:l)+2*max(jitter)) = temp2;  
         else 
             tempW = Wi;      
         end
 
         % neurons are jittered with some lambda
         %shifts = poissrnd(SeqNoiseTime(ii),N,1).*(1-2*(rand(N,1)>0.5));
-        shifts = round(normrnd(0,SeqNoiseTime(ii),N,1));
+        shifts = round(normrnd(0,jitter(ii),N,1));
         %shifts(abs(shifts) >5) = 0; %stop poiss from getting to big
         for idx = 1:N
             tempW(idx,:) = circshift(tempW(idx,:),shifts(idx)*1);
         end
         
         % neurons participate with some p
-        tempW(rand(N,1)>SeqNoiseNeuron(ii),:) = 0;
+        tempW(rand(N,1)>participation(ii),:) = 0;
     
         [tempW, tempH] = helper.shiftFactors(tempW, tempH);
         % Compensate for factor shift due to stretching
@@ -148,13 +151,13 @@ end
 
 
 %% could add indepent noise later
-V_hat = V_hat + (rand(size(V_hat))<NeuronNoise);
+V_hat = V_hat + (rand(size(V_hat))<noise);
 %V_hat  = V_hat./V_hat;
 V_hat(isnan(V_hat)) = 0;
 %%
 %data = V_hat;
 if ~bin
-    filtbio = [zeros(1,10*10) exp(-(1:10*10)/10)]; 
+    filtbio = exp(-(0:8)/4);
     data = conv2(V_hat,filtbio,'same');
 else
     data = V_hat;
