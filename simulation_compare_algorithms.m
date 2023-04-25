@@ -14,20 +14,14 @@ addpath(genpath(fullfile(root, 'FlexMF')));
 Trials = 200;
 % Trials = 10;
 L = 50; % length of each trial
-
-Nmotifs = 2*(1:10);
 K = 10;
+Nmotifs = 2*(1:K);
 Nneurons = 5*ones(K, 1); % the number of neurons in each motif
-Magnitudes = ones(K, 1); % the activation magnitudes of each motif
 Dt = 3.*ones(K,1); % gap between each member of the motif
 noise = 0.01; % probability of added noise in each bin
-jitter = 0*ones(K,1); % Jitter time std
 participation = .7.*ones(K,1); % Participation probability = 100%
-warp = 0; % the maximum warping time
 len_burst = 20; % Burst time
 dynamic = 1; % Consider calcium dynamics or not
-overlap = 0;
-neg = 0; % Proportion of negative indices in W
 
 nSim = 100;
 seeds = randperm(1000, nSim);
@@ -45,10 +39,11 @@ Ws = W_hats_SeqNMF;
 Hs = H_hats_SeqNMF;
 TrainingDatas = W_hats_SeqNMF;
 
-parpool(48)
+% parpool(48)
 parfor i=1:nSim
     tic
-    [X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Magnitudes, Dt, noise, jitter, participation, warp, len_burst, dynamic, overlap, neg, seeds(i));
+    [X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Dt, ...
+        'noise', noise, 'participation', participation, 'len_burst', len_burst, 'dynamic', dynamic, 'seed', seeds(i));
     groups = zeros(Trials,1);
     for k=1:K
         groups(motif_ind{k}) = k;
@@ -109,17 +104,12 @@ save('simulate_results.mat', "H_hats_FlexMF", 'W_hats_FlexMF', 'is_significants_
 disp('Impact of motif shape on results')
 Trials = 200;
 L = 50; % length of each trial
-Nmotifs = 2*(1:10);
 K = 10;
+Nmotifs = 2*(1:K);
 Nneurons = 5*ones(K, 1); % the number of neurons in each motif
-Magnitudes = ones(K, 1); % the activation magnitudes of each motif
 Dt = 3.*ones(K,1); % gap between each member of the motif
 noise = 0.01; % probability of added noise in each bin
-jitter = 0*ones(K,1); % Jitter time std
 participation = .7.*ones(K,1); % Participation probability = 100%
-warp = 0; % the maximum warping time
-overlap = 0;
-neg = 0; % Proportion of negative indices in W
 
 nSim = 100;
 seeds = randperm(1000, nSim);
@@ -142,7 +132,8 @@ parfor i=1:nSim
     disp('Calcium Transients:')
     len_burst = 20; % Continuous firing time
     dynamic = 1; % Consider calcium dynamics or not
-    [X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Magnitudes, Dt, noise, jitter, participation, warp, len_burst, dynamic, overlap, neg, seeds(i));
+    [X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Dt, ...
+        'noise', noise, 'participation', participation, 'len_burst', len_burst, 'dynamic', dynamic, 'seed', seeds(i));
     groups = zeros(Trials,1);
     for k=1:K
         groups(motif_ind{k}) = k;
@@ -201,7 +192,8 @@ parfor i=1:nSim
     disp('Burst:')
     len_burst = 20; % Continuous firing time
     dynamic = 0; % Consider calcium dynamics or not
-    [X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Magnitudes, Dt, noise, jitter, participation, warp, len_burst, dynamic, overlap, neg, seeds(i));
+    [X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Dt, ...
+        'noise', noise, 'participation', participation, 'len_burst', len_burst, 'dynamic', dynamic, 'seed', seeds(i));
     groups = zeros(Trials,1);
     for k=1:K
         groups(motif_ind{k}) = k;
@@ -231,7 +223,7 @@ parfor i=1:nSim
     nuc_norm = norm(svd(TrainingData),1);
     TrainingData = TrainingData/nuc_norm*N;
 
-    lambda = .005;
+    lambda = .01;
     alpha = 5e-5;
 
     % Run SeqNMF with multiplication rule
@@ -260,7 +252,8 @@ parfor i=1:nSim
     disp('Single spikes:')
     len_burst = 1; % Continuous firing time
     dynamic = 0; % Consider calcium dynamics or not
-    [X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Magnitudes, Dt, noise, jitter, participation, warp, len_burst, dynamic, overlap, neg, seeds(i));
+    [X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Dt, ...
+        'noise', noise, 'participation', participation, 'len_burst', len_burst, 'dynamic', dynamic, 'seed', seeds(i));
     groups = zeros(Trials,1);
     for k=1:K
         groups(motif_ind{k}) = k;
@@ -290,8 +283,8 @@ parfor i=1:nSim
     nuc_norm = norm(svd(TrainingData),1);
     TrainingData = TrainingData/nuc_norm*N;
 
-    lambda = .005;
-    alpha = 5e-5;
+    lambda = .02;
+    alpha = 1e-4;
 
     % Run SeqNMF with multiplication rule
     [W_hat, H_hat, ~,loadings_SeqNMF{i,3},power]= seqNMF(TrainingData,'K',K,'L',L,...
@@ -321,19 +314,11 @@ save('simulate_results_shape.mat', "H_hats_FlexMF", 'W_hats_FlexMF', 'is_signifi
 disp('Impact of noise level on results')
 Trials = 200;
 L = 50; % length of each trial
-Nmotifs = 2*(1:10);
 K = 10;
+Nmotifs = 2*(1:K);
 Nneurons = 5*ones(K, 1); % the number of neurons in each motif
-Magnitudes = ones(K, 1); % the activation magnitudes of each motif
 Dt = 3.*ones(K,1); % gap between each member of the motif
 noise_levels = [0.001, 0.01, 0.1]; % probability of added noise in each bin
-jitter = 0*ones(K,1); % Jitter time std
-participation = 1.*ones(K,1); % Participation probability = 100%
-warp = 0; % the maximum warping time
-len_burst = 10; % Continuous firing time
-dynamic = 1; % Consider calcium dynamics or not
-overlap = 0;
-neg = 0; % Proportion of negative indices in W
 
 nSim = 100;
 seeds = randperm(1000, nSim);
@@ -356,7 +341,8 @@ for j=1:length(noise_levels)
     disp(['Noise level=', num2str(noise_levels(j))])
     parfor i=1:nSim
         tic
-        [X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Magnitudes, Dt, noise, jitter, participation, warp, len_burst, dynamic, overlap, neg, seeds(i));
+        [X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Dt, ...
+        'noise', noise, 'seed', seeds(i));
         groups = zeros(Trials,1);
         for k=1:K
             groups(motif_ind{k}) = k;
@@ -418,19 +404,12 @@ save('simulate_results_noise.mat', "H_hats_FlexMF", 'W_hats_FlexMF', 'is_signifi
 disp('Impact of participation rate on results')
 Trials = 200;
 L = 50; % length of each trial
-Nmotifs = 2*(1:10);
 K = 10;
+Nmotifs = 2*(1:K);
 Nneurons = 5*ones(K, 1); % the number of neurons in each motif
-Magnitudes = ones(K, 1); % the activation magnitudes of each motif
 Dt = 3.*ones(K,1); % gap between each member of the motif
-noise = 0.001; % probability of added noise in each bin
-jitter = 0*ones(K,1); % Jitter time std
+
 participation_rates = 0.5:0.1:0.9; % Participation probability
-warp = 0; % the maximum warping time
-len_burst = 10; % Continuous firing time
-dynamic = 1; % Consider calcium dynamics or not
-overlap = 0;
-neg = 0; % Proportion of negative indices in W
 
 nSim = 100;
 seeds = randperm(1000, nSim);
@@ -453,7 +432,8 @@ for j=1:length(participation_rates)
     disp(['Participation rate=', num2str(participation_rates(j))])
     parfor i=1:nSim
         tic
-        [X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Magnitudes, Dt, noise, jitter, participation, warp, len_burst, dynamic, overlap, neg, seeds(i));
+        [X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Dt, ...
+        'participation', participation, 'seed', seeds(i));
         groups = zeros(Trials,1);
         for k=1:K
             groups(motif_ind{k}) = k;
@@ -515,19 +495,11 @@ save('simulate_results_participate.mat', "H_hats_FlexMF", 'W_hats_FlexMF', 'is_s
 disp('Impact of jittering on results')
 Trials = 200;
 L = 50; % length of each trial
-Nmotifs = 2*(1:10);
 K = 10;
+Nmotifs = 2*(1:K);
 Nneurons = 5*ones(K, 1); % the number of neurons in each motif
-Magnitudes = ones(K, 1); % the activation magnitudes of each motif
 Dt = 3.*ones(K,1); % gap between each member of the motif
-noise = 0.001; % probability of added noise in each bin
 jitter_stds = 1:3; % Jitter time std
-participation = 1.*ones(K,1); % Participation probability = 100%
-warp = 0; % the maximum warping time
-len_burst = 10; % Continuous firing time
-dynamic = 1; % Consider calcium dynamics or not
-overlap = 0;
-neg = 0; % Proportion of negative indices in W
 
 nSim = 100;
 seeds = randperm(1000, nSim);
@@ -550,7 +522,8 @@ for j=1:length(jitter_stds)
     disp(['Jittering std=', num2str(jitter_stds(j))])
     parfor i=1:nSim
         tic
-        [X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Magnitudes, Dt, noise, jitter, participation, warp, len_burst, dynamic, overlap, neg, seeds(i));
+        [X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Dt, ...
+        'jitter', jitter, 'seed', seeds(i));
         groups = zeros(Trials,1);
         for k=1:K
             groups(motif_ind{k}) = k;
@@ -612,19 +585,12 @@ save('simulate_results_jitter.mat', "H_hats_FlexMF", 'W_hats_FlexMF', 'is_signif
 disp('Impact of warping on results')
 Trials = 200;
 L = 50; % length of each trial
-Nmotifs = 2*(1:10);
 K = 10;
+Nmotifs = 2*(1:K);
 Nneurons = 5*ones(K, 1); % the number of neurons in each motif
 Magnitudes = ones(K, 1); % the activation magnitudes of each motif
 Dt = 3.*ones(K,1); % gap between each member of the motif
-noise = 0.001; % probability of added noise in each bin
-jitter = 0*ones(K,1); % Jitter time std
-participation = 1.*ones(K,1); % Participation probability = 100%
 warp_levels = [1,2,3]; % the maximum warping time
-len_burst = 10; % Continuous firing time
-dynamic = 1; % Consider calcium dynamics or not
-overlap = 0;
-neg = 0; % Proportion of negative indices in W
 
 nSim = 100;
 seeds = randperm(1000, nSim);
@@ -647,7 +613,8 @@ for j=1:length(warp_levels)
     disp(['Warping level=', num2str(warp_levels(j))])
     parfor i=1:nSim
         tic
-        [X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Magnitudes, Dt, noise, jitter, participation, warp, len_burst, dynamic, overlap, neg, seeds(i));
+        [X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Dt, ...
+        'warp', warp, 'seed', seeds(i));
         groups = zeros(Trials,1);
         for k=1:K
             groups(motif_ind{k}) = k;

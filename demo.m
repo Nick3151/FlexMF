@@ -17,12 +17,12 @@ number_of_seqences = 3;
 T = 3000; % length of data to generate
 Nneurons = 10*ones(number_of_seqences,1); % number of neurons in each sequence
 Dt = 3.*ones(number_of_seqences,1); % gap between each member of the sequence
-NeuronNoise = 0.001; % probability of added noise in each bin
-SeqNoiseTime = zeros(number_of_seqences,1); % Jitter parameter = 0%
-SeqNoiseNeuron = 1.*ones(number_of_seqences,1); % Participation parameter = 100%
+noise = 0.001; % probability of added noise in each bin
+jitter = zeros(number_of_seqences,1); % Jitter parameter = 0%
+participation = 1.*ones(number_of_seqences,1); % Participation parameter = 100%
 gap = 200; % maximum gap between sequences
 neg = 0; % Proportion of negative indices in W
-[X, W, H, V_hat] = generate_data(T,Nneurons,Dt,NeuronNoise,SeqNoiseTime,SeqNoiseNeuron,gap,0,0,neg,1);
+[X, W, H, V_hat] = generate_data(T,Nneurons,Dt);
 figure; SimpleWHPlot(W,H,[], [], [], neg, X); title('generated data','Fontsize',16)
 set(gcf,'position',[200,200,1200,900])
 nuc_norm = norm(svd(X),1);

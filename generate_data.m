@@ -1,39 +1,77 @@
-function [data,W,H,V_hat] = generate_data(T,Nneurons,Dt,noise,jitter,participation,gap,warp,bin,neg,seed)
-%rng(2001)
+function [data,W,H,X_hat] = generate_data(T,Nneurons,Dt,varargin)
+% Parameters
+% Nneurons = [5,15,10,8]; % the number of neurons in each sequence
+% Dt = [2,1,3,3]; % the number of time steps between each neuron in the sequence
+% Pseq = []; % the probability of the sequence occuring
+% Magnitudes = ones(number_of_seqences, 1); % the activation magnitudes of each motif
+% noise = 0.001; % probability of added noise in each bin
+% jitter = zeros(number_of_seqences,1); % Jitter time std
+% participation = 1.*ones(number_of_seqences,1); % Participation probability = 100%
+% gap = 100;  % the maximum gap between sequences
+% warp = 0; % the maximum warping time
+% overlap_t = 0; if temporal overlap between different motifs is allowed
+% overlap_n = 0; The proportion of shared neurons between different motifs
+% len_burst = 10; The time of continuous firing
+% dynamic = 1; if transient dynamics is being simulated
+% neg = 0; % Proportion of negative indices in W
+% seed = 0; % Random seed
+% additional_neurons = 0; % Number of additional neurons
+
+%% Parse inputs
+K = length(Nneurons); % The number of motifs
+validArrayK = @(x) isnumeric(x) && length(x)==K;
+
+p  = inputParser;
+addOptional(p, 'Magnitudes', ones(K, 1), validArrayK)
+addOptional(p, 'noise', .001, @isscalar)
+addOptional(p, 'jitter', zeros(K, 1), validArrayK)
+addOptional(p, 'participation', ones(K, 1), validArrayK)
+addOptional(p, 'gap', 100, @isscalar)
+addOptional(p, 'warp', 0, @isscalar)
+addOptional(p, 'overlap_t', 0, @isscalar)
+addOptional(p, 'overlap_n', 0, @isscalar)
+addOptional(p, 'len_burst', 10, @isscalar)
+addOptional(p, 'dynamic', 1, @isscalar)
+addOptional(p, 'neg', 0, @isscalar)
+addOptional(p, 'seed', 0, @isscalar)
+addOptional(p, 'additional_neurons', 0, @isscalar)
+parse(p, varargin{:})
+
+Magnitudes = p.Results.Magnitudes;
+noise = p.Results.noise;
+jitter = p.Results.jitter;
+participation = p.Results.participation;
+warp = p.Results.warp;
+gap = p.Results.gap;
+overlap_t = p.Results.overlap_t;
+overlap_n = p.Results.overlap_n;
+len_burst = p.Results.len_burst;
+dynamic = p.Results.dynamic;
+neg = p.Results.neg;
+seed = p.Results.seed;
+additional_neurons = p.Results.additional_neurons;
+
 if seed == 0
     rng shuffle
 else
     rng(seed)
 end
 
-additional_neurons = 0;
-
-%% Parameters
-% V = data.sequences(10000,randi(10,2,1)+5,randi(4,2,1),.01,rand(2),ones(2,1)*0.95);
-% Nneurons = [5,15,10,8]; % the number of neurons in each sequence
-% Dt = [2,1,3,3]; % the number of time steps between each neuron in the sequence
-% Pseq = []; % the probability of the sequence occuring
-% noise = 0.01; % the noise in a neurons firing rate
-% jitter = [0.2,0.2,0.1,0.1]; % Jitter time std
-% participation = [0.95,0.95,0.95,0.95]; % the probability that a neuron participates in a given seq
-% gap = 100;  % the maximum gap between sequences
-% warp = 0; % the maximum warping time
-% T = 1000;
-% Share = []; % the propotion of the chain that is shared in other sequences
 %% Calculate useful things
-N = sum(Nneurons)+additional_neurons; % Total number of neurons
-K = length(Nneurons); % The number of sequences
 lseq = Dt.*Nneurons; % the length of each sequences
 
 j = 1;
 neurons = {};
-for ii = 1:length(Nneurons)
-    neurons{ii} = j:j+Nneurons(ii)-1;
-    j = j+Nneurons(ii);
+assert((overlap_n<1) && (overlap_n>=0), 'Overlap_n should be between [0,1)!')
+num_overlap = floor(overlap_n*Nneurons);
+for k = 1:length(Nneurons)
+    neurons{k} = j:j+Nneurons(k)-1;
+    j = j+Nneurons(k)-num_overlap(k);
 end
 
+N = j+num_overlap(K)-1+additional_neurons; % Total number of neurons
+
 %% MAKE H's
-xx = zeros(1,T);
 H = zeros(K,T);
 %randomly distribute seq starting points preventing the same sequence from initiation during itself
 % for ii = 1:length(lseq)
@@ -56,27 +94,29 @@ end
 if seed == 0
     rng shuffle
 else
-    rng(seed)
+    rng(seed+1)
 end
 
 % time courses with a minimum gap.
 temp = [];
 for j = 1:nn
-    % need to fix this to work for stretches = 0
-    temp = [temp;randi(gap,1,1)+max(lseq)];
-%     temp = [temp;randi(gap,1,1)+(max(lseq)/max(Dt)*(max(Dt)+stretches(ii)))];
+    if overlap_t
+        temp = [temp;randi(gap)];
+    else
+        temp = [temp;randi(gap)+max(lseq)];
+    end
 end
 temp = cumsum(temp);
 
 %indx = randi(nseq,nn,1);
 indx = ones(1000,1)';
-for ii = 2:K
-    indx = [indx,ii*ones(1000,1)'];
+for k = 2:K
+    indx = [indx,k*ones(1000,1)'];
 end
 indx = indx(randperm(nn));
-for ii = 1:K
-    H(ii,temp((indx == ii))) = 1;
-    Hs{ii} = stretches((indx == ii));
+for k = 1:K
+    H(k,temp((indx == k))) = Magnitudes(k);
+    Hs{k} = stretches((indx == k));
 end
 H = H(:,1:T);
 
@@ -86,89 +126,101 @@ leng = (max(lseq)/max(Dt)*(max(Dt)+warp));
 L = max(lseq)+20;
 W = zeros(N,K,L);
 % H(:,T-(2*(max(lseq)/max(Dt)*(max(Dt)+(stretch)))):T) = 0;
-H(:,T-(2*(max(lseq))):T) = 0;
+H(:,(T-leng):T) = 0;
 [~,T] = size(H);
-V_hat = zeros(N,T);
+X_hat = zeros(N,T);
 
 %Dont forget these things!
 %NeuronNoise = [0.1,0.05,0.2,0.13]; % the noise in a neurons firing rate
 %SeqNoiseTime = [0.1,0.2,0.1,0.1]; % the noise in the sequence aka jitter (p of each neuron jittered 1 dt)
 %SeqNoiseNeuron = [0.9,0.9,0.9,0.9]; % the probability that a neuron participates in a given seq
-for ii = 1:K % go through each factor
-    ind = find(H(ii,:));
+for k = 1:K % go through each factor
+    ind = find(H(k,:));
     
     % neg: proportion of negative indices
-    neg_indices = (rand(1,length(neurons{ii})) < neg);
+    neg_indices = (rand(1,length(neurons{k})) < neg);
     
-    Dt_temp = Dt(ii);
+    Dt_temp = Dt(k);
     Wi = zeros(N,L);          
-    temp = ones(1,length(neurons{ii}));
+    temp = ones(1,length(neurons{k}));
     temp(neg_indices) = -temp(neg_indices);
-    l = Dt_temp*Nneurons(ii);
-    temp2 = zeros(length(neurons{ii}),l);
-    temp2(:,1:Dt_temp:Dt_temp*Nneurons(ii)) = diag(temp);    
-    Wi(neurons{ii},(1:l)+2*max(jitter)) = temp2;  
-    W(:,ii,:) = Wi;
+    l = Dt_temp*Nneurons(k);
+    temp2 = zeros(length(neurons{k}),l);
+    temp2(:,1:Dt_temp:Dt_temp*Nneurons(k)) = diag(temp);    
+    Wi(neurons{k},(1:l)+2*max(jitter)) = temp2;  
+    W(:,k,:) = Wi;
     
-    for jj = 1:sum(H(ii,:)) % go through each iteration of the sequence
+    for jj = 1:sum(H(k,:)) % go through each iteration of the sequence
         tempH = zeros(1,size(H,2));
         tempH(ind(jj)) = 1;
                    
         if warp > 0 % change the dt for each instance
-            Dt_temp = Dt(ii)+Hs{ii}(jj);%+(randi(stretch))
+            Dt_temp = Dt(k)+Hs{k}(jj);%+(randi(stretch))
             %*(-1+(2*(rand(1)>0.5))); If you want compression as well  
-            l = Dt_temp*Nneurons(ii);  
+            l = Dt_temp*Nneurons(k);  
             tempW = zeros(N,leng);      
             
-            temp2 = zeros(length(neurons{ii}),l);
+            temp2 = zeros(length(neurons{k}),l);
             temp2(:,1:Dt_temp:l) = diag(temp);    
-            tempW(neurons{ii},(1:l)+2*max(jitter)) = temp2;  
+            tempW(neurons{k},(1:l)+2*max(jitter)) = temp2;  
         else 
             tempW = Wi;      
         end
 
         % neurons are jittered with some lambda
         %shifts = poissrnd(SeqNoiseTime(ii),N,1).*(1-2*(rand(N,1)>0.5));
-        shifts = round(normrnd(0,jitter(ii),N,1));
+        shifts = round(normrnd(0,jitter(k),N,1));
         %shifts(abs(shifts) >5) = 0; %stop poiss from getting to big
         for idx = 1:N
             tempW(idx,:) = circshift(tempW(idx,:),shifts(idx)*1);
         end
         
         % neurons participate with some p
-        tempW(rand(N,1)>participation(ii),:) = 0;
+        tempW(rand(N,1)>participation(k),:) = 0;
     
         [tempW, tempH] = helper.shiftFactors(tempW, tempH);
         % Compensate for factor shift due to stretching
-        shift = circshift(1:length(tempH),floor((Dt(ii)*Nneurons(ii)- Dt_temp*Nneurons(ii))/2));
+        shift = circshift(1:length(tempH),floor((Dt(k)*Nneurons(k)- Dt_temp*Nneurons(k))/2));
         tempH = tempH(:,shift);
         newData = conv2(tempH,tempW);
         %V_hat = V_hat + newData(:,ceil(size(tempW,2)/2):end - floor(size(tempW,2)/2));
-        V_hat = V_hat + newData(:,1:(end - size(tempW,2)+1));
+        X_hat = X_hat + newData(:,1:(end - size(tempW,2)+1));
 
     end
 end
 
+%% Add indepent noise
+X_noise = (rand(size(X_hat))<noise);
 
-%% could add indepent noise later
-V_hat = V_hat + (rand(size(V_hat))<noise);
-%V_hat  = V_hat./V_hat;
-V_hat(isnan(V_hat)) = 0;
+%% Continuous firing
+if isempty(len_burst)
+    len_burst = 1;
+end
+
+X_hat_tmp = conv2(X_hat, ones(1,len_burst));
+X_hat = X_hat_tmp(:,1:T);
+
+for k = 1:K
+    W_tmp = conv2(squeeze(W(:,k,:)), ones(1,len_burst));
+    W(:,k,:) = W_tmp(:,1:L);
+end
+
+X = X_hat + (~X_hat).*X_noise;
+X(isnan(X)) = 0;
+
 %%
 %data = V_hat;
-if ~bin
+if dynamic
     filtbio = exp(-(0:8)/4);
-    data = conv2(V_hat,filtbio,'same');
-else
-    data = V_hat;
-end
+    data_tmp = conv2(X,filtbio);
+    data = data_tmp(:,1:T);
 
-[W, H] = helper.shiftFactors(W, H);
-
-if ~bin
-    for ii = 1:size(W,2)
-        W(:,ii,:) = conv2(squeeze(W(:,ii,:)),filtbio,'same');
+    for k = 1:size(W,2)
+        W_tmp= conv2(squeeze(W(:,k,:)),filtbio);
+        W(:,k,:) = W_tmp(:,1:L);
     end
+else
+    data = X;
 end
-rng shuffle
+
 end

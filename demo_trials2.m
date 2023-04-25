@@ -14,18 +14,17 @@ Trials = 200;
 % Trials = 10;
 L = 50; % length of each trial
 
-Nmotifs = 2*(1:10);
 K = 10;
+Nmotifs = 2*(1:K);
 Nneurons = 5*ones(K, 1); % the number of neurons in each motif
-Magnitudes = ones(K, 1); % the activation magnitudes of each motif
 Dt = 3.*ones(K,1); % gap between each member of the motif
-noise = 0.001; % probability of added noise in each bin
-jitter = 2*ones(K,1); % Jitter time std
+noise = 0; % probability of added noise in each bin
 participation = 1.*ones(K,1); % Participation probability = 100%
 warp = 0; % the maximum warping time
-len_spike = 20; % Continuous firing time
-dynamic = 1; % Consider calcium dynamics or not
-overlap = 0;
+len_spike = 1; % Continuous firing time
+dynamic = 0; % Consider calcium dynamics or not
+overlap_t = 0;
+overlap_n = .6;
 neg = 0; % Proportion of negative indices in W
 
 nsim = 100;
@@ -33,7 +32,8 @@ seeds = randperm(1000, nsim);
 pvals = zeros(nsim,K);
 is_significant = zeros(nsim,K);
 
-[X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Magnitudes, Dt, noise, jitter, participation, warp, len_spike, dynamic, overlap, neg, seeds(1));
+[X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Dt, ...
+    'overlap_n', overlap_n);
 groups = zeros(Trials,1);
 for k=1:K
     groups(motif_ind{k}) = k;
@@ -56,11 +56,14 @@ TestData = zeros(N,cv.TestSize(1)*L);
 for t=1:cv.TestSize(1)
     TestData(:,(t-1)*L+1:t*L) = squeeze(X_test(:,:,t));
 end
+f1 = figure;
 SimpleXplot_patch([TrainingData, TestData], [cv.TrainSize(1), cv.TestSize(1)], L); 
-set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
+set(f1,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 
-figure; SimpleWHPlot_trials(W, H, [], X, 1); title('generated data','Fontsize',16)
-set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
+f2 = figure;
+SimpleWHPlot_trials(W, H, [], X, 1); title('generated data','Fontsize',16)
+set(f2,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
+print(f2, 'Simulated_data_overlap.pdf', '-dpdf', '-bestfit')
 
 % Normalize training data
 nuc_norm = norm(svd(TrainingData),1);
@@ -68,8 +71,6 @@ TrainingData = TrainingData/nuc_norm*N;
 
 %% Procedure for choosing lambda
 nLambdas = 20; % increase if you're patient
-K = 10; 
-L = 50;
 lambdaL1H = 0;
 lambdaL1W = 0;
 lambdas = sort(logspace(-1,-5,nLambdas), 'ascend'); 
@@ -107,9 +108,6 @@ set(gca, 'xscale', 'log', 'ytick', [], 'color', 'none')
 set(gca,'color','none','tickdir','out','ticklength', [0.025, 0.025])
 
 %% Run SeqNMF
-
-K = 10;
-L = 50;
 lambda = .005;
 lambdaL1H = 0;
 lambdaL1W = 0;
@@ -133,21 +131,18 @@ display('Testing significance of factors on held-out data')
 indSort = hybrid(:,3);
 
 %% Look at factors
-plotAll = 1;
+plotAll = 0;
 figure; SimpleWHPlot_patch(What, Hhat, cv.TrainSize(1), L, is_significant, [], plotAll); title('SeqNMF reconstruction')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 figure; SimpleWHPlot_patch(What, Hhat, cv.TrainSize(1), L, is_significant, TrainingData, plotAll); title('SeqNMF factors, with raw data')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 
+print(gcf, 'Simulated_data_SeqNMF.pdf', '-dpdf', '-bestfit')
+
 % Compute similarity to ground truth
 [coeff_SeqNMF, ids_SeqNMF] = helper.similarity_W(W, What);
-ids_SeqNMF(~ids_SeqNMF) = [];
-coeff_SeqNMF(~coeff_SeqNMF) = [];
 
 %% Run FlexMF
-K = 10;
-L = 50;
-lambda = .005;
 alpha = 5e-5;
 
 % load([exp_num, '_BayesOpt.mat'])
@@ -192,8 +187,6 @@ print(gcf, 'Simulated_data_FlexMF.pdf', '-dpdf', '-bestfit')
 
 % Compute similarity to ground truth
 [coeff_FlexMF, ids_FlexMF] = helper.similarity_W(W, What);
-ids_FlexMF(~ids_FlexMF) = [];
-coeff_FlexMF(~coeff_FlexMF) = [];
 
 %% Compare algorithm results
 coeff_all = zeros(2,K);

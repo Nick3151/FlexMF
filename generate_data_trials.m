@@ -1,13 +1,4 @@
-function [data,W,H,X_hat,motif_ind] = generate_data_trials(Trials, Length, Nmotifs, Nneurons, Magnitudes, Dt, noise, jitter, participation, warp, len_burst, dynamic, overlap, neg, seed)
-% Generate data based on trials
-if seed == 0
-    rng shuffle
-else
-    rng(seed)
-end
-
-additional_neurons = 0;
-
+function [data,W,H,X_hat,motif_ind] = generate_data_trials(Trials, Length, Nmotifs, Nneurons, Dt, varargin)
 % Parameters:
 % Trials = 30; % total number of trials
 % Length = 150; % length of each trial
@@ -20,14 +11,57 @@ additional_neurons = 0;
 % jitter = zeros(number_of_seqences,1); % Jitter time std
 % participation = 1.*ones(number_of_seqences,1); % Participation probability = 100%
 % warp = 0; % the maximum warping time
-% len_burst = 20; The time of continuous firing
+% overlap_t = 0; if temporal overlap between different motifs is allowed
+% overlap_n = 0; The proportion of shared neurons between different motifs
+% len_burst = 10; The time of continuous firing
 % dynamic = 1; if transient dynamics is being simulated
-% overlap = 1; if temporal overlap between different motifs is allowed
 % neg = 0; % Proportion of negative indices in W
+% seed = 0; % Random seed
+% additional_neurons = 0; % Number of additional neurons
+
+%% Parse inputs
+K = length(Nmotifs); % The number of motifs
+if size(Nmotifs,1) ~= 1
+    Nmotifs = Nmotifs';
+end
+validArrayK = @(x) isnumeric(x) && length(x)==K;
+
+p  = inputParser;
+addOptional(p, 'Magnitudes', ones(K, 1), validArrayK)
+addOptional(p, 'noise', .001, @isscalar)
+addOptional(p, 'jitter', zeros(K, 1), validArrayK)
+addOptional(p, 'participation', ones(K, 1), validArrayK)
+addOptional(p, 'warp', 0, @isscalar)
+addOptional(p, 'overlap_t', 0, @isscalar)
+addOptional(p, 'overlap_n', 0, @isscalar)
+addOptional(p, 'len_burst', 10, @isscalar)
+addOptional(p, 'dynamic', 1, @isscalar)
+addOptional(p, 'neg', 0, @isscalar)
+addOptional(p, 'seed', 0, @isscalar)
+addOptional(p, 'additional_neurons', 0, @isscalar)
+parse(p, varargin{:})
+
+Magnitudes = p.Results.Magnitudes;
+noise = p.Results.noise;
+jitter = p.Results.jitter;
+participation = p.Results.participation;
+warp = p.Results.warp;
+overlap_t = p.Results.overlap_t;
+overlap_n = p.Results.overlap_n;
+len_burst = p.Results.len_burst;
+dynamic = p.Results.dynamic;
+neg = p.Results.neg;
+seed = p.Results.seed;
+additional_neurons = p.Results.additional_neurons;
+
+% Set random seed
+if seed == 0
+    rng shuffle
+else
+    rng(seed)
+end
 
 %% Calculate useful things
-N = sum(Nneurons)+additional_neurons; % Total number of neurons
-K = length(Nmotifs); % The number of motifs
 lmotif = Dt.*Nneurons+1; % the length of each motif
 if Dt>0
     lseq_warp = (max(lmotif)/max(Dt)*(max(Dt)+warp)); % warping motif length
@@ -38,10 +72,13 @@ assert(lseq_warp<=Length, 'Sequence length must be less than or equal to the len
 
 j = 1;
 neurons = cell(K,1);
+assert((overlap_n<1) && (overlap_n>=0), 'Overlap_n should be between [0,1)!')
+num_overlap = floor(overlap_n*Nneurons);
 for k = 1:K
     neurons{k} = j:j+Nneurons(k)-1;
-    j = j+Nneurons(k);
+    j = j+Nneurons(k)-num_overlap(k);
 end
+N = j+num_overlap(K)-1+additional_neurons; % Total number of neurons
 
 %% MAKE H's, sample warping params
 H = zeros(K,Trials);
@@ -49,7 +86,7 @@ Hs = cell(K,1);
 
 motif_ind = cell(K,1); % Index of trials in which motif occurs
 
-if overlap
+if overlap_t
     for k = 1:K
         motif_ind{k} = randperm(Trials, Nmotifs(k));
         if warp > 0
