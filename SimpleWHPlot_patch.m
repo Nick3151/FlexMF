@@ -60,7 +60,7 @@ axW = subplot('Position', [m m ww hdata]);
 hold on
 set(gca, 'ColorOrder', kColors); 
 
-dnW = prctile(W(:),100); 
+dnW = prctile(W(:),99.9); 
 XsEdge = zeros(3,K); 
 YsEdge = [zeros(1,K); dnW*N*ones(2,K)];
 
@@ -94,11 +94,11 @@ Xs = [1 1:length(indplot) length(indplot)];
 
 for ni=1:N
     if plotData
-        dnX = prctile(Data(:),100);
+        dnX = prctile(Data(:),99.9);
         Ys = [dnW*(N-ni) dnW*(N-ni)+Data(ni,indplot)/dnX*dnW dnW*(N-ni)];
     else
         Dhat = helper.reconstruct(W,H);
-        dnX = prctile(Dhat(:),100); 
+        dnX = prctile(Dhat(:),99.9); 
         Ys = [dnW*(N-ni) dnW*(N-ni)+Dhat(ni,indplot)/dnX*dnW dnW*(N-ni)];
     end
     

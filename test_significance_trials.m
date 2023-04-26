@@ -71,12 +71,12 @@ for i = 1:nnull
     Xnull = zeros(N,T);
     for trial = 1:trials
         X_tmp = X(:,(trial-1)*frames+1:trial*frames);  
-        [ids_start, ids_end, ~] = locate_true_transients(X_tmp,6,L);
+        [ids_start, ids_end, ~] = locate_true_transients(X_tmp,6,frames);
         for n=1:N
             if isempty(ids_start{n}) || isempty(ids_end{n})
-                Xnull(n,(trial-1)*frames+1:trial*frames) = circshift(X_tmp(n,:), randi(L));
+                Xnull(n,(trial-1)*frames+1:trial*frames) = circshift(X_tmp(n,:), randi(frames));
             else
-                Xnull(n,(trial-1)*frames+1:trial*frames) = circshift(X_tmp(n,:), randi([1-ids_start{n}(1), L-ids_end{n}(end)]));
+                Xnull(n,(trial-1)*frames+1:trial*frames) = circshift(X_tmp(n,:), randi([1-ids_start{n}(1), frames-ids_end{n}(end)]));
             end
         end
     end
