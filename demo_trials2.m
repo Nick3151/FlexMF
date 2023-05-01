@@ -5,7 +5,7 @@ clc
 root = fileparts(pwd);
 addpath(fullfile(root, 'TFOCS'))
 addpath(fullfile(root, 'Utils'))
-addpath(fullfile(root, 'MATLAB-tools'))
+addpath(genpath(fullfile(root, 'CoDybase-MATLAB')))
 rmpath(genpath(fullfile(root, 'seqNMF-master')));
 addpath(genpath(fullfile(root, 'FlexMF')));
 
@@ -15,7 +15,7 @@ Trials = 200;
 L = 50; % length of each trial
 
 K = 10;
-Nmotifs = 2*(1:K);
+Nmotifs = 2*(K:-1:1);
 Nneurons = 5*ones(K, 1); % the number of neurons in each motif
 Dt = 3.*ones(K,1); % gap between each member of the motif
 noise = 0; % probability of added noise in each bin
@@ -41,9 +41,9 @@ end
 
 % Dimension N*L*Trials
 cv = cvpartition(groups, "KFold",2);
-ind_train = find(training(cv,1));
+ind_train = training(cv,1);
 X_train = X(:,:,ind_train);
-ind_test = find(test(cv,1));
+ind_test = test(cv,1);
 X_test = X(:,:,ind_test);
 
 % Dimension N*T
@@ -61,9 +61,11 @@ SimpleXplot_patch([TrainingData, TestData], [cv.TrainSize(1), cv.TestSize(1)], L
 set(f1,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 
 f2 = figure;
-SimpleWHPlot_trials(W, H, [], X, 1); title('generated data','Fontsize',16)
+H_train = H(:,ind_train);
+SimpleWHPlot_trials(W, H_train, [], X_train, 1); title('generated data','Fontsize',16)
 set(f2,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-print(f2, 'Simulated_data_overlap.pdf', '-dpdf', '-bestfit')
+
+save2pdf('Simulated_data_overlap.pdf', f2)
 
 % Normalize training data
 nuc_norm = norm(svd(TrainingData),1);
@@ -137,7 +139,7 @@ set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 figure; SimpleWHPlot_patch(What, Hhat, cv.TrainSize(1), L, is_significant, TrainingData, plotAll); title('SeqNMF factors, with raw data')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 
-print(gcf, 'Simulated_data_SeqNMF.pdf', '-dpdf', '-bestfit')
+save2pdf('Simulated_data_SeqNMF.pdf', gcf)
 
 % Compute similarity to ground truth
 [coeff_SeqNMF, ids_SeqNMF] = helper.similarity_W(W, What);
@@ -183,7 +185,7 @@ set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 figure; SimpleWHPlot_patch(What, Hhat, cv.TrainSize(1), L, is_significant, TrainingData, plotAll); title('FlexMF factors, with raw data')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 
-print(gcf, 'Simulated_data_FlexMF.pdf', '-dpdf', '-bestfit')
+save2pdf('Simulated_data_FlexMF.pdf', gcf)
 
 % Compute similarity to ground truth
 [coeff_FlexMF, ids_FlexMF] = helper.similarity_W(W, What);
