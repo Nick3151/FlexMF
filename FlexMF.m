@@ -51,6 +51,7 @@ function [W, H, cost, loadings, power] = FlexMF(X, varargin)
 % 'useWupdate'      1                                   Wupdate for cross orthogonality often doesn't change results much, and can be slow, so option to remove  
 % 'M'               ones(N,T)                           Masking matrix if excluding a random test set from the fit
 % 'neg_prop'        0.2                                 Proportion of negative indices
+% 'verbal'          1                                   Print intermediate output?
 % ------------------------------------------------------------------------
 % OUTPUTS:
 %
