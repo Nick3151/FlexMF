@@ -19,7 +19,7 @@ Nmotifs = 2*(K:-1:1);
 Nneurons = 5*ones(K, 1); % the number of neurons in each motif
 Dt = 3.*ones(K,1); % gap between each member of the motif
 noise = 0; % probability of added noise in each bin
-participation = 1.*ones(K,1); % Participation probability = 100%
+participation = .7.*ones(K,1); % Participation probability = 100%
 warp = 0; % the maximum warping time
 len_spike = 1; % Continuous firing time
 dynamic = 0; % Consider calcium dynamics or not
@@ -34,6 +34,8 @@ is_significant = zeros(nsim,K);
 
 [X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Dt, ...
     'overlap_n', overlap_n);
+% [X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Dt, ...
+%     'participation', participation);
 groups = zeros(Trials,1);
 for k=1:K
     groups(motif_ind{k}) = k;
@@ -66,6 +68,7 @@ SimpleWHPlot_trials(W, H_train, [], X_train, 1); title('generated data','Fontsiz
 set(f2,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 
 save2pdf('Simulated_data_overlap.pdf', f2)
+% save2pdf('Simulated_data_participation.pdf', f2)
 
 % Normalize training data
 nuc_norm = norm(svd(TrainingData),1);
@@ -75,6 +78,7 @@ TrainingData = TrainingData/nuc_norm*N;
 nLambdas = 20; % increase if you're patient
 lambdaL1H = 0;
 lambdaL1W = 0;
+lambdaOrthoH = 0;
 lambdas = sort(logspace(-1,-5,nLambdas), 'ascend'); 
 loadings = [];
 regularization = []; 
@@ -82,7 +86,7 @@ cost = [];
 for li = 1:length(lambdas)
     [N,T] = size(TrainingData);
     [What, Hhat, ~,loadings(li,:),power]= seqNMF(TrainingData,'K',K,'L',L,...
-        'lambdaL1W', lambdaL1W, 'lambda', lambdas(li), 'maxiter', 100, 'showPlot', 0); 
+        'lambdaL1W', lambdaL1W, 'lambda', lambdas(li), 'lambdaOrthoH', lambdaOrthoH, 'maxiter', 100, 'showPlot', 0); 
     [cost(li),regularization(li),~] = helper.get_seqNMF_cost(TrainingData,What,Hhat);
     display(['Testing lambda ' num2str(li) '/' num2str(length(lambdas))])
 end
@@ -111,13 +115,15 @@ set(gca,'color','none','tickdir','out','ticklength', [0.025, 0.025])
 
 %% Run SeqNMF
 lambda = .005;
+% lambda = .01;
 lambdaL1H = 0;
 lambdaL1W = 0;
+lambdaOrthoH = 0;
 
 figure;
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-[What, Hhat, ~,loadings,power]= seqNMF(TrainingData,'K',K,'L',L,...
-            'lambdaL1W', lambdaL1W, 'lambda', lambda, 'maxiter', 100, 'showPlot', 1); 
+[What, Hhat, cost_SeqNMF,loadings,power]= seqNMF(TrainingData,'K',K,'L',L,...
+            'lambdaL1W', lambdaL1W, 'lambda', lambda, 'lambdaOrthoH', lambdaOrthoH, 'maxiter', 100, 'showPlot', 1); 
 
 [recon_error_SeqNMF, reg_cross, reg_W, reg_H] = helper.get_FlexMF_cost(TrainingData,What,Hhat);
 reg_cross_SeqNMF = reg_cross*lambda;
@@ -133,18 +139,20 @@ display('Testing significance of factors on held-out data')
 indSort = hybrid(:,3);
 
 %% Look at factors
-plotAll = 0;
+plotAll = 1;
 figure; SimpleWHPlot_patch(What, Hhat, cv.TrainSize(1), L, is_significant, [], plotAll); title('SeqNMF reconstruction')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 figure; SimpleWHPlot_patch(What, Hhat, cv.TrainSize(1), L, is_significant, TrainingData, plotAll); title('SeqNMF factors, with raw data')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 
-save2pdf('Simulated_data_SeqNMF.pdf', gcf)
+% save2pdf('Simulated_data_SeqNMF.pdf', gcf)
+% save2pdf('Simulated_data_HOrth.pdf', gcf)
 
 % Compute similarity to ground truth
 [coeff_SeqNMF, ids_SeqNMF] = helper.similarity_W(W, What);
 
 %% Run FlexMF
+% alpha = 1e-4;
 alpha = 5e-5;
 
 % load([exp_num, '_BayesOpt.mat'])
@@ -158,14 +166,20 @@ display('Running FlexMF on 2p data')
 figure;
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 tic
-[What,Hhat,cost,loadings,power] = FlexMF(TrainingData,'K',K, 'L', L, 'maxiter', 50,...
+[What,Hhat,cost_FlexMF,loadings,power] = FlexMF(TrainingData,'K',K, 'L', L, 'maxiter', 50,...
     'lambda', lambda, 'alpha', alpha, 'lambdaL1W', lambdaL1W, 'lambdaL1H', lambdaL1H, 'neg_prop', 0, 'showPlot', 1);
 toc
 
 % 
 figure;
-plot(cost(2:end))
+hold on
+plot(cost_SeqNMF(2:length(cost_FlexMF)), 'b')
+plot(cost_FlexMF(2:end), 'r')
+xlabel('# Iteration')
 title('Reconstruction Error')
+legend({'MUR', 'SBI'})
+save2pdf('Simulation_Error_Curves.pdf')
+
 
 [recon_error_FlexMF, reg_cross, reg_W, reg_H] = helper.get_FlexMF_cost(TrainingData,What,Hhat);
 reg_cross_FlexMF = reg_cross*lambda;
@@ -185,7 +199,7 @@ set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 figure; SimpleWHPlot_patch(What, Hhat, cv.TrainSize(1), L, is_significant, TrainingData, plotAll); title('FlexMF factors, with raw data')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 
-save2pdf('Simulated_data_FlexMF.pdf', gcf)
+% save2pdf('Simulated_data_FlexMF.pdf', gcf)
 
 % Compute similarity to ground truth
 [coeff_FlexMF, ids_FlexMF] = helper.similarity_W(W, What);

@@ -26,6 +26,8 @@ sel = 3;
 [f1, f2, f3] = simulation_compare_algorithm_plot("simulate_results_participate.mat", 5, ...
     {'Participate=.5', 'Participate=.6', 'Participate=.7', 'Participate=.8', 'Participate=.9'}, sel);
 save2pdf('Simulation_results_participate', f1);
+save2pdf('Simulation_results_sparsity', f2);
+save2pdf('Simulation_results_error', f3);
 
 %% Jittering conditions
 sel = 2;

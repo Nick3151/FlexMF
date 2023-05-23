@@ -6,7 +6,7 @@ addOptional(p, 'c1', 'b');
 addOptional(p, 'c2', 'r');
 addOptional(p, "linestyles", ["-", "--", ":", "-.", "-"]);
 addOptional(p, "markers", [".", ".", ".", "." "o"]);
-addOptional(p, 'thresh_x', 5.5)
+addOptional(p, 'thresh_x', 3.5)
 addOptional(p, 'thresh_y', .8)
 parse(p, varargin{:});
 nSim = p.Results.nSim;
@@ -96,10 +96,10 @@ end
 
 % Make plots
 legends_MR = cellfun(@(x) [x ' MUR'], legends,'UniformOutput',false);
-legends_SB = cellfun(@(x) [x ' SBI'], legends,'UniformOutput',false);
+legends_SB = cellfun(@(x) [x ' SBI'], legends,'UniformOutput',false);   
 
 f1 = figure; 
-ax1 = subplot('Position', [0.1 0.6 0.8 0.3]);
+ax1 = subplot('Position', [0.1 0.6 0.6 0.3]);
 hold on
 for j=1:nCond
     p1(j) = plot(1:K, num_significant_SeqNMF(:,j)./nSim, 'LineStyle', linestyles(j), 'Marker', markers(j), 'LineWidth',2,'Color',c1);
@@ -109,28 +109,28 @@ end
 
 % ylabel('P(significant)')
 patch([thresh_x, K+.5, K+.5, thresh_x], [0, 0, 1, 1], [.5 .5 .5], 'EdgeColor', 'none', 'FaceAlpha', .3)
-legend([p1 p2], [legends_MR legends_SB], 'Location', 'northoutside', 'Orientation','horizontal', 'NumColumns',nCond)
+legend([p1 p2], [legends_MR legends_SB], 'Orientation','vertical', 'NumColumns',1, 'Position',[0.7 0.1 0.25 0.8])
 set(gca, 'FontSize', 12, 'XTick', [])
 
 j = sel;
-ax2 = subplot('Position', [0.1 0.35 0.8 0.2]);
+ax2 = subplot('Position', [0.1 0.35 0.6 0.2]);
 hold on
 boxplot(coeffs_SeqNMF(:,:,j), 'Plotstyle', 'compact', 'Colors', c1);
 % title('Correlation Coeff Multiplicative Update Rule')
 patch([thresh_x, K+.5, K+.5, thresh_x], [0, 0, 1, 1], [.5 .5 .5], 'EdgeColor', 'none', 'FaceAlpha', .3)
 yline(thresh_y, 'LineWidth', 2, 'LineStyle','--');
-set(gca, 'FontSize', 12, 'XTick', [], 'YTick', [0, .5, thresh_y, 1], 'box','off', 'Position', [0.1 0.35 0.8 0.2])
+set(gca, 'FontSize', 12, 'XTick', [], 'YTick', [0, .5, thresh_y, 1], 'box','off', 'Position', [0.1 0.35 0.6 0.2])
 
-ax3 = subplot('Position', [0.1 0.1 0.8 0.2]);
+ax3 = subplot('Position', [0.1 0.1 0.6 0.2]);
 hold on
 boxplot(coeffs_FlexMF(:,:,j), 'Plotstyle', 'compact', 'Colors',c2);
 % title('Correlation Coeff Split Bregman Iteration')
-set(gca, 'FontSize', 12, 'XTick', 1:K, 'XTickLabel', num2str([1:K]'), 'YTick', [0, .5, thresh_y, 1], 'box','off', 'Position', [0.1 0.1 0.8 0.2])
+set(gca, 'FontSize', 12, 'XTick', 1:K, 'XTickLabel', num2str([1:K]'), 'YTick', [0, .5, thresh_y, 1], 'box','off', 'Position', [0.1 0.1 0.6 0.2])
 patch([thresh_x, K+.5, K+.5, thresh_x], [0, 0, 1, 1], [.5 .5 .5], 'EdgeColor', 'none', 'FaceAlpha', .3)
 yline(thresh_y, 'LineWidth', 2, 'LineStyle','--');
 % xtickangle(ax, 90)
 % xlabel('# Motif Occurences')
-set(gcf, 'Position', [100, 100, 1500, 800])
+set(gcf, 'Position', [100, 100, 800, 800])
 linkaxes([ax1, ax2, ax3], 'xy')
 set(gca, 'XLim', [0, K+.5], 'YLim', [0,1])
 
