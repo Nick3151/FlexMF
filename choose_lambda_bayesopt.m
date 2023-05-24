@@ -43,7 +43,7 @@ results = bayesopt(fun, [lambda_var,alpha_var],'AcquisitionFunctionName','expect
 %% Run with best parameters
 lambda = results.XAtMinEstimatedObjective.lambda;
 alpha = results.XAtMinEstimatedObjective.alpha;
-[W_hat,H_hat,cost,loadings,power] = FlexMF(X,'K',K, 'L', L, 'maxiter', 50,...
+[W_hat,H_hat,~,~,loadings,power] = FlexMF(X,'K',K, 'L', L, 'maxiter', 50,...
     'lambda', lambda, 'alpha', alpha, 'lambdaL1W', 0, 'lambdaL1H', 0, 'neg_prop', 0, 'showPlot', 0);
 [recon_error, reg_cross, reg_W, reg_H] = helper.get_FlexMF_cost(X,W_hat,H_hat);
 

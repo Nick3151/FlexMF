@@ -4,7 +4,7 @@ function score = compute_error_balance_score_3d(X,K,L,lambda,lambdaL1W,alpha)
 % c = ||X-X_hat||_2
 % score = (a^3+b^3+c^3)/3 / ((a+b+c)/3)^3
 
-[W_hat,H_hat,cost,loadings,power] = FlexMF(X,'K',K, 'L', L, 'maxiter', 50,...
+[W_hat,H_hat,~,~,loadings,power] = FlexMF(X,'K',K, 'L', L, 'maxiter', 50,...
     'lambda', lambda, 'alpha', alpha, 'lambdaL1W', lambdaL1W, 'lambdaL1H', 0, 'neg_prop', 0.2, 'showPlot', 0);
 [recon_error, reg_cross, reg_W, reg_H] = helper.get_FlexMF_cost(X,W_hat,H_hat);
 

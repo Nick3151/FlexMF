@@ -85,7 +85,7 @@ regularization = [];
 cost = []; 
 for li = 1:length(lambdas)
     [N,T] = size(TrainingData);
-    [What, Hhat, ~,loadings(li,:),power]= seqNMF(TrainingData,'K',K,'L',L,...
+    [What, Hhat, ~,~,loadings(li,:),power]= seqNMF(TrainingData,'K',K,'L',L,...
         'lambdaL1W', lambdaL1W, 'lambda', lambdas(li), 'lambdaOrthoH', lambdaOrthoH, 'maxiter', 100, 'showPlot', 0); 
     [cost(li),regularization(li),~] = helper.get_seqNMF_cost(TrainingData,What,Hhat);
     display(['Testing lambda ' num2str(li) '/' num2str(length(lambdas))])
@@ -122,7 +122,7 @@ lambdaOrthoH = 0;
 
 figure;
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-[What, Hhat, cost_SeqNMF,loadings,power]= seqNMF(TrainingData,'K',K,'L',L,...
+[What, Hhat, ~, errors_SeqNMF,loadings,power]= seqNMF(TrainingData,'K',K,'L',L,...
             'lambdaL1W', lambdaL1W, 'lambda', lambda, 'lambdaOrthoH', lambdaOrthoH, 'maxiter', 100, 'showPlot', 1); 
 
 [recon_error_SeqNMF, reg_cross, reg_W, reg_H] = helper.get_FlexMF_cost(TrainingData,What,Hhat);
@@ -166,18 +166,20 @@ display('Running FlexMF on 2p data')
 figure;
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 tic
-[What,Hhat,cost_FlexMF,loadings,power] = FlexMF(TrainingData,'K',K, 'L', L, 'maxiter', 50,...
+[What,Hhat,~,errors_FlexMF,loadings,power] = FlexMF(TrainingData,'K',K, 'L', L, 'maxiter', 50,...
     'lambda', lambda, 'alpha', alpha, 'lambdaL1W', lambdaL1W, 'lambdaL1H', lambdaL1H, 'neg_prop', 0, 'showPlot', 1);
 toc
 
 % 
 figure;
 hold on
-plot(cost_SeqNMF(2:length(cost_FlexMF)), 'b')
-plot(cost_FlexMF(2:end), 'r')
+plot(errors_SeqNMF(2:length(errors_FlexMF), 1), 'b')
+plot(errors_SeqNMF(2:length(errors_FlexMF), 2)*lambda, 'b--')
+plot(errors_FlexMF(2:end, 1), 'r')
+plot(errors_FlexMF(2:end, 2)*lambda, 'r--')
 xlabel('# Iteration')
-title('Reconstruction Error')
-legend({'MUR', 'SBI'})
+legend({'MUR Reconstruction Error', 'MUR Regularizaion Error', ...
+    'SBI Reconstruction Error', 'SBI Regularizaion Error'})
 save2pdf('Simulation_Error_Curves.pdf')
 
 

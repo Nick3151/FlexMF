@@ -1,4 +1,4 @@
-function [W, H, cost,loadings,power] = seqNMF(X, varargin)
+function [W, H, cost,errors,loadings,power] = seqNMF(X, varargin)
 %
 % USAGE: 
 %
@@ -56,9 +56,12 @@ function [W, H, cost,loadings,power] = seqNMF(X, varargin)
 %
 % W                         NxKxL tensor containing factor exemplars
 % H                         KxT matrix containing factor timecourses
-% cost                      1x(#Iterations+1) vector containing 
+% cost                      (#Iterations+1)x1 vector containing 
 %                               reconstruction error at each iteration. 
 %                               cost(1) is error before 1st iteration.
+% errors                    (#Iterations+1)x4 matrix containing
+%                               reconstrcution and regularization errors 
+%                               for each iteration
 % loadings                  1xK vector containing loading of each factor 
 %                               (Fraction power in data explained by each factor)
 % power                     Fraction power in data explained 
@@ -102,11 +105,15 @@ lasttime = 0;
 % Calculate initial cost
 cost = zeros(params.maxiter+1, 1);
 cost(1) = sqrt(mean((X(:)-Xhat(:)).^2));
+errors = zeros(params.maxiter+1, 4);
+[recon_err, reg_cross, reg_W, reg_H] = helper.get_FlexMF_cost(X,W,H);
+errors(1,:) = [recon_err, reg_cross, reg_W, reg_H];
 
 for iter = 1 : params.maxiter
     % Stopping criteria... Stop if reach maxiter or if change in cost function is less than the tolerance
     if (iter == params.maxiter) || ((iter>5) && (cost(iter+1)+params.tolerance)>mean(cost((iter-5):iter)))
         cost = cost(1 : iter+1);  % trim vector
+        errors = errors(1 : iter+1, :);
         lasttime = 1; 
         if iter>1
             params.lambda = 0; % Do one final CNMF iteration (no regularization, just prioritize reconstruction)
@@ -190,6 +197,8 @@ for iter = 1 : params.maxiter
     mask = find(params.M == 0); % find masked (held-out) indices 
     X(mask) = Xhat(mask); % replace data at masked elements with reconstruction, so masked datapoints do not effect fit
     cost(iter+1) = sqrt(mean((X(:)-Xhat(:)).^2));
+    [recon_err, reg_cross, reg_W, reg_H] = helper.get_FlexMF_cost(X,W,H);
+    errors(iter+1,:) = [recon_err, reg_cross, reg_W, reg_H];
 
     % Plot to show progress
     if params.showPlot 

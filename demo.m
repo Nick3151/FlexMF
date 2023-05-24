@@ -39,7 +39,7 @@ lambdaL1W = 0;
 shg; clf
 display('Running FlexMF on simulated data (3 simulated sequences + noise)')
 tic
-[W_hat,H_hat,cost,loadings,power] = FlexMF(X,'K',K, 'L', L, 'maxiter', 50,...
+[W_hat,H_hat,cost,errors,loadings,power] = FlexMF(X,'K',K, 'L', L, 'maxiter', 50,...
     'lambda', lambda, 'alpha', alpha, 'lambdaL1W', lambdaL1W, 'lambdaL1H', lambdaL1H, 'neg_prop', neg);
 toc
 set(gcf,'position',[200,200,1200,900])
@@ -106,7 +106,7 @@ Lneural = ceil(L*VIDEOfs);
 Lsong = ceil(L*SONGfs);
 shg
 display('Running seqNMF on real neural data (from songbird HVC, recorded by Emily Mackevicius, Fee Lab)')
-[W, H, ~,loadings,power]= seqNMF(X,'K',K,'L',Lneural,...
+[W, H, ~,~,loadings,power]= seqNMF(X,'K',K,'L',Lneural,...
             'lambdaL1W', .1, 'lambda', .005, 'maxiter', 100, 'showPlot', 1,...
             'lambdaOrthoW', 0); 
 p = .05; % desired p value for factors
@@ -139,7 +139,7 @@ regularization = [];
 cost = []; 
 for li = 1:length(lambdas)
     [N,T] = size(X);
-    [W, H, ~,loadings(li,:),power]= seqNMF(X,'K',K,'L',Lneural,...
+    [W, H, ~,~,loadings(li,:),power]= seqNMF(X,'K',K,'L',Lneural,...
         'lambdaL1W', .1, 'lambda', lambdas(li), 'maxiter', 100, 'showPlot', 0); 
     [cost(li),regularization(li),~] = helper.get_seqNMF_cost(X,W,H);
     display(['Testing lambda ' num2str(li) '/' num2str(length(lambdas))])
@@ -178,7 +178,7 @@ nIter = 20; % increase if patient
 display('Running seqNMF multiple times for lambda=0.005')
 
 for iteri = 1:nIter
-    [W, H, ~,loadings(iteri,:),power]= seqNMF(X,'K',K,'L',Lneural,...
+    [W, H, ~,~,loadings(iteri,:),power]= seqNMF(X,'K',K,'L',Lneural,...
             'lambdaL1W', .1, 'lambda', .005, 'maxiter', 100, 'showPlot', 0); 
     p = .05;
     [pvals(iteri,:),is_significant(iteri,:)] = test_significance(testNEURAL,W,p);
@@ -286,7 +286,7 @@ tmp = [];
 
 parfor iteri = 1:nIter
     rng('shuffle')
-    [~, ~, ~,~,tmp(iteri)] = seqNMF(X, 'L', L, 'K', K, 'lambda', 0, 'showPlot',0);
+    [~, ~, ~,~,~,tmp(iteri)] = seqNMF(X, 'L', L, 'K', K, 'lambda', 0, 'showPlot',0);
 end
 
 PEx = max(tmp); 
@@ -303,7 +303,7 @@ parfor repi = 1:nRepsShuff
     
     for iteri = 1:nIter
         rng('shuffle')
-        [~, ~, ~,~,tmp(iteri)] = seqNMF(Xshuff, 'L', L, 'K', K, 'lambda', 0.0, 'showPlot',0);
+        [~, ~, ~,~,~,tmp(iteri)] = seqNMF(Xshuff, 'L', L, 'K', K, 'lambda', 0.0, 'showPlot',0);
     end
     PExShuff(repi) = max(tmp); 
 end
@@ -316,7 +316,7 @@ parfor repi = 1:nRepsColShuff
     
     for iteri = 1:nIter
         rng('shuffle')
-        [~, ~, ~,~,tmp(iteri)] = seqNMF(Xshuff, 'L', L, 'K', K, 'lambda', 0.0, 'showPlot',0);
+        [~, ~, ~,~,~,tmp(iteri)] = seqNMF(Xshuff, 'L', L, 'K', K, 'lambda', 0.0, 'showPlot',0);
     end    
     PExColShuff(repi) = max(tmp); 
 end

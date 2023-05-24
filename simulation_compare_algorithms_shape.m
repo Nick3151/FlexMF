@@ -72,7 +72,7 @@ parfor i=1:nSim
     alpha = 5e-5;
 
     % Run SeqNMF with multiplication rule
-    [W_hat, H_hat, ~,loadings_SeqNMF{i,1},power]= seqNMF(TrainingData,'K',K,'L',L,...
+    [W_hat, H_hat, ~,~,loadings_SeqNMF{i,1},power]= seqNMF(TrainingData,'K',K,'L',L,...
             'lambdaL1W', 0, 'lambda', lambda, 'maxiter', 100, 'showPlot', 0); 
     p = .05;
     [pvals_SeqNMF{i,1},is_significants_SeqNMF{i,1}] = test_significance_trials(TestData, cv.TestSize(1), L, W_hat,[],p);
@@ -81,7 +81,7 @@ parfor i=1:nSim
     display(['SeqNMF run ' num2str(i) '/' num2str(nSim)])
 
     % Run SeqNMF with Bregman Iteration
-    [W_hat, H_hat, ~,loadings_FlexMF{i,1},power]= FlexMF(TrainingData,'K',K,'L',L,...
+    [W_hat, H_hat, ~,~,loadings_FlexMF{i,1},power]= FlexMF(TrainingData,'K',K,'L',L,...
             'lambda', lambda, 'alpha', alpha, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
     p = .05;
     [pvals_FlexMF{i,1},is_significants_FlexMF{i,1}] = test_significance_trials(TestData, cv.TestSize(1), L, W_hat,[],p);
@@ -132,7 +132,7 @@ parfor i=1:nSim
     alpha = 5e-5;
 
     % Run SeqNMF with multiplication rule
-    [W_hat, H_hat, ~,loadings_SeqNMF{i,2},power]= seqNMF(TrainingData,'K',K,'L',L,...
+    [W_hat, H_hat, ~,~,loadings_SeqNMF{i,2},power]= seqNMF(TrainingData,'K',K,'L',L,...
             'lambdaL1W', 0, 'lambda', lambda, 'maxiter', 100, 'showPlot', 0); 
     p = .05;
     [pvals_SeqNMF{i,2},is_significants_SeqNMF{i,2}] = test_significance_trials(TestData, cv.TestSize(1), L, W_hat,[],p);
@@ -141,7 +141,7 @@ parfor i=1:nSim
     display(['SeqNMF run ' num2str(i) '/' num2str(nSim)])
 
     % Run SeqNMF with Bregman Iteration
-    [W_hat, H_hat, ~,loadings_FlexMF{i,2},power]= FlexMF(TrainingData,'K',K,'L',L,...
+    [W_hat, H_hat, ~,~,loadings_FlexMF{i,2},power]= FlexMF(TrainingData,'K',K,'L',L,...
             'lambda', lambda, 'alpha', alpha, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
     p = .05;
     [pvals_FlexMF{i,2},is_significants_FlexMF{i,2}] = test_significance_trials(TestData, cv.TestSize(1), L, W_hat,[],p);
@@ -192,7 +192,7 @@ parfor i=1:nSim
     alpha = 1e-4;
 
     % Run SeqNMF with multiplication rule
-    [W_hat, H_hat, ~,loadings_SeqNMF{i,3},power]= seqNMF(TrainingData,'K',K,'L',L,...
+    [W_hat, H_hat, ~,~,loadings_SeqNMF{i,3},power]= seqNMF(TrainingData,'K',K,'L',L,...
             'lambdaL1W', 0, 'lambda', lambda, 'maxiter', 100, 'showPlot', 0); 
     p = .05;
     [pvals_SeqNMF{i,3},is_significants_SeqNMF{i,3}] = test_significance_trials(TestData, cv.TestSize(1), L, W_hat,[],p);
@@ -201,7 +201,7 @@ parfor i=1:nSim
     display(['SeqNMF run ' num2str(i) '/' num2str(nSim)])
 
     % Run SeqNMF with Bregman Iteration
-    [W_hat, H_hat, ~,loadings_FlexMF{i,3},power]= FlexMF(TrainingData,'K',K,'L',L,...
+    [W_hat, H_hat, ~,~,loadings_FlexMF{i,3},power]= FlexMF(TrainingData,'K',K,'L',L,...
             'lambda', lambda, 'alpha', alpha, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
     p = .05;
     [pvals_FlexMF{i,3},is_significants_FlexMF{i,3}] = test_significance_trials(TestData, cv.TestSize(1), L, W_hat,[],p);

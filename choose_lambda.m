@@ -13,7 +13,7 @@ number_of_seqences = 5;
 T = 5000; % length of data to generate
 Nneurons = 5*ones(number_of_seqences,1); % number of neurons in each sequence
 Dt = 3.*ones(number_of_seqences,1); % gap between each member of the sequence
-noise = 0.001; % probability of added noise in each bin
+noise = 0.001; % probability of added noise in each bingi
 neg = 0;
 
 participation = 1.*ones(number_of_seqences,1); % Participation parameter = 100%
@@ -54,7 +54,7 @@ for li = 1:length(lambdas)
             Hs{n} = H;
             L = size(W,3);
             tic
-            [W_hat, H_hat, ~, loadings{n,li,ai}, ~]= FlexMF(X,'K',K,'L',L, 'maxiter', 50,...
+            [W_hat, H_hat, ~, ~, loadings{n,li,ai}, ~]= FlexMF(X,'K',K,'L',L, 'maxiter', 50,...
                 'lambda', lambda, 'alpha', alpha, 'neg_prop', neg, 'showPlot', 0, 'verbal', 0); 
     
             [recon_errors{n,li,ai},reg_crosses{n,li,ai},reg_Ws{n,li,ai},reg_Hs{n,li,ai}] = helper.get_FlexMF_cost(X,W_hat,H_hat);
