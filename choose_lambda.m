@@ -16,7 +16,7 @@ Dt = 3.*ones(number_of_seqences,1); % gap between each member of the sequence
 noise = 0.001; % probability of added noise in each bingi
 neg = 0;
 
-participation = 1.*ones(number_of_seqences,1); % Participation parameter = 100%
+participation = .7.*ones(number_of_seqences,1); % Participation parameter = 100%
 warp = 2; % stretch should be less than Dt
 gap = 200;
 
@@ -47,7 +47,7 @@ for li = 1:length(lambdas)
         lambda = lambdas(li);
         alpha = alphas(ai);
         parfor n=1:nSim
-            [X, W, H, ~] = generate_data(T,Nneurons,Dt, 'seed', seeds(n), 'gap', gap);
+            [X, W, H, ~] = generate_data(T,Nneurons,Dt, 'seed', seeds(n), 'participation', participation, 'gap', gap);
             nuc_norm = norm(svd(X),1);
             X = X/nuc_norm*size(X,1);
             Ws{n} = W;
@@ -70,5 +70,5 @@ for li = 1:length(lambdas)
     end
 end
 
-save('choose_lambda.mat', 'recon_errors', 'reg_crosses', 'reg_Ws', 'reg_Hs', 'times', 'loadings',...
+save('choose_lambda_participation.mat', 'recon_errors', 'reg_crosses', 'reg_Ws', 'reg_Hs', 'times', 'loadings',...
     'lambdas', 'alphas', 'W_hats', 'H_hats', 'scores', "num_detected", "Ws", "Hs")
