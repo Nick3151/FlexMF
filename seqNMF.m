@@ -2,7 +2,7 @@ function [W, H, cost,errors,loadings,power] = seqNMF(X, varargin)
 %
 % USAGE: 
 %
-% [W, H, cost, loadings, power] = seqNMF(X, ...    % X is the data matrix
+% [W, H, cost, errors, loadings, power] = seqNMF(X, ...    % X is the data matrix
 %       'K', 10, 'L', 20, 'lambda', .1, ...        % Other inputs optional
 %       'W_init', W_init, 'H_init', H_init, ...
 %       'showPlot', 1, 'maxiter', 20, 'tolerance', -Inf, 'shift', 1, ... 

@@ -123,14 +123,18 @@ for iter = 1 : params.maxiter
 %         end
     end
     
-%     tic
-    if params.verbal
-        fprintf('Updating W\n');
+    if ~params.W_fixed
+    %     tic
+        if params.verbal
+            fprintf('Updating W\n');
+        end
+    %     W0 = max(W_pre(:))*rand(N, K, L);
+        W0 = W_pre;
+    %     H_tmp = H_pre + 0.05*max(H_pre(:))*rand(K,T); 
+        W = updateW(W0, H_pre, X, params);   
+    else
+        W = W_pre;
     end
-%     W0 = max(W_pre(:))*rand(N, K, L);
-    W0 = W_pre;
-%     H_tmp = H_pre + 0.05*max(H_pre(:))*rand(K,T); 
-    W = updateW(W0, H_pre, X, params);   
     
     if params.verbal
         fprintf('Updating H\n');
@@ -141,18 +145,19 @@ for iter = 1 : params.maxiter
     H = updateH(W, H0, X, params);   
 
 %     toc
-    
-    % Shift to center factors
-    if params.shift
-        [W, H] = helper.shiftFactors(W, H);  
+    if ~params.W_fixed
+        % Shift to center factors
+        if params.shift
+            [W, H] = helper.shiftFactors(W, H);  
+        end
+        
+        % Renormalize so rows of H have constant energy
+        norms = sqrt(sum(H.^2, 2))';
+        H = diag(1 ./ (norms+eps)) * H;
+        for l = 1 : L
+            W(:, :, l) = W(:, :, l) * diag(norms);
+        end 
     end
-    
-    % Renormalize so rows of H have constant energy
-    norms = sqrt(sum(H.^2, 2))';
-    H = diag(1 ./ (norms+eps)) * H;
-    for l = 1 : L
-        W(:, :, l) = W(:, :, l) * diag(norms);
-    end 
     
     % Calculate cost for this iteration
     Xhat = helper.reconstruct(W, H);    
