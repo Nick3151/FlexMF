@@ -1,8 +1,11 @@
 clear all
 close all
 clc
+root = fileparts(pwd);
+addpath(genpath(fullfile(root, 'CoDybase-MATLAB')))
 %% plot costs as a function of lambda and alpha
-load choose_lambda_clean.mat;
+condition = 'overlap';
+load(['choose_lambda_' condition '.mat']);
 nLambdas = length(lambdas); 
 nAlphas = length(alphas);
 nSim = 100;
@@ -22,7 +25,7 @@ for li = 1:nLambdas
 %         b = bar([regs(li,ai), recon_errors(li,ai)],'FaceColor','flat');
 %         b.CData(2,:) = [1 0 0];\
         boxplot(ax, [regs(:,li,ai),recon_errors(:,li,ai)], 'Colors', 'br')
-        set(gca,'YLim',[0,maxregs],'XTick',[],'YTick',[], ...
+        set(gca,'YLim',[0,maxregs],'XTick',[],'YTick',[], 'YScale', 'log', ...
             'Position', [marginX+(ai-1)*(1-marginX)/nAlphas, (nLambdas-li)*(1-marginY)/nLambdas, (1-marginX)/nAlphas, (1-marginY)/nLambdas])
     end
 end
@@ -38,8 +41,9 @@ for ai = 1:nAlphas
     annotation('textbox',pos_Alphas(ai,:),'String',sprintf('\\alpha=%0.3e',alphas(ai)),...
         'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none')
 end  
-set(f1, 'Units', 'normalized', 'Position',[.1 .1 .7 .7])
-save2pdf('choose_lambda_clean.pdf', f1)
+set(f1, 'Position',[100 100 900 900])
+% save2pdf(['choose_lambda_' condition '.pdf'], f1)
+export_fig(['choose_lambda_' condition '.pdf'])
 
 % % Plot costs for single alpha
 % windowSize = 3; 
@@ -149,7 +153,7 @@ for ai = 1:nAlphas
     annotation('textbox',pos_Alphas(ai,:),'String',sprintf('\\alpha=%0.3e',alphas(ai)),...
         'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none')
 end
-set(gcf, 'Units', 'normalized', 'Position',[.1 .1 .7 .7])
+set(gcf, 'Position',[100 100 900 900])
 
 %% Plot running times and scores
 f2 = figure;
@@ -170,8 +174,8 @@ for ai = 1:nAlphas
 end
 annotation('textbox',[0.1 0.85 0.8 0.1],'String', 'Running time(s)', 'FontSize', 16, 'FontWeight', 'bold',...
         'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none')
-set(gcf, 'Units', 'normalized', 'Position',[.1 .1 .7 .7])
-save2pdf('times_clean.pdf', f2)
+set(gcf, 'Position',[100 100 900 900])
+save2pdf(['times_' condition '.pdf'], f2)
 
 % Number of detected motifs
 f3 = figure;
@@ -190,8 +194,8 @@ for ai = 1:nAlphas
 end
 annotation('textbox',[0.1 0.85 0.8 0.1],'String', 'Detected motifs(%)', 'FontSize', 16, 'FontWeight', 'bold',...
         'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none')
-set(gcf, 'Units', 'normalized', 'Position',[.1 .1 .7 .7])
-save2pdf('nMotifs_clean.pdf', f3)
+set(gcf, 'Position',[100 100 900 900])
+save2pdf(['nMotifs_' condition '.pdf'], f3)
 
 % Coefficient scores to ground truth
 f4 = figure;
@@ -210,8 +214,8 @@ for ai = 1:nAlphas
 end
 annotation('textbox',[0.1 0.85 0.8 0.1],'String', 'Coefficients', 'FontSize', 16, 'FontWeight', 'bold',...
         'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none')
-set(gcf, 'Units', 'normalized', 'Position',[.1 .1 .7 .7])
-save2pdf('scores_clean.pdf', f4)
+set(gcf, 'Position',[100 100 900 900])
+save2pdf(['scores_' condition '.pdf'], f4)
 
 %% Ratio of Reg/Recon
 f5 = figure;
@@ -226,21 +230,44 @@ set(gca, 'Position', [0.1 0.1 0.7 0.7], 'XTickLabel', [], 'YTickLabel', [], 'Col
 colorbar('Position', [0.85 0.1 0.05 0.7]);
 
 for li = 1:nLambdas
-    annotation('textbox',pos_Lambdas(li,:),'String',sprintf('\\lambda=%0.3e',lambdas(li)),...
+    annotation('textbox',pos_Lambdas(li,:),'String',sprintf('\\lambda=%0.2e',lambdas(li)),...
         'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none')
 end
 for ai = 1:nAlphas
-    annotation('textbox',pos_Alphas(ai,:),'String',sprintf('\\alpha=%0.3e',alphas(ai)),...
+    annotation('textbox',pos_Alphas(ai,:),'String',sprintf('\\alpha=%0.2e',alphas(ai)),...
         'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none')
 end  
 annotation('textbox',[0.1 0.85 0.8 0.1],'String', 'Reg Error/Recon Error', 'FontSize', 16, 'FontWeight', 'bold',...
         'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none')
-set(f5, 'Units', 'normalized', 'Position',[.1 .1 .7 .7])
-save2pdf('ratios_clean.pdf', f5)
+set(f5, 'Position',[100 100 900 900])
+save2pdf(['ratios_' condition '.pdf'], f5)
+
+%% Sparseness of H_hat
+sparseness_Hhats = cellfun(@(x) mean(x(:)==0), H_hats);
+sparseness_Hhats = squeeze(median(sparseness_Hhats));
+sparseness_Hs = cellfun(@(x) mean(x(:)==0), Hs);
+
+f6 = figure;
+imagesc(sparseness_Hhats)
+set(gca, 'Position', [0.1 0.1 0.7 0.7], 'XTickLabel', [], 'YTickLabel', []);
+colorbar('Position', [0.85 0.1 0.05 0.7]);
+
+for li = 1:nLambdas
+    annotation('textbox',pos_Lambdas(li,:),'String',sprintf('\\lambda=%0.2e',lambdas(li)),...
+        'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none')
+end
+for ai = 1:nAlphas
+    annotation('textbox',pos_Alphas(ai,:),'String',sprintf('\\alpha=%0.2e',alphas(ai)),...
+        'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none')
+end  
+annotation('textbox',[0.1 0.85 0.8 0.1],'String', 'Sparseness of H', 'FontSize', 16, 'FontWeight', 'bold',...
+        'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', 'EdgeColor', 'none')
+set(f6, 'Position',[100 100 900 900])
+save2pdf(['sparseness_' condition '.pdf'], f6)
 
 %% Plot X_hat
-li = 9;
-ai = 7;
+li = 5;
+ai = 5;
 plotAll = 1;
 figure; SimpleWHPlot_patch(W_hats{1,li,ai},H_hats{1,li,ai},[],[],[],[],plotAll); 
 set(gcf,'position',[200,200,1200,900])
