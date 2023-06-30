@@ -17,7 +17,7 @@ gap = 200;
 neg = 0;
 bin = 0;
 seed = 1;
-[X, W, H, ~] = generate_data(T,Nneurons,Dt, 'seed', seed, 'gap', gap);
+[X, W, H, ~] = generate_data(T,Nneurons,Dt, 'seed', seed, 'gap', gap, 'overlap_n', .5);
 
 plotAll = 1;
 figure; SimpleWHPlot_patch(W,H,[],[],[],X,plotAll); title('generated data raw','Fontsize',16)
@@ -30,22 +30,29 @@ X = X/nuc_norm*size(X,1);
 K = 5;
 L = 50;
 lambdaL1H = 0;
-lambda_var = optimizableVariable('lambda', [1e-5, 1e-1], 'Transform', 'log');
+lambda_var = optimizableVariable('lambda', [1e-4, 1e0], 'Transform', 'log');
 lambdaW_var = optimizableVariable('lambdaL1W', [1e-3, 1], 'Transform', 'log');
 alpha_var = optimizableVariable('alpha', [1e-6, 1e-2], 'Transform', 'log');
 
 % fun = @(x)compute_error_balance_score_3d(X,K,L,x.lambda,x.lambdaL1W,x.alpha);
 % results = bayesopt(fun, [lambda_var,lambdaW_var,alpha_var],'AcquisitionFunctionName','expected-improvement-plus','UseParallel',true, 'MaxObjectiveEvaluations',100)
 
-fun = @(x)compute_error_balance_score_2d(X,K,L,x.lambda,x.alpha);
-results = bayesopt(fun, [lambda_var,alpha_var],'AcquisitionFunctionName','expected-improvement-plus','UseParallel',true, 'MaxObjectiveEvaluations',100)
+etas = [1e-6];
+for i=1:length(etas)
+    fun = @(x)compute_error_balance_score_2d(X,K,L,x.lambda,x.alpha, 'eta', etas(i));
+    results{i} = bayesopt(fun, [lambda_var,alpha_var],'AcquisitionFunctionName','expected-improvement-plus','UseParallel',true, 'MaxObjectiveEvaluations',100)
+end
+
+lambdas = cellfun(@(x) x.XAtMinEstimatedObjective.lambda, results);
+alphas = cellfun(@(x) x.XAtMinEstimatedObjective.alpha, results);
 
 %% Run with best parameters
-lambda = results.XAtMinEstimatedObjective.lambda;
-alpha = results.XAtMinEstimatedObjective.alpha;
+lambda = results{1}.XAtMinEstimatedObjective.lambda;
+alpha = results{1}.XAtMinEstimatedObjective.alpha;
 [W_hat,H_hat,~,~,loadings,power] = FlexMF(X,'K',K, 'L', L, 'maxiter', 50,...
     'lambda', lambda, 'alpha', alpha, 'lambdaL1W', 0, 'lambdaL1H', 0, 'neg_prop', 0, 'showPlot', 0);
 [recon_error, reg_cross, reg_W, reg_H] = helper.get_FlexMF_cost(X,W_hat,H_hat);
+reg_cross = reg_cross*lambda;
 
 plotAll = 1;
 figure; SimpleWHPlot_patch(W_hat,H_hat,[],[],[],[],plotAll); title('generated data raw','Fontsize',16)
