@@ -95,6 +95,7 @@ end
 
 WTX = helper.transconv(W,X); 
 skew = skewness(WTX,1,2);
+pvals = zeros(1,K);
 for k = 1:K
     % Assign pvals from skewness
     pvals(k) = (1+sum(skewnull(k,:)>skew(k)))/nnull;

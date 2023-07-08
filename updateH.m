@@ -45,7 +45,7 @@ if params.lambda > 0
 %         op_reg_error = tfunc_scale(smooth_quad(params.lambda), 1, op_reg, B-D);
 %         op_smooth = tfunc_sum(op_recon_error, op_reg_error);
 %         op_smooth = @(varargin)off_diag_frob_norm_sqr(params.lambda, Q, varargin{:});
-        smoothF = {smooth_quad, smooth_quad(params.alpha)};
+        smoothF = {smooth_quad, smooth_quad(params.alpha_H)};
         affineF = {op_recon, -X; op_reg, B-D};
         H = tfocs(smoothF, affineF, proj_Rplus, H0, opts);
         
@@ -66,7 +66,7 @@ if params.lambda > 0
         
         % Step 2: Update D
         AH = A*H';
-        D = tfocs(smooth_quad(params.alpha), {1, -AH-B}, prox_l1(params.lambda*Q), D, opts_default);
+        D = tfocs(smooth_quad(params.alpha_H), {1, -AH-B}, prox_l1(params.lambda*Q), D, opts_default);
         
         % Step 3: Update B
         B = B + AH - D;

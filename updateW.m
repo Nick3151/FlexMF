@@ -7,6 +7,7 @@ opts.maxIts = 500;
 opts.tol = 1e-4;
 opts.restart = 50;
 opts.alg = 'N83';
+
 if ~params.showPlot 
     opts_default.printEvery = 0;
     opts.printEvery = 0;
@@ -31,7 +32,7 @@ if params.neg_prop==0 && params.lambda > 0
         op_reg = @(W, mode)smooth_cross_ortho_W(X, H, L, W, mode);
 %         op_reg_error = tfunc_scale(smooth_quad(params.lambda), 1, op_reg, B-D);
 %         op_smooth = tfunc_sum(op_recon_error, op_reg_error);
-        smoothF = {smooth_quad, smooth_quad(params.alpha)};
+        smoothF = {smooth_quad, smooth_quad(params.alpha_W)};
         affineF = {op_recon, -X; op_reg, B-D};
         W = tfocs(smoothF, affineF, proj_Rplus, W0, opts);
         
@@ -54,7 +55,7 @@ if params.neg_prop==0 && params.lambda > 0
         WTX = helper.transconv(W, X);
         WTXS = conv2(WTX, smoothkernel, 'same');
         WTXSHT = WTXS*H';
-        D = tfocs(smooth_quad(params.lambda), {1, -WTXSHT-B}, prox_l1(params.lambda*Q), D, opts_default);
+        D = tfocs(smooth_quad(params.alpha_W), {1, -WTXSHT-B}, prox_l1(params.lambda*Q), D, opts_default);
         
         % Step 3: Update B
         B = B + WTXSHT - D;

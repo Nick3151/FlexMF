@@ -25,36 +25,18 @@ elseif length(szW) == 3
     assert(N==szWhat(1) && L==szWhat(3), 'Dimensions of W and W_hat do not match!')
 end
 
-if L>1 % if L=1, no room to shift
-    
-    center = max(floor(L/2),1); % middle bin
-
-    % pad with zeros
-    Wpad = cat(3,zeros(N,K,L),W,zeros(N,K,L));
-
-    for k = 1:K
-        % compute center of mass
-        temp = sum(abs(squeeze(W(:,k,:))),1);
-        cmass = max(floor(sum(temp.*(1:length(temp)))/sum(temp)),1);          
-        Wpad(:,k,:) = circshift(squeeze(Wpad(:,k,:)),[0,center-cmass]); 
-
-    end
-
-
-    % undo zero pad
-    W = Wpad(:,:,(L+1):(end-L));
-    
-    if K==1
-        W = reshape(W,[N,L]);
-    end
-end
-
 %%
 for ii = 1:K
     for jj = 1:Khat
         wk = squeeze(W(:,ii,:));
         wk_hat = squeeze(W_hat(:,jj,:));
-        S(ii,jj) = (wk(:)'*wk_hat(:))/((sqrt(wk(:)'*wk(:))*sqrt(wk_hat(:)'*wk_hat(:)))+eps);
+        for l=-L:L
+            wpad = cat(2,zeros(N,L),wk,zeros(N,L));
+            wtmp = circshift(wpad, [0,l]);
+            wtmp = wtmp(:,(L+1):(end-L));
+            Stmp(l+L+1) = (wtmp(:)'*wk_hat(:))/((sqrt(wtmp(:)'*wtmp(:))*sqrt(wk_hat(:)'*wk_hat(:)))+eps);
+        end
+        S(ii,jj) = max(Stmp);
     end
 end
 % S(isnan(S)) = 0;
