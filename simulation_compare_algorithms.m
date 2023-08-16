@@ -11,88 +11,6 @@ addpath(fullfile(root, 'MATLAB-tools'))
 addpath(genpath(fullfile(root, 'FlexMF')));
 n = str2double(getenv("SLURM_ARRAY_TASK_ID"));
 
-% %% Simulate data for one condition Trials = 200; % Trials = 10; L = 50; %
-% length of each trial K = 10; Nmotifs = 2*(1:K); Nneurons = 5*ones(K, 1);
-% % the number of neurons in each motif Dt = 3.*ones(K,1); % gap between
-% each member of the motif noise = 0.01; % probability of added noise in
-% each bin participation = .7.*ones(K,1); % Participation probability =
-% 100% len_burst = 20; % Burst time dynamic = 1; % Consider calcium
-% dynamics or not
-% 
-% nSim = 100; seeds = randperm(1000, nSim); TrainingDatas = cell(nSim,1);
-% pvals_SeqNMF = cell(nSim,1); is_significants_SeqNMF = cell(nSim,1);
-% loadings_SeqNMF = cell(nSim,1); W_hats_SeqNMF = cell(nSim,1);
-% H_hats_SeqNMF = cell(nSim,1); coeffs_SeqNMF = cell(nSim,1); ids_SeqNMF =
-% cell(nSim,1); sparsity_W_SeqNMF = cell(nSim,1); sparsity_H_SeqNMF =
-% cell(nSim,1);
-% 
-% pvals_FlexMF = pvals_SeqNMF; is_significants_FlexMF =
-% is_significants_SeqNMF; loadings_FlexMF = loadings_SeqNMF; W_hats_FlexMF
-% = W_hats_SeqNMF; H_hats_FlexMF = H_hats_SeqNMF; Ws = W_hats_SeqNMF; Hs =
-% H_hats_SeqNMF; coeffs_FlexMF = coeffs_SeqNMF; ids_FlexMF = ids_SeqNMF;
-% sparsity_W_FlexMF = sparsity_W_SeqNMF; sparsity_H_FlexMF =
-% sparsity_H_SeqNMF;
-% 
-% % parpool(48) parfor i=1:nSim
-%     tic [X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L,
-%     Nmotifs, Nneurons, Dt, ...
-%         'noise', noise, 'participation', participation, 'len_burst',
-%         len_burst, 'dynamic', dynamic, 'seed', seeds(i));
-%     groups = zeros(Trials,1); for k=1:K
-%         groups(motif_ind{k}) = k;
-%     end Ws{i} = W; Hs{i} = H;
-%     
-%     % Dimension N*L*Trials cv = cvpartition(groups, "KFold",2); ind_train
-%     = find(training(cv,1)); X_train = X(:,:,ind_train); ind_test =
-%     find(test(cv,1)); X_test = X(:,:,ind_test);
-%     
-%     % Dimension N*T N = size(W,1); TrainingData =
-%     zeros(N,cv.TrainSize(1)*L); for t=1:cv.TrainSize(1)
-%         TrainingData(:,(t-1)*L+1:t*L) = squeeze(X_train(:,:,t));
-%     end TestData = zeros(N,cv.TestSize(1)*L); for t=1:cv.TestSize(1)
-%         TestData(:,(t-1)*L+1:t*L) = squeeze(X_test(:,:,t));
-%     end
-%     
-%     % Normalize training data nuc_norm = norm(svd(TrainingData),1);
-%     TrainingData = TrainingData/nuc_norm*N;
-% 
-%     lambda = .01;
-% 
-%     % Run SeqNMF with multiplication rule [W_hat, H_hat,
-%     ~,~,loadings_SeqNMF{i},power]= seqNMF(TrainingData,'K',K,'L',L,...
-%             'lambdaL1W', 0, 'lambda', lambda, 'maxiter', 100, 'showPlot',
-%             0);
-%     p = .05; [pvals_SeqNMF{i},is_significants_SeqNMF{i}] =
-%     test_significance_trials(TestData, cv.TestSize(1), L, W_hat,[],p);
-%     W_hats_SeqNMF{i} = W_hat; H_hats_SeqNMF{i} = H_hat;
-%     [coeffs_SeqNMF{i}, ids_SeqNMF{i}] = helper.similarity_W(W, W_hat);
-%     sparsity_W_SeqNMF{i} = mean(W_hat==0, "all"); sparsity_H_SeqNMF{i} =
-%     mean(H_hat==0, "all");
-% 
-%     display(['SeqNMF run ' num2str(i) '/' num2str(nSim)])
-% 
-%     % Run SeqNMF with Bregman Iteration [W_hat, H_hat,
-%     ~,~,loadings_FlexMF{i},power]= FlexMF(TrainingData,'K',K,'L',L,...
-%             'lambda', lambda, 'neg_prop', 0, 'maxiter', 50, 'showPlot',
-%             0, 'verbal', 0);
-%     p = .05; [pvals_FlexMF{i},is_significants_FlexMF{i}] =
-%     test_significance_trials(TestData, cv.TestSize(1), L, W_hat,[],p);
-%     W_hats_FlexMF{i} = W_hat; H_hats_FlexMF{i} = H_hat; TrainingDatas{i}
-%     = TrainingData; [coeffs_FlexMF{i}, ids_FlexMF{i}] =
-%     helper.similarity_W(W, W_hat); sparsity_W_FlexMF{i} = mean(W_hat==0,
-%     "all"); sparsity_H_FlexMF{i} = mean(H_hat==0, "all");
-% 
-%     display(['FlexMF run ' num2str(i) '/' num2str(nSim)]) toc
-% end
-% 
-% save('simulate_results.mat', "H_hats_FlexMF", 'W_hats_FlexMF',
-% 'is_significants_FlexMF', 'pvals_FlexMF', 'loadings_FlexMF',...
-%     'loadings_SeqNMF', 'W_hats_SeqNMF', 'H_hats_SeqNMF', "pvals_SeqNMF",
-%     "is_significants_SeqNMF", 'Ws', 'Hs', 'TrainingDatas',...
-%     'coeffs_SeqNMF', 'ids_SeqNMF', 'coeffs_FlexMF', 'ids_FlexMF', ...
-%     'sparsity_W_SeqNMF', 'sparsity_H_SeqNMF', 'sparsity_W_FlexMF',
-%     'sparsity_H_FlexMF')
-
 %% Impact of motif shape
 if n==1
     disp('Impact of motif shape on results')
@@ -131,7 +49,6 @@ if n==1
             groups(motif_ind{k}) = k;
         end
         Ws{i,1} = W;
-        Hs{i,1} = H;
         
         % Dimension N*L*Trials
         cv = cvpartition(groups, "KFold",2);
@@ -154,8 +71,14 @@ if n==1
         % Normalize training data
         nuc_norm = norm(svd(TrainingData),1);
         TrainingData = TrainingData/nuc_norm*N;
+
+        H_train = H(:,ind_train);
+        T = cv.TrainSize(1)*L;
+        H_train_full = zeros(K,T);
+        H_train_full(:,1:L:T) = H_train;
+        Hs{i,1} = H_train_full;
     
-        lambda = .01;
+        lambda = .005;
     
         % Run SeqNMF with multiplication rule
         [W_hat, H_hat, ~,~,loadings_SeqNMF{i,1},power]= seqNMF(TrainingData,'K',K,'L',L,...
@@ -167,8 +90,10 @@ if n==1
         display(['SeqNMF run ' num2str(i) '/' num2str(nSim)])
     
         % Run SeqNMF with Bregman Iteration
+        alpha_W = 1e-6;
+        alpha_H = 1e-3;
         [W_hat, H_hat, ~,~,loadings_FlexMF{i,1},power]= FlexMF(TrainingData,'K',K,'L',L,...
-                'lambda', lambda, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
+                'lambda', lambda, 'alpha_W', alpha_W, 'alpha_H', alpha_H, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
         p = .05;
         [pvals_FlexMF{i,1},is_significants_FlexMF{i,1}] = test_significance_trials(TestData, cv.TestSize(1), L, W_hat,[],p);
         W_hats_FlexMF{i,1} = W_hat;
@@ -189,8 +114,7 @@ if n==1
         for k=1:K
             groups(motif_ind{k}) = k;
         end
-        Ws{i,2} = W;
-        Hs{i,2} = H;
+        Ws{i,2} = W
         
         % Dimension N*L*Trials
         cv = cvpartition(groups, "KFold",2);
@@ -213,6 +137,12 @@ if n==1
         % Normalize training data
         nuc_norm = norm(svd(TrainingData),1);
         TrainingData = TrainingData/nuc_norm*N;
+
+        H_train = H(:,ind_train);
+        T = cv.TrainSize(1)*L;
+        H_train_full = zeros(K,T);
+        H_train_full(:,1:L:T) = H_train;
+        Hs{i,2} = H_train_full;
     
         lambda = .01;
     
@@ -226,8 +156,10 @@ if n==1
         display(['SeqNMF run ' num2str(i) '/' num2str(nSim)])
     
         % Run SeqNMF with Bregman Iteration
+        alpha_W = 1e-6;
+        alpha_H = 1e-3;
         [W_hat, H_hat, ~,~,loadings_FlexMF{i,2},power]= FlexMF(TrainingData,'K',K,'L',L,...
-                'lambda', lambda, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
+                'lambda', lambda, 'alpha_W', alpha_W, 'alpha_H', alpha_H, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
         p = .05;
         [pvals_FlexMF{i,2},is_significants_FlexMF{i,2}] = test_significance_trials(TestData, cv.TestSize(1), L, W_hat,[],p);
         W_hats_FlexMF{i,2} = W_hat;
@@ -249,7 +181,6 @@ if n==1
             groups(motif_ind{k}) = k;
         end
         Ws{i,3} = W;
-        Hs{i,3} = H;
         
         % Dimension N*L*Trials
         cv = cvpartition(groups, "KFold",2);
@@ -272,6 +203,12 @@ if n==1
         % Normalize training data
         nuc_norm = norm(svd(TrainingData),1);
         TrainingData = TrainingData/nuc_norm*N;
+
+        H_train = H(:,ind_train);
+        T = cv.TrainSize(1)*L;
+        H_train_full = zeros(K,T);
+        H_train_full(:,1:L:T) = H_train;
+        Hs{i,3} = H_train_full;
     
         lambda = .01;
     
@@ -285,8 +222,10 @@ if n==1
         display(['SeqNMF run ' num2str(i) '/' num2str(nSim)])
     
         % Run SeqNMF with Bregman Iteration
+        alpha_W = 1e-6;
+        alpha_H = 1e-4;
         [W_hat, H_hat, ~,~,loadings_FlexMF{i,3},power]= FlexMF(TrainingData,'K',K,'L',L,...
-                'lambda', lambda, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
+                'lambda', lambda, 'alpha_W', alpha_W, 'alpha_H', alpha_H, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
         p = .05;
         [pvals_FlexMF{i,3},is_significants_FlexMF{i,3}] = test_significance_trials(TestData, cv.TestSize(1), L, W_hat,[],p);
         W_hats_FlexMF{i,3} = W_hat;
@@ -339,7 +278,6 @@ if n==2
                 groups(motif_ind{k}) = k;
             end
             Ws{i,j} = W;
-            Hs{i,j} = H;
             
             % Dimension N*L*Trials
             cv = cvpartition(groups, "KFold",2);
@@ -362,6 +300,12 @@ if n==2
             % Normalize training data
             nuc_norm = norm(svd(TrainingData),1);
             TrainingData = TrainingData/nuc_norm*N;
+
+            H_train = H(:,ind_train);
+            T = cv.TrainSize(1)*L;
+            H_train_full = zeros(K,T);
+            H_train_full(:,1:L:T) = H_train;
+            Hs{i,j} = H_train_full;
         
             lambda = .003;
         
@@ -375,8 +319,10 @@ if n==2
             display(['SeqNMF run ' num2str(i) '/' num2str(nSim)])
         
             % Run SeqNMF with Bregman Iteration
+            alpha_W = 1e-6;
+            alpha_H = 1e-3;
             [W_hat, H_hat, ~,~,loadings_FlexMF{i,j},power]= FlexMF(TrainingData,'K',K,'L',L,...
-                    'lambda', lambda, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
+                    'lambda', lambda, 'alpha_W', alpha_W, 'alpha_H', alpha_H, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
             p = .05;
             [pvals_FlexMF{i,j},is_significants_FlexMF{i,j}] = test_significance_trials(TestData, cv.TestSize(1), L, W_hat,[],p);
             W_hats_FlexMF{i,j} = W_hat;
@@ -431,7 +377,6 @@ if n==3
                 groups(motif_ind{k}) = k;
             end
             Ws{i,j} = W;
-            Hs{i,j} = H;
             
             % Dimension N*L*Trials
             cv = cvpartition(groups, "KFold",2);
@@ -454,6 +399,12 @@ if n==3
             % Normalize training data
             nuc_norm = norm(svd(TrainingData),1);
             TrainingData = TrainingData/nuc_norm*N;
+
+            H_train = H(:,ind_train);
+            T = cv.TrainSize(1)*L;
+            H_train_full = zeros(K,T);
+            H_train_full(:,1:L:T) = H_train;
+            Hs{i,j} = H_train_full;
         
             lambda = .01;
         
@@ -467,8 +418,10 @@ if n==3
             display(['SeqNMF run ' num2str(i) '/' num2str(nSim)])
         
             % Run SeqNMF with Bregman Iteration
+            alpha_W = 1e-6;
+            alpha_H = 1e-3;
             [W_hat, H_hat, ~,~,loadings_FlexMF{i,j},power]= FlexMF(TrainingData,'K',K,'L',L,...
-                    'lambda', lambda, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
+                    'lambda', lambda, 'alpha_W', alpha_W, 'alpha_H', alpha_H, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
             p = .05;
             [pvals_FlexMF{i,j},is_significants_FlexMF{i,j}] = test_significance_trials(TestData, cv.TestSize(1), L, W_hat,[],p);
             W_hats_FlexMF{i,j} = W_hat;
@@ -522,7 +475,6 @@ if n==4
                 groups(motif_ind{k}) = k;
             end
             Ws{i,j} = W;
-            Hs{i,j} = H;
             
             % Dimension N*L*Trials
             cv = cvpartition(groups, "KFold",2);
@@ -545,6 +497,12 @@ if n==4
             % Normalize training data
             nuc_norm = norm(svd(TrainingData),1);
             TrainingData = TrainingData/nuc_norm*N;
+
+            H_train = H(:,ind_train);
+            T = cv.TrainSize(1)*L;
+            H_train_full = zeros(K,T);
+            H_train_full(:,1:L:T) = H_train;
+            Hs{i,j} = H_train_full;
         
             lambda = .01;
         
@@ -558,8 +516,10 @@ if n==4
             display(['SeqNMF run ' num2str(i) '/' num2str(nSim)])
         
             % Run SeqNMF with Bregman Iteration
+            alpha_W = 1e-6;
+            alpha_H = 1e-3;
             [W_hat, H_hat, ~,~,loadings_FlexMF{i,j},power]= FlexMF(TrainingData,'K',K,'L',L,...
-                    'lambda', lambda, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
+                    'lambda', lambda, 'alpha_W', alpha_W, 'alpha_H', alpha_H, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
             p = .05;
             [pvals_FlexMF{i,j},is_significants_FlexMF{i,j}] = test_significance_trials(TestData, cv.TestSize(1), L, W_hat,[],p);
             W_hats_FlexMF{i,j} = W_hat;
@@ -614,7 +574,6 @@ if n==5
                 groups(motif_ind{k}) = k;
             end
             Ws{i,j} = W;
-            Hs{i,j} = H;
             
             % Dimension N*L*Trials
             cv = cvpartition(groups, "KFold",2);
@@ -637,6 +596,12 @@ if n==5
             % Normalize training data
             nuc_norm = norm(svd(TrainingData),1);
             TrainingData = TrainingData/nuc_norm*N;
+
+            H_train = H(:,ind_train);
+            T = cv.TrainSize(1)*L;
+            H_train_full = zeros(K,T);
+            H_train_full(:,1:L:T) = H_train;
+            Hs{i,j} = H_train_full;
         
             lambda = .01;
         
@@ -650,8 +615,10 @@ if n==5
             display(['SeqNMF run ' num2str(i) '/' num2str(nSim)])
         
             % Run SeqNMF with Bregman Iteration
+            alpha_W = 1e-6;
+            alpha_H = 1e-3;
             [W_hat, H_hat, ~,~,loadings_FlexMF{i,j},power]= FlexMF(TrainingData,'K',K,'L',L,...
-                    'lambda', lambda, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
+                    'lambda', lambda, 'alpha_W', alpha_W, 'alpha_H', alpha_H, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
             p = .05;
             [pvals_FlexMF{i,j},is_significants_FlexMF{i,j}] = test_significance_trials(TestData, cv.TestSize(1), L, W_hat,[],p);
             W_hats_FlexMF{i,j} = W_hat;
@@ -706,7 +673,6 @@ if n==6
                 groups(motif_ind{k}) = k;
             end
             Ws{i,j} = W;
-            Hs{i,j} = H;
             
             % Dimension N*L*Trials
             cv = cvpartition(groups, "KFold",2);
@@ -729,6 +695,12 @@ if n==6
             % Normalize training data
             nuc_norm = norm(svd(TrainingData),1);
             TrainingData = TrainingData/nuc_norm*N;
+
+            H_train = H(:,ind_train);
+            T = cv.TrainSize(1)*L;
+            H_train_full = zeros(K,T);
+            H_train_full(:,1:L:T) = H_train;
+            Hs{i,j} = H_train_full;
         
             lambda = .01;
         
@@ -742,8 +714,10 @@ if n==6
             display(['SeqNMF run ' num2str(i) '/' num2str(nSim)])
         
             % Run SeqNMF with Bregman Iteration
+            alpha_W = 1e-6;
+            alpha_H = 5e-5;
             [W_hat, H_hat, ~,~,loadings_FlexMF{i,j},power]= FlexMF(TrainingData,'K',K,'L',L,...
-                    'lambda', lambda, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
+                    'lambda', lambda, 'alpha_W', alpha_W, 'alpha_H', alpha_H, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
             p = .05;
             [pvals_FlexMF{i,j},is_significants_FlexMF{i,j}] = test_significance_trials(TestData, cv.TestSize(1), L, W_hat,[],p);
             W_hats_FlexMF{i,j} = W_hat;
