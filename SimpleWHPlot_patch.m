@@ -1,4 +1,4 @@
-function SimpleWHPlot_patch(W, H, trials, frames, is_significant, Data, plotAll) 
+function SimpleWHPlot_patch(W, H, varargin) 
 % plots factors W and H with trials
 % Also plots Data if provided, and reconstruction if data is not provided
 % plotAll=1 means plot all data
@@ -7,16 +7,20 @@ function SimpleWHPlot_patch(W, H, trials, frames, is_significant, Data, plotAll)
 % Adapted by Liang Xiang
 
 clf
-
-% set(gcf, 'color', 'w');
-if nargin < 7
-    plotAll = 0;
-end
-if nargin < 6 || size(Data,2)==0
-    plotData = 0;
-else
-    plotData = 1; 
-end
+p = inputParser;
+addOptional(p, 'trials', [])
+addOptional(p, 'frames', [])
+addOptional(p, 'onsets', [])
+addOptional(p, 'is_significant', [])
+addOptional(p, 'Data', [])
+addOptional(p, 'plotAll',0)
+parse(p, varargin{:});
+trials = p.Results.trials;
+frames = p.Results.frames;
+onsets = p.Results.onsets;
+is_significant = p.Results.is_significant;
+Data = p.Results.Data;
+plotAll = p.Results.plotAll;
 
 [N,K,L] = size(W); 
 [~,T] = size(H);
@@ -27,10 +31,23 @@ else
     plotTrials = 0;
 end
 
+if ~isempty(onsets)
+    plotOnsets = 1;
+else
+    plotOnsets = 0;
+end
+
 if isempty(is_significant)
     is_significant = zeros(1,K);
 else
     assert(length(is_significant)==K, 'Dimensions of is_significant do not match!')
+end
+
+if isempty(Data)
+    plotData = 0;
+else
+    assert(isequal(size(Data),[N,T]), 'Dimensions of Data do not match!')
+    plotData = 1;
 end
 
 color_palet = [[0 .6 .3]; [.7 0 .7]; [1 .6 0];  [.1 .3 .9];  [1 .1 .1];  [0 .9 .3]; [.4 .2 .7]; [.7 .2 .1]; [.1 .8 1 ]; [1 .3 .7]; [.2 .8 .2]; [.7 .4 1]; [.9 .6 .4]; [0 .6 1]; [1 .1 .3]]; 
@@ -113,6 +130,12 @@ if plotTrials
         xline(trial*frames-indplot(1)+1, 'LineWidth', 2);
     end
 end
+
+if plotOnsets
+    for i=1:length(onsets)
+        xline(onsets(i)-indplot(1)+1, 'LineWidth', 2);
+    end
+end    
 
 plot([0 0 length(indplot)+1], [0 dnW*N dnW*N], 'k', 'LineWidth', 2)
 xlim([0 length(indplot)+1]);ylim([0 dnW*N])
