@@ -132,6 +132,7 @@ if plotTrials
 end
 
 if plotOnsets
+    onsets = onsets(onsets>indplot(1) & onsets<indplot(end));
     for i=1:length(onsets)
         xline(onsets(i)-indplot(1)+1, 'LineWidth', 2);
     end

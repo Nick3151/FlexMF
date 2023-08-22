@@ -41,7 +41,7 @@ function [W, H, cost,errors,loadings,power] = seqNMF(X, varargin)
 % 'H_init'          max(X(:))*rand(K,T)./(sqrt(T/3))    Initial H (rows have norm ~1 if max(data) is 1)
 % 'showPlot'        1                                   Plot every iteration? no=0
 % 'maxiter'         100                                 Maximum # iterations to run
-% 'tolerance'       -Inf                                Stop if improved less than this;  Set to -Inf to always run maxiter
+% 'tolerance'       1e-4                                Stop if improved less than this;  Set to -Inf to always run maxiter
 % 'shift'           1                                   Shift factors to center; Helps avoid local minima
 % 'lambdaL1W'       0                                   L1 sparsity parameter; Increase to make W's more sparse
 % 'lambdaL1H'       0                                   L1 sparsity parameter; Increase to make H's more sparse
