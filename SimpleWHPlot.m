@@ -152,8 +152,9 @@ if plotTrials
 end
 
 if plotOnsets
+    onsets = onsets(onsets>indplot(1) & onsets<indplot(end));
     for i=1:length(onsets)
-        xline(onsets(i)-indplot(1)+1, 'LineWidth', 2);
+        xline(onsets(i)-indplot(1)+1, 'LineWidth', 1, 'Color', 'r');
     end
 end  
 
@@ -177,9 +178,13 @@ axH = subplot('Position', [m+ww m+hdata wdata hh]);
 Hrescaled = repmat(squeeze(sum(sum(abs(W),1),3))',1,T).*H; % rescale by approximate loading
 dn = prctile(Hrescaled(:),100)/2; 
 for ki = K:-1:1
-    Xs = [1 1:length(indplot) length(indplot)]; 
-    Ys = [dn*ki (dn*ki + Hrescaled(K-ki+1,indplot)) dn*ki]-dn/2;
-    patch(Xs,Ys, kColors(K-ki+1,:), 'edgecolor', kColors(K-ki+1,:))
+    if length(indplot)<=5000
+        Xs = [1 1:length(indplot) length(indplot)]; 
+        Ys = [dn*ki (dn*ki + Hrescaled(K-ki+1,indplot)) dn*ki]-dn/2;
+        patch(Xs,Ys, kColors(K-ki+1,:), 'edgecolor', kColors(K-ki+1,:))
+    else
+        plot(1:length(indplot), dn*ki + Hrescaled(K-ki+1,indplot), 'Color',kColors(K-ki+1,:), 'LineWidth', 1)
+    end
     hold on
 end
 ylim([0 dn*K+dn*3+epsilon]);xlim([0 length(indplot)+1])
