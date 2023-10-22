@@ -15,12 +15,13 @@ color_palet_red = flip(color_palet_blue,2);
 
 %% Shape conditions
 sel = 1;
-[f1, f2, f3] = simulation_compare_algorithm_plot('simulate_results_shape.mat', 3, {'Calcium transients', 'Bursts', 'Single spikes'}, sel);
+[f1, f2, f3] = simulation_compare_algorithm_plot('simulate_results_shape.mat', 3, {'Calcium transients', 'Bursts', 'Single spikes'}, sel, 'lambda', .005);
 save2pdf('Simulation_results_shape', f1);
 
 %% Noise conditions
 sel = 2;
-simulation_compare_algorithm_plot("simulate_results_noise.mat", 3, {'Noise=.001', 'Noise=.01', 'Noise=.1'}, sel)
+[f1, f2, f3] = simulation_compare_algorithm_plot("simulate_results_noise.mat", 3, {'Noise=.001', 'Noise=.01', 'Noise=.1'}, sel, 'lambda', .003)
+save2pdf('Simulation_results_noise', f1);
 
 %% Participation conditions
 sel = 3;
@@ -44,4 +45,4 @@ simulation_compare_algorithm_plot("simulate_results_warp.mat", 3, ...
 sel = 1;
 [f1, f2, f3] = simulation_compare_algorithm_plot("simulate_results_overlap.mat", 5, ...
     {'Overlap=0%', 'Overlap=20%', 'Overlap=40%', 'Overlap=60%', 'Overlap=80%'}, sel);
-% save2pdf('Simulation_results_overlap', f1);
+save2pdf('Simulation_results_overlap', f1);

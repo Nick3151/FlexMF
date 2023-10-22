@@ -37,13 +37,13 @@ function [W, H, cost, errors, loadings, power] = FlexMF(X, varargin)
 % 'K'               10                                  Number of factors
 % 'L'               100                                 Length (timebins) of each factor exemplar
 % 'lambda'          .001                                Regularization parameter
-% 'alpha_H'         1e-4                                Regularization parameter for H
+% 'alpha_H'         1e-3                                Regularization parameter for H
 % 'alpha_W'         1e-6                                Regularization parameter for W
 % 'W_init'          max(X(:))*rand(N,K,L)               Initial W
 % 'H_init'          max(X(:))*rand(K,T)./(sqrt(T/3))    Initial H (rows have norm ~1 if max(data) is 1)
 % 'showPlot'        1                                   Plot every iteration? no=0
 % 'maxiter'         100                                 Maximum # iterations to run
-% 'tolerance'       1e-4                                Stop if improved less than this;  Set to -Inf to always run maxiter
+% 'tolerance'       1e-2                                Stop if improved less than this;  Set to -Inf to always run maxiter
 % 'alg'             'N83'                               Algorithm
 % 'shift'           1                                   Shift factors to center; Helps avoid local minima
 % 'lambdaL1W'       0                                   L1 sparsity parameter; Increase to make W's more sparse
@@ -181,7 +181,6 @@ for iter = 1 : params.maxiter
     
     W_pre = W;
     H_pre = H;
-    
     if lasttime
         break
     end
@@ -213,12 +212,12 @@ end
         addOptional(p,'K',10);
         addOptional(p,'L',100);
         addOptional(p,'lambda',.01);
-        addOptional(p,'alpha_H',1e-4);
+        addOptional(p,'alpha_H',1e-3);
         addOptional(p,'alpha_W',1e-6);
         addOptional(p,'showPlot',1);
         addOptional(p,'verbal',1);
         addOptional(p,'maxiter',100);
-        addOptional(p,'tolerance',1e-4);
+        addOptional(p,'tolerance',1e-2);
         addOptional(p,'alg','N83');
         addOptional(p,'shift',1);
         addOptional(p,'lambdaL1W',0);

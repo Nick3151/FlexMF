@@ -34,9 +34,9 @@ pvals = zeros(nsim,K);
 is_significant = zeros(nsim,K);
 
 [X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Dt, ...
-     'seed', 1);
+      'seed', 1);
 % [X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Dt, ...
-%     'len_burst', 10, 'dynamic', 1, 'seed', 1);
+%     'overlap_n', overlap_n, 'seed', 1);
 groups = zeros(Trials,1);
 for k=1:K
     groups(motif_ind{k}) = k;
@@ -74,8 +74,8 @@ set(f2,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 save2pdf('Simulated_data.pdf', f2)
 
 % Normalize training data
-nuc_norm = norm(svd(TrainingData),1);
-TrainingData = TrainingData/nuc_norm*N;
+frob_norm = norm(TrainingData(:));
+TrainingData = TrainingData/frob_norm*K;
 
 %% Procedure for choosing lambda
 nLambdas = 20; % increase if you're patient
@@ -116,8 +116,8 @@ set(gca, 'xscale', 'log', 'ytick', [], 'color', 'none')
 set(gca,'color','none','tickdir','out','ticklength', [0.025, 0.025])
 
 %% Run SeqNMF
-lambda = .003;
-lambdaL1H = 0;
+lambda = .005;
+lambdaL1H = 1e-3;
 lambdaL1W = 0;
 lambdaOrthoH = 0;
 
@@ -130,7 +130,8 @@ set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 reg_cross_SeqNMF = reg_cross*lambda;
 reg_W_SeqNMF = reg_W*lambdaL1W;
 reg_H_SeqNMF = reg_H*lambdaL1H;
-
+nuc_norm = norm(svd(TrainingData),1);
+            TrainingData = TrainingData/nuc_norm*N;
 p = .05; % desired p value for factors
 display('Testing significance of factors on held-out data')
 [pvals,is_significant] = test_significance_trials(TestData, cv.TestSize(1), L, What,[],p);
@@ -141,9 +142,9 @@ indSort = hybrid(:,3);
 
 %% Look at factors
 plotAll = 1;
-figure; SimpleWHPlot_patch(What, Hhat, cv.TrainSize(1), L, is_significant, [], plotAll); title('SeqNMF reconstruction')
+figure; SimpleWHPlot_patch(What, Hhat, 'trials', cv.TrainSize(1), 'frames', L, 'is_significant', is_significant, 'plotAll', plotAll); title('SeqNMF reconstruction')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-figure; SimpleWHPlot_patch(What, Hhat, cv.TrainSize(1), L, is_significant, TrainingData, plotAll); title('SeqNMF factors, with raw data')
+figure; SimpleWHPlot_patch(What, Hhat, 'trials', cv.TrainSize(1), 'frames', L, 'is_significant', is_significant, 'Data', TrainingData, 'plotAll', plotAll); title('SeqNMF factors, with raw data')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 
 save2pdf('Simulated_data_SeqNMF.pdf', gcf)
@@ -154,8 +155,8 @@ H_train_full(:,1:L:T) = H_train;
 [coeffs_W_SeqNMF, coeffs_H_SeqNMF, ids_SeqNMF] = helper.similarity_WH(W, H_train_full, What, Hhat);
 
 %% Run FlexMF
-alpha_W = 1e-6;
-alpha_H = 1e-3;
+alpha_W = 1e-5;
+alpha_H = 1e-2;
 
 % load([exp_num, '_BayesOpt.mat'])
 % lambda = results.XAtMinEstimatedObjective.lambda;
@@ -168,7 +169,7 @@ display('Running FlexMF on 2p data')
 figure;
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 tic
-[What,Hhat,~,errors_FlexMF,loadings,power] = FlexMF(TrainingData,'K',K, 'L', L, 'maxiter', 50, 'tolerance', 1e-5,...
+[What,Hhat,~,errors_FlexMF,loadings,power] = FlexMF(TrainingData,'K',K, 'L', L, 'maxiter', 50, 'tolerance', 1e-2,...
     'lambda', lambda, 'alpha_W', alpha_W, 'alpha_H', alpha_H, 'lambdaL1W', lambdaL1W, 'lambdaL1H', lambdaL1H, 'neg_prop', 0, 'showPlot', 1);
 toc
 
@@ -197,9 +198,9 @@ display('Testing significance of factors')
 [pvals,is_significant] = test_significance_trials(TestData, cv.TestSize(1), L, What,[],p);
 
 %% Look at factors
-figure; SimpleWHPlot_patch(What, Hhat, cv.TrainSize(1), L, is_significant, [], plotAll); title('FlexMF reconstruction')
+figure; SimpleWHPlot_patch(What, Hhat, 'trials', cv.TrainSize(1), 'frames', L, 'is_significant', is_significant, 'plotAll', plotAll); title('FlexMF reconstruction')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-figure; SimpleWHPlot_patch(What, Hhat, cv.TrainSize(1), L, is_significant, TrainingData, plotAll); title('FlexMF factors, with raw data')
+figure; SimpleWHPlot_patch(What, Hhat, 'trials', cv.TrainSize(1), 'frames', L, 'is_significant',is_significant, 'Data', TrainingData, 'plotAll', plotAll); title('FlexMF factors, with raw data')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 
 save2pdf('Simulated_data_FlexMF.pdf', gcf)

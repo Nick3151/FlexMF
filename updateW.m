@@ -23,7 +23,7 @@ if params.neg_prop==0 && params.lambda > 0
     Q = ones(K);
     Q(1:K+1:end) = 0;   % off diagonal mask
     
-    tol_W = 1e-3;
+    tol_W = 1e-2;
     max_iter = 10;
     for i=1:max_iter
         % Step 1: Update W
@@ -37,13 +37,13 @@ if params.neg_prop==0 && params.lambda > 0
         W = tfocs(smoothF, affineF, proj_Rplus, W0, opts);
         
         % Plot to show progress
+        Xhat = helper.reconstruct(W, H);
         if params.showPlot 
-            Xhat = helper.reconstruct(W, H);
             SimpleWHPlot_patch(W, H, 'Data', Xhat); 
             drawnow
         end
         
-        dW = sqrt(mean((W(:)-W0(:)).^2));
+        dW = sqrt(sum((W-W0).^2, 'all')/K);
         if dW < tol_W
             if params.verbal
                 fprintf('Step size tolerance of W reached\n')
@@ -63,6 +63,7 @@ if params.neg_prop==0 && params.lambda > 0
         if params.verbal
             fprintf('dW=%f\n',dW);
             fprintf('reg=%f\n',sum(Q(:).*WTXSHT(:)));
+            fprintf('recon=%f\n',sum((X(:)-Xhat(:)).^2)/2);
             fprintf('D=%f\n',sum(Q(:).*D(:)));
             fprintf('B=%f\n',sum(Q(:).*B(:)));
         end

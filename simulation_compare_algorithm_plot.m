@@ -8,6 +8,7 @@ addOptional(p, "linestyles", ["-", "--", ":", "-.", "-"]);
 addOptional(p, "markers", [".", ".", ".", "." "o"]);
 addOptional(p, 'thresh_x', 3.5)
 addOptional(p, 'thresh_y', .8)
+addOptional(p, 'lambda', .01)
 parse(p, varargin{:});
 nSim = p.Results.nSim;
 K = p.Results.K;
@@ -17,6 +18,7 @@ linestyles = p.Results.linestyles;
 markers = p.Results.markers;
 thresh_x = p.Results.thresh_x;
 thresh_y = p.Results.thresh_y;
+lambda = p.Results.lambda;
 
 load(file_name)
 
@@ -81,7 +83,6 @@ for i=1:nSim
         reg_FlexMF = WTXS_FlexMF*H_hat_SeqNMF';
         sparsity_reg_FlexMF(i,j) = mean(reg_FlexMF.*Q==0, "all");
 
-        lambda=.005;
         [recon_errors_SeqNMF(i,j), reg_cross, ~, ~] = helper.get_FlexMF_cost(TrainingData,W_hat_SeqNMF,H_hat_SeqNMF);
         reg_costs_SeqNMF(i,j) = reg_cross*lambda;
         [recon_errors_FlexMF(i,j), reg_cross, ~, ~] = helper.get_FlexMF_cost(TrainingData,W_hat_FlexMF,H_hat_FlexMF);

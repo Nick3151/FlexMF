@@ -69,8 +69,8 @@ if n==1
         end
         
         % Normalize training data
-        nuc_norm = norm(svd(TrainingData),1);
-        TrainingData = TrainingData/nuc_norm*N;
+        frob_norm = norm(TrainingData(:));
+        TrainingData = TrainingData/frob_norm*K;
 
         H_train = H(:,ind_train);
         T = cv.TrainSize(1)*L;
@@ -91,7 +91,7 @@ if n==1
     
         % Run SeqNMF with Bregman Iteration
         alpha_W = 1e-6;
-        alpha_H = 1e-3;
+        alpha_H = 1e-2;
         [W_hat, H_hat, ~,~,loadings_FlexMF{i,1},power]= FlexMF(TrainingData,'K',K,'L',L,...
                 'lambda', lambda, 'alpha_W', alpha_W, 'alpha_H', alpha_H, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
         p = .05;
@@ -135,8 +135,8 @@ if n==1
         end
         
         % Normalize training data
-        nuc_norm = norm(svd(TrainingData),1);
-        TrainingData = TrainingData/nuc_norm*N;
+        frob_norm = norm(TrainingData(:));
+        TrainingData = TrainingData/frob_norm*K;
 
         H_train = H(:,ind_train);
         T = cv.TrainSize(1)*L;
@@ -144,7 +144,7 @@ if n==1
         H_train_full(:,1:L:T) = H_train;
         Hs{i,2} = H_train_full;
     
-        lambda = .01;
+        lambda = .005;
     
         % Run SeqNMF with multiplication rule
         [W_hat, H_hat, ~,~,loadings_SeqNMF{i,2},power]= seqNMF(TrainingData,'K',K,'L',L,...
@@ -157,7 +157,7 @@ if n==1
     
         % Run SeqNMF with Bregman Iteration
         alpha_W = 1e-6;
-        alpha_H = 1e-3;
+        alpha_H = 1e-2;
         [W_hat, H_hat, ~,~,loadings_FlexMF{i,2},power]= FlexMF(TrainingData,'K',K,'L',L,...
                 'lambda', lambda, 'alpha_W', alpha_W, 'alpha_H', alpha_H, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
         p = .05;
@@ -201,8 +201,8 @@ if n==1
         end
         
         % Normalize training data
-        nuc_norm = norm(svd(TrainingData),1);
-        TrainingData = TrainingData/nuc_norm*N;
+        frob_norm = norm(TrainingData(:));
+        TrainingData = TrainingData/frob_norm*K;
 
         H_train = H(:,ind_train);
         T = cv.TrainSize(1)*L;
@@ -223,7 +223,7 @@ if n==1
     
         % Run SeqNMF with Bregman Iteration
         alpha_W = 1e-6;
-        alpha_H = 1e-4;
+        alpha_H = 1e-3;
         [W_hat, H_hat, ~,~,loadings_FlexMF{i,3},power]= FlexMF(TrainingData,'K',K,'L',L,...
                 'lambda', lambda, 'alpha_W', alpha_W, 'alpha_H', alpha_H, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
         p = .05;
@@ -298,8 +298,8 @@ if n==2
             end
             
             % Normalize training data
-            nuc_norm = norm(svd(TrainingData),1);
-            TrainingData = TrainingData/nuc_norm*N;
+            frob_norm = norm(TrainingData(:));
+            TrainingData = TrainingData/frob_norm*K;
 
             H_train = H(:,ind_train);
             T = cv.TrainSize(1)*L;
@@ -319,8 +319,8 @@ if n==2
             display(['SeqNMF run ' num2str(i) '/' num2str(nSim)])
         
             % Run SeqNMF with Bregman Iteration
-            alpha_W = 1e-6;
-            alpha_H = 1e-3;
+            alpha_W = 1e-5;
+            alpha_H = 1e-2;
             [W_hat, H_hat, ~,~,loadings_FlexMF{i,j},power]= FlexMF(TrainingData,'K',K,'L',L,...
                     'lambda', lambda, 'alpha_W', alpha_W, 'alpha_H', alpha_H, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
             p = .05;
@@ -397,8 +397,8 @@ if n==3
             end
             
             % Normalize training data
-            nuc_norm = norm(svd(TrainingData),1);
-            TrainingData = TrainingData/nuc_norm*N;
+            frob_norm = norm(TrainingData(:));
+            TrainingData = TrainingData/frob_norm*K;
 
             H_train = H(:,ind_train);
             T = cv.TrainSize(1)*L;
@@ -495,8 +495,8 @@ if n==4
             end
             
             % Normalize training data
-            nuc_norm = norm(svd(TrainingData),1);
-            TrainingData = TrainingData/nuc_norm*N;
+            frob_norm = norm(TrainingData(:));
+            TrainingData = TrainingData/frob_norm*K;
 
             H_train = H(:,ind_train);
             T = cv.TrainSize(1)*L;
@@ -594,8 +594,8 @@ if n==5
             end
             
             % Normalize training data
-            nuc_norm = norm(svd(TrainingData),1);
-            TrainingData = TrainingData/nuc_norm*N;
+            frob_norm = norm(TrainingData(:));
+            TrainingData = TrainingData/frob_norm*K;
 
             H_train = H(:,ind_train);
             T = cv.TrainSize(1)*L;
@@ -693,8 +693,8 @@ if n==6
             end
             
             % Normalize training data
-            nuc_norm = norm(svd(TrainingData),1);
-            TrainingData = TrainingData/nuc_norm*N;
+            frob_norm = norm(TrainingData(:));
+            TrainingData = TrainingData/frob_norm*K;
 
             H_train = H(:,ind_train);
             T = cv.TrainSize(1)*L;
@@ -715,7 +715,7 @@ if n==6
         
             % Run SeqNMF with Bregman Iteration
             alpha_W = 1e-6;
-            alpha_H = 5e-5;
+            alpha_H = 1e-3;
             [W_hat, H_hat, ~,~,loadings_FlexMF{i,j},power]= FlexMF(TrainingData,'K',K,'L',L,...
                     'lambda', lambda, 'alpha_W', alpha_W, 'alpha_H', alpha_H, 'neg_prop', 0, 'maxiter', 50, 'showPlot', 0, 'verbal', 0); 
             p = .05;

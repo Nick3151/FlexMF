@@ -35,7 +35,7 @@ if params.lambda > 0
         A = WTXS;
     end
     
-    tol_H = 1e-3;
+    tol_H = 1e-2;
     max_iter = 10;
     for i=1:max_iter
         % Step 1: Update H
@@ -50,13 +50,13 @@ if params.lambda > 0
         H = tfocs(smoothF, affineF, proj_Rplus, H0, opts);
         
         % Plot to show progress
+        Xhat = helper.reconstruct(W, H);
         if params.showPlot 
-            Xhat = helper.reconstruct(W, H);
             SimpleWHPlot_patch(W, H, 'Data', Xhat); 
             drawnow
         end
         
-        dH = sqrt(mean((H(:)-H0(:)).^2));
+        dH = sqrt(sum((H-H0).^2, 'all')/K);
         if dH < tol_H
             if params.verbal
                 fprintf('Step size tolerance of H reached\n')
@@ -74,6 +74,7 @@ if params.lambda > 0
         if params.verbal
             fprintf('dH=%f\n',dH);
             fprintf('reg=%f\n',sum(Q(:).*AH(:)));
+            fprintf('recon=%f\n',sum((X(:)-Xhat(:)).^2)/2);
             fprintf('D=%f\n',sum(Q(:).*D(:)));
             fprintf('B=%f\n',sum(Q(:).*B(:)));
         end
