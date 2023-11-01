@@ -3,7 +3,7 @@ function C = max_xcorr(X, lag, varargin)
 [N,T] = size(X);
 p = inputParser;
 addOptional(p, 'bin', 0);
-addOptional(p, 'option', 'normalized');
+addOptional(p, 'option', 'none');
 parse(p, varargin{:});
 bin = p.Results.bin;
 option = p.Results.option;
