@@ -1,4 +1,4 @@
-function [pvals,is_significant] = test_significance_trials(TestData, trials, frames, W,plot,p,nnull)
+function [pvals,is_significant] = test_significance_new(TestData, W,plot,p,nnull)
 %
 % USAGE: 
 %
@@ -44,71 +44,79 @@ W(:,indempty,:) = []; % Delete factors that meet the above critera
 
 [N,K,L] = size(W);
 [~,T] = size(TestData);
-assert(trials*frames==T, 'Dimensions of trials do not match!')
 
-if nargin < 5 || isempty(plot)
+if nargin < 3 || isempty(plot)
     plot = 0;
 end
 
-if nargin < 6
+if nargin < 4
     p = 0.05;
 end
 
-if nargin < 7
-    nnull = ceil(K/p)*2;
+if nargin < 5
+    nnull = ceil(K/p)*5;
+end
+
+WTX = helper.transconv(W,TestData);
+thresh = prctile(WTX', 95);
+WTX_large_mean = zeros(K,1);
+for k=1:K
+    WTX_tmp = WTX(k,:);
+    WTX_large_mean(k) = mean(WTX_tmp(WTX_tmp>thresh(k)));
+end
+
+if plot
+    k_plot = 1;
+    nbins = 100;
+    figure; histogram(WTX(k_plot,:), nbins, 'FaceColor','k'); 
+    hold on
+    xline(thresh(k_plot), 'r', 'LineWidth',1)
+    title('WTX distribution')
+    set(gca,'yscale','log')
 end
 
 % make nnull shifted datasets 
-skewnull = zeros(K,nnull);
+thresh_null = zeros(K,nnull);
+WTX_large_mean_null = zeros(K,nnull);
 
-% Normalize each row
-% X = bsxfun(@rdivide, TestData, sum(TestData,2));
-X = TestData;
-
-for i = 1:nnull
-    % Make a null dataset, randomly circuilarly shift each row in each
-    % trial, yet keep transient structures.
-    Xnull = zeros(N,T);
-    for trial = 1:trials
-        X_tmp = X(:,(trial-1)*frames+1:trial*frames);  
-        [ids_start, ids_end, ~] = locate_true_transients(X_tmp,6,frames);
-        for n=1:N
-            if isempty(ids_start{n}) || isempty(ids_end{n})
-                Xnull(n,(trial-1)*frames+1:trial*frames) = circshift(X_tmp(n,:), randi(frames));
-            else
-                Xnull(n,(trial-1)*frames+1:trial*frames) = circshift(X_tmp(n,:), randi([1-ids_start{n}(1), frames-ids_end{n}(end)]));
-            end
+for n = 1:nnull
+    Wnull = zeros(N,K,L);
+    for k = 1:K
+        for ni = 1:N
+            Wnull(ni,k,:) = circshift(W(ni,k,:),[0,0,randi(L)]);
         end
     end
-    WTX = helper.transconv(W,Xnull);
+    WTX = helper.transconv(Wnull,TestData);
+    thresh_null(:,n) = prctile(WTX', 95);
+    for k=1:K
+        WTX_tmp = WTX(k,:);
+        WTX_large_mean_null(k,n) = mean(WTX_tmp(WTX_tmp>thresh_null(k,n)));
+    end
     if plot
-        if i<5
-            SimpleXplot_patch(Xnull, trials, frames);
-            set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-            figure; histogram(WTX(1,:),'FaceColor','k'); title('WTX distribution')
+        if n<5
+            figure; histogram(WTX(k_plot,:), nbins, 'FaceColor','k'); 
+            hold on
+            xline(thresh_null(k_plot), 'r', 'LineWidth',1)
+            title('WTX null distribution')
             set(gca,'yscale','log')
         end
     end
-    % Get skewness of each
-    skewnull(:,i) = skewness(WTX,1,2);
 end
 
-WTX = helper.transconv(W,X); 
-skew = skewness(WTX,1,2);
-pvals = zeros(1,K);
+pvals = zeros(K,1);
 for k = 1:K
-    % Assign pvals from skewness
-    pvals(k) = (1+sum(skewnull(k,:)>skew(k)))/nnull;
+    % Assign pvals from mean of top 5% values
+    pvals(k) = (1+sum(WTX_large_mean_null(k,:)>WTX_large_mean(k)))/nnull;
 end
-if plot
-    figure;
-    histogram(skewnull(1,:)); title('skewness distribution')
-    hold on
-    xline(skew(1), 'Color', 'r', 'Linewidth', 2);
-end
-
 allpvals(indempty) = Inf; 
 allpvals(~indempty) = pvals; 
 pvals = allpvals;
 is_significant = (pvals <= p/K);
+
+if plot
+    figure;
+    histogram(WTX_large_mean_null(k_plot,:))
+    hold on
+    xline(WTX_large_mean(k_plot), 'Color', 'r', 'Linewidth', 2);
+end
 end
