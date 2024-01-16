@@ -42,7 +42,9 @@ simulation_compare_algorithm_plot("simulate_results_warp.mat", 3, ...
     {'Warp=1', 'Warp=2', 'Warp=3'}, sel)
 
 %% Overlapping conditions
-sel = 1;
+sel = 3;
 [f1, f2, f3] = simulation_compare_algorithm_plot("simulate_results_overlap.mat", 5, ...
     {'Overlap=0%', 'Overlap=20%', 'Overlap=40%', 'Overlap=60%', 'Overlap=80%'}, sel);
 save2pdf('Simulation_results_overlap', f1);
+save2pdf('Simulation_results_sparsity', f2);
+save2pdf('Simulation_results_error', f3);

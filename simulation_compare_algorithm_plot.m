@@ -24,10 +24,10 @@ load(file_name)
 
 num_success_SeqNMF = zeros(K,nCond);
 num_success_FlexMF = zeros(K,nCond);
-coeffs_W_SeqNMF = nan(nSim, K, nCond);
-coeffs_W_FlexMF = nan(nSim, K, nCond);
-coeffs_H_SeqNMF = nan(nSim, K, nCond);
-coeffs_H_FlexMF = nan(nSim, K, nCond);
+coeffs_W_SeqNMF = zeros(nSim, K, nCond);
+coeffs_W_FlexMF = zeros(nSim, K, nCond);
+coeffs_H_SeqNMF = zeros(nSim, K, nCond);
+coeffs_H_FlexMF = zeros(nSim, K, nCond);
 sparsity_H_SeqNMF = zeros(nSim, nCond);
 sparsity_W_SeqNMF = zeros(nSim, nCond);
 sparsity_H_FlexMF = zeros(nSim, nCond);
@@ -64,24 +64,25 @@ for i=1:nSim
         coeffs_H_SeqNMF(i,ids_SeqNMF,j) = coeff_H_SeqNMF;
         coeffs_H_FlexMF(i,ids_FlexMF,j) = coeff_H_FlexMF;
 
-        sparsity_W_SeqNMF(i,j) = mean(W_hat_SeqNMF==0, "all");
-        sparsity_H_SeqNMF(i,j) = mean(H_hat_SeqNMF==0, "all");
-        sparsity_W_FlexMF(i,j) = mean(W_hat_FlexMF==0, "all");
-        sparsity_H_FlexMF(i,j) = mean(H_hat_FlexMF==0, "all");
-        
-        % Sparsity of regularization term
+        sparsity_W_SeqNMF(i,j) = mean(W_hat_SeqNMF>1e-3, "all");
+        sparsity_H_SeqNMF(i,j) = mean(H_hat_SeqNMF>1e-3, "all");
+        sparsity_W_FlexMF(i,j) = mean(W_hat_FlexMF>1e-3, "all");
+        sparsity_H_FlexMF(i,j) = mean(H_hat_FlexMF>1e-3, "all");
+
         TrainingData = TrainingDatas{i,j};
-        Q = ones(K);
-        Q(1:K+1:end) = 0;   % off diagonal mask
-        smoothkernel = ones(1,(2*L)-1); 
-        WTX_SeqNMF = helper.transconv(W_hat_SeqNMF, TrainingData);
-        WTXS_SeqNMF = conv2(abs(WTX_SeqNMF), smoothkernel, 'same');
-        reg_SeqNMF = WTXS_SeqNMF*H_hat_SeqNMF';
-        sparsity_reg_SeqNMF(i,j) = mean(reg_SeqNMF.*Q==0, "all");
-        WTX_FlexMF = helper.transconv(W_hat_FlexMF, TrainingData);
-        WTXS_FlexMF = conv2(abs(WTX_FlexMF), smoothkernel, 'same');
-        reg_FlexMF = WTXS_FlexMF*H_hat_SeqNMF';
-        sparsity_reg_FlexMF(i,j) = mean(reg_FlexMF.*Q==0, "all");
+        
+%         % Sparsity of regularization term
+%         Q = ones(K);
+%         Q(1:K+1:end) = 0;   % off diagonal mask
+%         smoothkernel = ones(1,(2*L)-1); 
+%         WTX_SeqNMF = helper.transconv(W_hat_SeqNMF, TrainingData);
+%         WTXS_SeqNMF = conv2(abs(WTX_SeqNMF), smoothkernel, 'same');
+%         reg_SeqNMF = WTXS_SeqNMF*H_hat_SeqNMF';
+%         sparsity_reg_SeqNMF(i,j) = mean(reg_SeqNMF.*Q>1e-3, "all");
+%         WTX_FlexMF = helper.transconv(W_hat_FlexMF, TrainingData);
+%         WTXS_FlexMF = conv2(abs(WTX_FlexMF), smoothkernel, 'same');
+%         reg_FlexMF = WTXS_FlexMF*H_hat_SeqNMF';
+%         sparsity_reg_FlexMF(i,j) = mean(reg_FlexMF.*Q>1e-3, "all");
 
         [recon_errors_SeqNMF(i,j), reg_cross, ~, ~] = helper.get_FlexMF_cost(TrainingData,W_hat_SeqNMF,H_hat_SeqNMF);
         reg_costs_SeqNMF(i,j) = reg_cross*lambda;
@@ -111,80 +112,89 @@ set(gca, 'FontSize', 12, 'XTick', [])
 j = sel;
 ax2 = subplot('Position', [0.1 0.35 0.6 0.2]);
 hold on
-boxplot(coeffs_W_SeqNMF(:,:,j), 'Plotstyle', 'compact', 'Colors', c1, 'Positions', 2*(1:K)-.25, 'Jitter', 0);
-boxplot(coeffs_W_FlexMF(:,:,j), 'Plotstyle', 'compact', 'Colors', c2, 'Positions', 2*(1:K)+.25, 'Jitter', 0);
+% boxplot(coeffs_W_SeqNMF(:,:,j), 'Colors', c1, 'Positions', 2*(1:K)-.25, 'Jitter', .1, 'Widths', .2);
+% boxplot(coeffs_W_FlexMF(:,:,j), 'Colors', c2, 'Positions', 2*(1:K)+.25, 'Jitter', .1, 'Widths', .2);
+x = repmat(2*(1:K), [nSim,1]);
+swarmchart(x-.25, coeffs_W_SeqNMF(:,:,j), 12, c1, 'filled', 'XJitterWidth', .2);
+swarmchart(x+.25, coeffs_W_FlexMF(:,:,j), 12, c2, 'filled', 'XJitterWidth', .2);
 % title('Correlation Coeff Multiplicative Update Rule')
 patch(2*[thresh_x, K+.5, K+.5, thresh_x], [0, 0, 1, 1], [.5 .5 .5], 'EdgeColor', 'none', 'FaceAlpha', .3)
 yline(thresh_y, 'LineWidth', 2, 'LineStyle','--');
-set(gca, 'FontSize', 12, 'XTick', 2*(1:K), 'YTick', [0, .5, thresh_y, 1], 'box','off', 'Position', [0.1 0.35 0.6 0.2])
+set(gca, 'FontSize', 12, 'XTick', 2*(1:K), 'XTickLabel', [], 'YTick', [0, .5, thresh_y, 1], 'box','off', 'Position', [0.1 0.35 0.6 0.2])
 
 ax3 = subplot('Position', [0.1 0.1 0.6 0.2]);
 hold on
-boxplot(coeffs_H_SeqNMF(:,:,j), 'Plotstyle', 'compact', 'Colors', c1, 'Positions', 2*(1:K)-.25, 'Jitter', 0);
-boxplot(coeffs_H_FlexMF(:,:,j), 'Plotstyle', 'compact', 'Colors', c2, 'Positions', 2*(1:K)+.25, 'Jitter', 0);
+% boxplot(coeffs_H_SeqNMF(:,:,j), 'Colors', c1, 'Positions', 2*(1:K)-.25, 'Jitter', .1, 'Widths', .2);
+% boxplot(coeffs_H_FlexMF(:,:,j), 'Colors', c2, 'Positions', 2*(1:K)+.25, 'Jitter', .1, 'Widths', .2);
+swarmchart(x-.25, coeffs_H_SeqNMF(:,:,j), 12, c1, 'filled', 'XJitterWidth', .2);
+swarmchart(x+.25, coeffs_H_FlexMF(:,:,j), 12, c2, 'filled', 'XJitterWidth', .2);
 % title('Correlation Coeff Split Bregman Iteration')
 set(gca, 'FontSize', 12, 'XTick', 2*(1:K), 'XTickLabel', num2str((1:K)'), 'YTick', [0, .5, thresh_y, 1], 'box','off', 'Position', [0.1 0.1 0.6 0.2])
 patch(2*[thresh_x, K+.5, K+.5, thresh_x], [0, 0, 1, 1], [.5 .5 .5], 'EdgeColor', 'none', 'FaceAlpha', .3)
 yline(thresh_y, 'LineWidth', 2, 'LineStyle','--');
 % xtickangle(ax, 90)
 % xlabel('# Motif Occurences')
-set(gcf, 'Position', [100, 100, 800, 800])
+set(f1, 'Position', [100, 100, 1500, 800])
 linkaxes([ax1, ax2, ax3], 'xy')
 set(gca, 'XLim', 2*[0, K+.5], 'YLim', [0,1])
 
 
 % Compare sparsity levels
 f2 = figure;
-subplot(131)
-hold on
-boxplot(sparsity_H_SeqNMF, 'Plotstyle', 'compact', 'Colors', c1, 'Positions', 2*(1:nCond)-.25, 'Jitter', 0);
-boxplot(sparsity_H_FlexMF, 'Plotstyle', 'compact', 'Colors', c2, 'Positions', 2*(1:nCond)+.25, 'Jitter', 0);
-title('Sparsity of H')
-ylim([0,1])
-set(gca, 'FontSize', 12, 'XTickLabel', legends, 'XTick', 2*(1:nCond), 'box','off', 'Position', [0.05 0.15 0.2 0.75])
-xtickangle(45)
-
-subplot(132)
-hold on
-boxplot(sparsity_W_SeqNMF, 'Plotstyle', 'compact', 'Colors', c1, 'Positions', 2*(1:nCond)-.25, 'Jitter', 0);
-boxplot(sparsity_W_FlexMF, 'Plotstyle', 'compact', 'Colors', c2, 'Positions', 2*(1:nCond)+.25, 'Jitter', 0);
-title('Sparsity of W')
-ylim([0,1])
-set(gca, 'FontSize', 12, 'XTickLabel', legends, 'XTick', 2*(1:nCond), 'YTick', [], 'box','off', 'Position', [0.3 0.15 0.2 0.75])
-xtickangle(45)
-
-subplot(133)
-hold on
-boxplot(sparsity_reg_SeqNMF, 'Plotstyle', 'compact', 'Colors', c1, 'Positions', 2*(1:nCond)-.25, 'Jitter', 0);
-boxplot(sparsity_reg_FlexMF, 'Plotstyle', 'compact', 'Colors', c2, 'Positions', 2*(1:nCond)+.25, 'Jitter', 0);
-title('Sparsity of Regularization')
-ylim([0,1])
-set(gca, 'FontSize', 12, 'XTickLabel', legends, 'XTick', 2*(1:nCond), 'YTick', [], 'box','off', 'Position', [0.55 0.15 0.2 0.75])
-xtickangle(45)
-
-boxes_SeqNMF = findobj(gca,'Tag','Box','Color',c1);
-boxes_FlexMF = findobj(gca,'Tag','Box','Color',c2);
-legend([boxes_SeqNMF(1), boxes_FlexMF(1)], {'MUR', 'SBI'}, 'box','off', 'Position', [0.8 0.75 0.15 0.1])
-set(gcf, 'Position', [100, 100, 1500, 800])
-
-% Compare cost functions
-f3 = figure; 
 subplot(121)
 hold on
-boxplot(recon_errors_SeqNMF, 'Plotstyle', 'compact', 'Colors', c1, 'Positions', 2*(1:nCond)-.25, 'Jitter', 0);
-boxplot(recon_errors_FlexMF, 'Plotstyle', 'compact', 'Colors', c2, 'Positions', 2*(1:nCond)+.25, 'Jitter', 0);
-title('Reconstruction Costs')
-set(gca, 'FontSize', 12, 'XTickLabel', legends, 'XTick', 2*(1:nCond), 'box','off', 'Position', [0.05 0.15 0.3 0.75])
+x = repmat(2*(1:nCond), [nSim,1]);
+swarmchart(x-.25, sparsity_H_SeqNMF, 12, c1, 'filled', 'XJitterWidth', .2);
+swarmchart(x+.25, sparsity_H_FlexMF, 12, c2, 'filled', 'XJitterWidth', .2);
+% boxplot(sparsity_H_SeqNMF, 'Colors', c1, 'Positions', 2*(1:nCond)-.25, 'Jitter', .2, 'Widths',.2);
+% boxplot(sparsity_H_FlexMF, 'Colors', c2, 'Positions', 2*(1:nCond)+.25, 'Jitter', .2, 'Widths',.2);
+title('Sparsity of H')
+ylim([0,.2])
+set(gca, 'FontSize', 12, 'XTickLabel', legends, 'XTick', 2*(1:nCond), 'box','off', 'Position', [0.05 0.15 0.4 0.75])
 xtickangle(45)
 
 subplot(122)
 hold on
-boxplot(reg_costs_SeqNMF, 'Plotstyle', 'compact', 'Colors', c1, 'Positions', 2*(1:nCond)-.25, 'Jitter', 0);
-boxplot(reg_costs_FlexMF, 'Plotstyle', 'compact', 'Colors', c2, 'Positions', 2*(1:nCond)+.25, 'Jitter', 0);
-title('Regularization Costs')
-set(gca, 'FontSize', 12, 'XTickLabel', legends, 'XTick', 2*(1:nCond), 'YTick', [], 'box','off', 'Position', [0.4 0.15 0.3 0.75])
+% boxplot(sparsity_W_SeqNMF, 'Colors', c1, 'Positions', 2*(1:nCond)-.25, 'Jitter', .2, 'Widths',.2);
+% boxplot(sparsity_W_FlexMF, 'Colors', c2, 'Positions', 2*(1:nCond)+.25, 'Jitter', .2, 'Widths',.2);
+s1 = swarmchart(x-.25, sparsity_W_SeqNMF, 12, c1, 'filled', 'XJitterWidth', .2);
+s2 = swarmchart(x+.25, sparsity_W_FlexMF, 12, c2, 'filled', 'XJitterWidth', .2);
+title('Sparsity of W')
+ylim([0,.2])
+set(gca, 'FontSize', 12, 'XTickLabel', legends, 'XTick', 2*(1:nCond), 'YTick', [], 'box','off', 'Position', [0.5 0.15 0.4 0.75])
 xtickangle(45)
-boxes_SeqNMF = findobj(gca,'Tag','Box','Color',c1);
-boxes_FlexMF = findobj(gca,'Tag','Box','Color',c2);
-legend([boxes_SeqNMF(1), boxes_FlexMF(1)], {'MUR', 'SBI'}, 'box','off', 'Position', [0.75 0.75 0.2 0.1])
-set(gcf, 'Position', [100, 100, 1500, 800])
+
+% subplot(133)
+% hold on
+% boxplot(sparsity_reg_SeqNMF, 'Plotstyle', 'compact', 'Colors', c1, 'Positions', 2*(1:nCond)-.25, 'Jitter', 0);
+% boxplot(sparsity_reg_FlexMF, 'Plotstyle', 'compact', 'Colors', c2, 'Positions', 2*(1:nCond)+.25, 'Jitter', 0);
+% title('Sparsity of Regularization')
+% ylim([0,1])
+% set(gca, 'FontSize', 12, 'XTickLabel', legends, 'XTick', 2*(1:nCond), 'YTick', [], 'box','off', 'Position', [0.55 0.15 0.2 0.75])
+% xtickangle(45)
+
+% s1 = findobj(gca,'Tag','Scatter','Color',c1);
+% s2 = findobj(gca,'Tag','Scatter','Color',c2);
+legend([s1(1), s2(2)], {'MUR', 'SBI'}, 'box','off', 'Position', [0.9 0.75 0.1 0.1])
+set(f2, 'Position', [100, 100, 1500, 800])
+
+% Compare cost functions
+f3 = figure; 
+ax1 = subplot(121);
+hold on
+swarmchart(x-.25, recon_errors_SeqNMF, 12, c1, 'filled', 'XJitterWidth', .2);
+swarmchart(x+.25, recon_errors_FlexMF, 12, c2, 'filled', 'XJitterWidth', .2);
+title('Reconstruction Costs')
+set(gca, 'FontSize', 12, 'XTickLabel', legends, 'XTick', 2*(1:nCond), 'box','off', 'Position', [0.05 0.15 0.4 0.75])
+xtickangle(45)
+
+ax2 = subplot(122);
+hold on
+s1 = swarmchart(x-.25, reg_costs_SeqNMF, 12, c1, 'filled', 'XJitterWidth', .2);
+s2 = swarmchart(x+.25, reg_costs_FlexMF, 12, c2, 'filled', 'XJitterWidth', .2);
+title('Regularization Costs')
+set(gca, 'FontSize', 12, 'XTickLabel', legends, 'XTick', 2*(1:nCond), 'YTick', [], 'box','off', 'Position', [0.5 0.15 0.4 0.75])
+xtickangle(45)
+linkaxes([ax1, ax2], 'y')
+legend([s1(1), s2(1)], {'MUR', 'SBI'}, 'box','off', 'Position', [0.9 0.75 0.1 0.1])
+set(f3, 'Position', [100, 100, 1500, 800])

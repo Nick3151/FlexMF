@@ -116,8 +116,8 @@ set(gca, 'xscale', 'log', 'ytick', [], 'color', 'none')
 set(gca,'color','none','tickdir','out','ticklength', [0.025, 0.025])
 
 %% Run SeqNMF
-lambda = .005;
-lambdaL1H = 1e-3;
+lambda = .003;
+lambdaL1H = 0;
 lambdaL1W = 0;
 lambdaOrthoH = 0;
 
@@ -134,7 +134,7 @@ nuc_norm = norm(svd(TrainingData),1);
             TrainingData = TrainingData/nuc_norm*N;
 p = .05; % desired p value for factors
 display('Testing significance of factors on held-out data')
-[pvals,is_significant] = test_significance_trials(TestData, cv.TestSize(1), L, What,[],p);
+[pvals,is_significant] = test_significance_new(TestData, What,[],p);
 
 % plot, sorting neurons by latency within each factor
 [max_factor, L_sort, max_sort, hybrid] = helper.ClusterByFactor(What(:,:,:),1);
@@ -183,7 +183,7 @@ plot(errors_FlexMF(2:end, 2)*lambda, 'Color',[0.9020 0 0.7843],'LineStyle','--',
 xlabel('# Iteration')
 legend({'MUR Reconstruction Error', 'MUR Regularizaion Error', ...
     'SBI Reconstruction Error', 'SBI Regularizaion Error'})
-save2pdf('Simulation_Error_Curves.pdf', gcf)
+% save2pdf('Simulation_Error_Curves.pdf', gcf)
 
 
 [recon_error_FlexMF, reg_cross, reg_W, reg_H] = helper.get_FlexMF_cost(TrainingData,What,Hhat);
@@ -195,7 +195,7 @@ sparseness = sum(Hhat>0, 2)/size(Hhat,2);
 
 p = .05; % desired p value for factors
 display('Testing significance of factors')
-[pvals,is_significant] = test_significance_trials(TestData, cv.TestSize(1), L, What,[],p);
+[pvals,is_significant] = test_significance_new(TestData, What,[],p);
 
 %% Look at factors
 figure; SimpleWHPlot_patch(What, Hhat, 'trials', cv.TrainSize(1), 'frames', L, 'is_significant', is_significant, 'plotAll', plotAll); title('FlexMF reconstruction')
