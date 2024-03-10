@@ -1,4 +1,4 @@
-function [pvals,is_significant] = test_significance_new(TestData, W,plot,p,nnull)
+function [pvals,is_significant,is_single] = test_significance_new(TestData, W,plot,p,nnull)
 %
 % USAGE: 
 %
@@ -39,8 +39,8 @@ function [pvals,is_significant] = test_significance_new(TestData, W,plot,p,nnull
 
 indempty = sum(sum(W>0,1),3)==0; % W is literally empty
 Wflat = sum(W,3); 
-indempty = indempty | (max(Wflat,[],1).^2> .999*sum(Wflat.^2,1)); % or one neuron has >99.9% of the power
-W(:,indempty,:) = []; % Delete factors that meet the above critera
+is_single = (max(Wflat,[],1).^2> .999*sum(Wflat.^2,1)); % one neuron has >99.9% of the power
+W(:,indempty|is_single,:) = []; % Delete factors that meet the above critera
 
 [N,K,L] = size(W);
 [~,T] = size(TestData);
@@ -108,8 +108,8 @@ for k = 1:K
     % Assign pvals from mean of top 5% values
     pvals(k) = (1+sum(WTX_large_mean_null(k,:)>WTX_large_mean(k)))/nnull;
 end
-allpvals(indempty) = Inf; 
-allpvals(~indempty) = pvals; 
+allpvals(indempty|is_single) = Inf; 
+allpvals(~(indempty|is_single)) = pvals; 
 pvals = allpvals;
 is_significant = (pvals <= p/K);
 
