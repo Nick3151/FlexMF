@@ -1,10 +1,18 @@
-function [h, p, active_times] = test_significance_neurons(Wk, X_tmp, Xall)
+function [h, p, active_times] = test_significance_neurons(Wk, X_tmp, Xall, varargin)
+p = inputParser;
+addOptional(p, 'nNull', 100);
+addOptional(p, 'seed', 0);
+
+parse(p, varargin{:});
+nNull = p.Results.nNull;
+seed = p.Results.seed;
+rng(seed)
+
 assert(size(Xall,1)==size(Wk,1) && size(X_tmp,1)==size(Wk,1), 'Neurons do not meatch!')
 [N,T] = size(Xall);
 [~,L] = size(Wk);
 R = size(X_tmp,2);  % number of motif occurrences
 
-nNull = 100;
 overlap = zeros(N,1,R);
 overlap_null = zeros(N, nNull, R);
 
