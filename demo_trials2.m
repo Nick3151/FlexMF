@@ -33,10 +33,10 @@ seeds = randperm(1000, nsim);
 pvals = zeros(nsim,K);
 is_significant = zeros(nsim,K);
 
-[X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Dt, ...
-      'seed', 1);
 % [X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Dt, ...
-%     'overlap_n', overlap_n, 'seed', 1);
+%       'seed', 1);
+[X, W, H, X_hat, motif_ind] = generate_data_trials(Trials, L, Nmotifs, Nneurons, Dt, ...
+    'overlap_n', overlap_n, 'seed', 1);
 groups = zeros(Trials,1);
 for k=1:K
     groups(motif_ind{k}) = k;
@@ -114,6 +114,7 @@ xlabel('Lambda'); ylabel('Cost (au)')
 set(legend('Correlation cost', 'Reconstruction cost'), 'Box', 'on')
 set(gca, 'xscale', 'log', 'ytick', [], 'color', 'none')
 set(gca,'color','none','tickdir','out','ticklength', [0.025, 0.025])
+save2pdf('Simulate_choose_lambda_SeqNMF')
 
 %% Run SeqNMF
 lambda = .003;
