@@ -32,7 +32,8 @@ end
 p = zeros(N,1);
 h = zeros(N,1);
 for ni=1:N
-    [p(ni), h(ni)] = ranksum(reshape(overlap(ni,:,:), 1,[]), reshape(overlap_null(ni,:,:), 1,[]), "tail","right");
+    [p(ni), h(ni)] = ranksum(reshape(overlap(ni,:,:), 1,[]), reshape(overlap_null(ni,:,:), 1,[]),...
+        "tail","right", "alpha", .05/N);
 end
 active_times = sum(overlap>0,[2,3]);
 
