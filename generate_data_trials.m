@@ -15,9 +15,10 @@ function [data,W,H,X_hat,motif_ind] = generate_data_trials(Trials, Length, Nmoti
 % overlap_n = 0; The proportion of shared neurons between different motifs
 % len_burst = 10; The time of continuous firing
 % dynamic = 1; if transient dynamics is being simulated
-% neg = 0; % Proportion of negative indices in W
+% neg = 0; % Proportion of negative indiuntitledces in Wuntitled
 % seed = 0; % Random seed
 % additional_neurons = 0; % Number of additional neurons
+% spontaneous_rate = 0; % Spontaneous activities of additional neurons
 
 %% Parse inputs
 K = length(Nmotifs); % The number of motifs
@@ -39,6 +40,7 @@ addOptional(p, 'dynamic', 1, @isscalar)
 addOptional(p, 'neg', 0, @isscalar)
 addOptional(p, 'seed', 0, @isscalar)
 addOptional(p, 'additional_neurons', 0, @isscalar)
+addOptional(p, 'spontaneous_rate', 0, @isscalar)
 parse(p, varargin{:})
 
 Magnitudes = p.Results.Magnitudes;
@@ -53,6 +55,7 @@ dynamic = p.Results.dynamic;
 neg = p.Results.neg;
 seed = p.Results.seed;
 additional_neurons = p.Results.additional_neurons;
+spontaneous_rate = p.Results.spontaneous_rate;
 
 % Set random seed
 if seed == 0
@@ -121,7 +124,7 @@ end
 W = zeros(N,K,Length);
 X_hat = zeros(N,Length,Trials);
 % H_hat = zeros(K,T);
-for k = 1:K % go through each factor
+for k = 1:K % go through each motif
 
     % neg: proportion of negative indices
     neg_indices = (rand(1,Nneurons(k)) < neg);
@@ -173,10 +176,16 @@ for k = 1:K % go through each factor
 
 end
 
-%% Add indepent noise
+%% Add independent noise
 X_noise = (rand(size(X_hat))<noise);
 
-%% Continuous firing
+%% Spontaneous activities of additional neurons
+if additional_neurons
+    X_spont = (rand(additional_neurons,Length,Trials)<spontaneous_rate);
+    X_hat(N-additional_neurons+1:N,:,:) = X_spont;
+end
+
+%% Burst
 if isempty(len_burst)
     len_burst = 1;
 end
@@ -184,6 +193,10 @@ end
 for t = 1:Trials
     X_hat_tmp = conv2(squeeze(X_hat(:,:,t)), ones(1,len_burst));
     X_hat(:,:,t) = X_hat_tmp(:,1:Length);
+    if additional_neurons
+        X_spont_tmp = conv2(squeeze(X_spont(:,:,t)), ones(1,len_burst));
+        X_spont(:,:,t) = X_spont_tmp(:,1:Length);
+    end
 end
 
 for k = 1:K
@@ -191,7 +204,11 @@ for k = 1:K
     W(:,k,:) = W_tmp(:,1:Length);
 end
 
-X = X_hat + (~X_hat).*X_noise;
+X = X_hat;
+if additional_neurons
+    X(N-additional_neurons+1:N,:,:) = X_spont;
+end
+X = X + (~X).*X_noise;
 X(isnan(X)) = 0;
 
 %% Include calcimu dynamic
