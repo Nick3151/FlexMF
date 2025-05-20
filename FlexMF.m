@@ -1,4 +1,4 @@
-function [W, H, cost, errors, loadings, power] = FlexMF(X, varargin)
+function [W, H, cost, errors, loadings, power, M, R] = FlexMF(X, varargin)
 %
 % USAGE: 
 %
@@ -53,6 +53,9 @@ function [W, H, cost, errors, loadings, power] = FlexMF(X, varargin)
 % 'useWupdate'      1                                   Wupdate for cross orthogonality often doesn't change results much, and can be slow, so option to remove  
 % 'M'               ones(N,T)                           Masking matrix if excluding a random test set from the fit
 % 'neg_prop'        0.2                                 Proportion of negative indices
+% 'EMD              0                                   Optimize EMD instead of reconstruction error
+% 'lambda_R'        1e2                                 Penalty coefficient on residual term for unbalanced EMD
+% 
 % 'verbal'          1                                   Print intermediate output?
 % ------------------------------------------------------------------------
 % OUTPUTS:
@@ -60,11 +63,11 @@ function [W, H, cost, errors, loadings, power] = FlexMF(X, varargin)
 % W                         NxKxL tensor containing factor exemplars
 % H                         KxT matrix containing factor timecourses
 % cost                      (#Iterations+1)x1 vector containing 
-%                               reconstruction error at each iteration. 
+%                               reconstruction error(or EMD) at each iteration. 
 %                               cost(1) is error before 1st iteration.
 % errors                    (#Iterations+1)x4 matrix containing
-%                               reconstrcution and regularization errors 
-%                               for each iteration
+%                               reconstrcution and regularization  
+%                               errors for each iteration
 % loadings                  1xK vector containing loading of each factor 
 %                               (Fraction power in data explained by each factor)
 % power                     Fraction power in data explained 
@@ -73,6 +76,7 @@ function [W, H, cost, errors, loadings, power] = FlexMF(X, varargin)
 %                           Note, if doing fit with masked (held-out) data,
 %                               the cost and power do not include masked
 %                               (M==0) test set elements
+% M,R                       M and R for EMD optimization
 % ------------------------------------------------------------------------
 % CREDITS:
 %   Emily Mackevicius and Andrew Bahle, 2/1/2018
@@ -100,7 +104,19 @@ X(mask) = Xhat(mask); % replace data at masked elements with reconstruction, so 
 lasttime = 0;
 cost = zeros(params.maxiter+1, 1);
 errors = zeros(params.maxiter+1, 4);
-cost(1) = sqrt(mean((X(:)-Xhat(:)).^2));
+if params.EMD
+    opts = tfocs_SCD;
+    opts.continuation = 1;
+    opts.tol = 1e-6;
+    opts.stopCrit = 4;
+    opts.maxIts = 500;
+    opts.printEvery = 0;
+    cost(1) = compute_EMD(X,Xhat,opts);
+    M_pre = zeros(N,T);
+    R_pre = zeros(N,T);
+else
+    cost(1) = sqrt(mean((X(:)-Xhat(:)).^2));
+end
 [recon_err, reg_cross, reg_W, reg_H] = helper.get_FlexMF_cost(X,W_pre,H_pre);
 errors(1,:) = [recon_err, reg_cross, reg_W, reg_H];
 
@@ -130,10 +146,16 @@ for iter = 1 : params.maxiter
         if params.verbal
             fprintf('Updating W\n');
         end
-    %     W0 = max(W_pre(:))*rand(N, K, L);
         W0 = W_pre;
-    %     H_tmp = H_pre + 0.05*max(H_pre(:))*rand(K,T); 
-        W = updateW(W0, H_pre, X, params);   
+        M0 = M_pre;
+        R0 = R_pre;
+%         M0 = zeros(N,T);
+%         R0 = zeros(N,T);
+        if params.EMD
+            [W, M_pre, R_pre, out] = updateW_EMD(W0, H_pre, X, M0, R0, params);
+        else
+            W = updateW(W0, H_pre, X, params); 
+        end
     else
         W = W_pre;
     end
@@ -141,10 +163,17 @@ for iter = 1 : params.maxiter
     if params.verbal
         fprintf('Updating H\n');
     end
-%     H0 = max(H_pre(:))*rand(K,T); 
+
     H0 = H_pre;
-    W_tmp = W + 0.05*max(W_pre(:))*rand(N, K, L);
-    H = updateH(W, H0, X, params);   
+    M0 = M_pre;
+    R0 = R_pre;
+%     M0 = zeros(N,T);
+%     R0 = zeros(N,T);
+    if params.EMD
+        [H, M, R, out] = updateH_EMD(W, H0, X, M0, R0, params);
+    else
+        H = updateH(W, H0, X, params);   
+    end
 
 %     toc
     if ~params.W_fixed
@@ -165,7 +194,11 @@ for iter = 1 : params.maxiter
     Xhat = helper.reconstruct(W, H);    
     mask = find(params.M == 0); % find masked (held-out) indices 
     X(mask) = Xhat(mask); % replace data at masked elements with reconstruction, so masked datapoints do not effect fit
-    cost(iter+1) = sqrt(mean((X(:)-Xhat(:)).^2));
+    if params.EMD
+        cost(iter+1) = compute_EMD(X,Xhat,opts);
+    else
+        cost(iter+1) = sqrt(mean((X(:)-Xhat(:)).^2));
+    end
     [recon_err, reg_cross, reg_W, reg_H] = helper.get_FlexMF_cost(X,W,H);
     errors(iter+1,:) = [recon_err, reg_cross, reg_W, reg_H];
 %     dW = sqrt(mean((W(:)-W_pre(:)).^2));
@@ -181,6 +214,8 @@ for iter = 1 : params.maxiter
     
     W_pre = W;
     H_pre = H;
+    M_pre = M;
+    R_pre = R;
     if lasttime
         break
     end
@@ -190,6 +225,10 @@ end
 X = X(:,L+1:end-L);
 Xhat = Xhat(:,L+1:end-L);
 H = H(:,L+1:end-L);
+if params.EMD
+    M = M(:,L+1:end-L);
+    R = R(:,L+1:end-L);
+end
 
 % Compute explained power of whole reconstruction and each factor
 power = (sum(X(:).^2)-sum((X(:)-Xhat(:)).^2))/sum(X(:).^2);  % fraction power explained by whole reconstruction
@@ -211,7 +250,7 @@ end
         %USAGE: addOptional(p,'parametername',defaultvalue);
         addOptional(p,'K',10);
         addOptional(p,'L',100);
-        addOptional(p,'lambda',.01);
+        addOptional(p,'lambda',.001);
         addOptional(p,'alpha_H',1e-3);
         addOptional(p,'alpha_W',1e-6);
         addOptional(p,'showPlot',1);
@@ -229,6 +268,8 @@ end
         addOptional(p,'useWupdate',1); % W update for cross orthogonality often doesn't change results much, and can be slow, so option to skip it 
         addOptional(p,'M',nan); % Masking matrix: default is ones; set elements to zero to hold out as masked test set
         addOptional(p, 'neg_prop', 0.2); % proportion of negative indices
+        addOptional(p, 'EMD', 0);  % Optimize EMD instead of reconstruction error
+        addOptional(p, 'lambda_R', 1e2); % Penalty coefficient on residual term for unbalanced EMD
         parse(p,inputs{:});
         L = p.Results.L; 
         K = p.Results.K; 

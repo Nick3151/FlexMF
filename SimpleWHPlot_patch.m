@@ -77,7 +77,7 @@ axW = subplot('Position', [m m ww hdata]);
 hold on
 set(gca, 'ColorOrder', kColors); 
 
-dnW = prctile(W(:),99.9); 
+dnW = prctile(W(:),99.9)+epsilon; 
 XsEdge = zeros(3,K); 
 YsEdge = [zeros(1,K); dnW*N*ones(2,K)];
 

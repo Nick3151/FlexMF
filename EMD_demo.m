@@ -1,54 +1,37 @@
+%% Demo script showing EMD between two sequences
 clear all
 close all
 root = fileparts(pwd);
 addpath(fullfile(root, 'TFOCS'))
+addpath(fullfile(root, 'Utils'))
 rmpath(genpath(fullfile(root, 'seqNMF-master')));
 addpath(genpath(fullfile(root, 'FlexMF')));
-%% Generate some synthetic data with temporal jittering or time warping
-number_of_seqences = 3;
-T = 800; % length of data to generate
-Nneurons = 10*ones(number_of_seqences,1); % number of neurons in each sequence
-Dt = 3.*ones(number_of_seqences,1); % gap between each member of the sequence
-noise = 0.001; % probability of added noise in each bin
-jitter = 5*ones(number_of_seqences,1); % Jitter std
-participation = 1.*ones(number_of_seqences,1); % Participation parameter = 100%
-warp = 2; % stretch should be less than Dt
-gap = 100;
-neg = 0;
-bin = 0;
-seed = 1;
-[X, W, H, ~] = generate_data(T,Nneurons,Dt, 'seed', seed);
-[Xwarp, Wwarp, Hwarp, ~] = generate_data(T,Nneurons,Dt, 'warp', warp, 'seed', seed);
-[Xjit, Wjit, Hjit, ~] = generate_data(T,Nneurons,Dt, 'jitter', jitter, 'seed', seed);
-L = size(W,3);
-% range = round(L/2)-25:round(L/2)+35;
+%% Generate some synthetic sequence with temporal shifting or time warping
+T = 100;
+N = 10;
+X = generate_sequence(T,N,3);
+figure; SimpleXplot(X)
+save2pdf('Sequence_raw.pdf')
 
-plotAll = 1;
-figure; SimpleWHPlot_patch(W,H,[],[],[],X,plotAll); title('generated data raw','Fontsize',16)
-set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-figure; SimpleWHPlot_patch(Wwarp,Hwarp,[],[],[],Xwarp,plotAll); title('generated data warping','Fontsize',16)
-set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-figure; SimpleWHPlot_patch(Wjit,Hjit,[],[],[],Xjit,plotAll); title('generated data jittering','Fontsize',16)
-set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
+Xwarp = generate_sequence(T,N,3,'warp',1);
+figure; SimpleXplot(Xwarp)
+save2pdf('Sequence_warp.pdf')
 
-%% Compute EMD
+Xshift = generate_sequence(T,N,3,'shift',1);
+figure; SimpleXplot(Xshift)
+save2pdf('Sequence_shift.pdf')
+
+%% Compute EMD demo
 opts_default = tfocs_SCD;
 opts = opts_default;
 opts.continuation = 1;
 opts.tol = 1e-6;
 opts.stopCrit = 4;
-opts.maxIts = 5000;
+opts.maxIts = 500;
+% opts.alg = 'N83';
 
-mu = 1e6;
-N = size(X,1);
-A = @(Y, mode)Beckmann_UOT_constraint(N, T, Y, mode);
-W = @(Y, mode)Beckmann_UOT_obj(N, T, mu, Y, mode);
-% b = Xwarp-X;
-b = Xjit-X;
-[Y, out] = solver_sBPDN_W(A,W,b,0,1,[],[],opts);
+[d, M, R, out] = compute_EMD(X, Xshift, opts);
 
-M = Y(1:N,:);
-R = Y(N+1:2*N,:);
 figure;
 ax_res = subplot('Position', [0.05, 0.55, 0.8, 0.4]);
 imagesc(R)
@@ -61,97 +44,105 @@ title('M', 'FontSize', 16)
 set(ax_flux, 'XTickLabel', [], 'YTickLabel', []);
 colorbar('Position', [0.9 0.05 0.05 0.4], 'FontSize', 14);
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
+% save2pdf('EMD_warp_demo.pdf')
+save2pdf('EMD_shift_demo.pdf')
 
 figure;
 plot(out.f)
 title('out.f')
 
-emd = norm(M(:),1)+mu*norm(R(:),1)
-
 % Check constraint
 D = eye(T) - diag(ones(T-1,1),-1);
-C = M*D'-R-b;
+C = M*D'-R-(Xshift-X);
 figure;
 imagesc(C)
 set(gca, 'XTickLabel', [], 'YTickLabel', []);
+title('Constraint error')
 colorbar
+%% EMD vs different levels of warping/shift
+T = 100;
+N = 10;
+X = generate_sequence(T,N,3);
 
-%% EMD vs different levels of jittering
-number_of_seqences = 3;
-T = 800; % length of data to generate
-Nneurons = 10*ones(number_of_seqences,1); % number of neurons in each sequence
-Dt = 3.*ones(number_of_seqences,1); % gap between each member of the sequence
-noise = 0.001; % probability of added noise in each bin
-participation = 1.*ones(number_of_seqences,1); % Participation parameter = 100%
-gap = 100;
-neg = 0;
-bin = 0;
-[X, W, H, ~] = generate_data(T,Nneurons,Dt,noise,zeros(number_of_seqences,1),participation,gap,0,bin,neg,1);
-L = size(W,3);
+EMDs_shift = zeros(5,1);
+L2_shift = zeros(5,1);
+EMDs_warp = zeros(5,1);
+L2_warp = zeros(5,1);
 
-opts_default = tfocs_SCD;
-opts = opts_default;
-opts.continuation = 1;
-opts.tol = 1e-6;
-opts.stopCrit = 4;
-opts.maxIts = 5000;
+for j=0:4
+    Xshift = generate_sequence(T,N,3,'shift',j);
+    Xwarp = generate_sequence(T,N,3,'warp',j);
 
-mu = 1e6;
-N = size(X,1);
-A = @(Y, mode)Beckmann_UOT_constraint(N, T, Y, mode);
-W = @(Y, mode)Beckmann_UOT_obj(N, T, mu, Y, mode);
+    [d, M, R, out] = compute_EMD(X, Xshift, opts);
+    EMDs_shift(j+1) = d;
+    b = Xshift-X;
+    L2_shift(j+1) = norm(b(:))^2;
 
-for j=1:5
-    jitter = j*ones(number_of_seqences,1); % Jitter std
-    [Xjit, Wjit, Hjit, ~] = generate_data(T,Nneurons,Dt,noise,jitter,participation,gap,0,bin,neg,1);
-    b = Xjit-X;
-    [Y, out] = solver_sBPDN_W(A,W,b,0,1,[],[],opts);
-    M = Y(1:N,:);
-    R = Y(N+1:2*N,:);
-    EMDs(j) = norm(M(:),1)+mu*norm(R(:),1);
-end
-
-figure;
-plot(1:5, EMDs, 'LineWidth',2)
-ylabel('EMD')
-xlabel('Jitter SD')
-
-%% EMD vs different levels of warping
-number_of_seqences = 3;
-T = 800; % length of data to generate
-Nneurons = 10*ones(number_of_seqences,1); % number of neurons in each sequence
-Dt = 3.*ones(number_of_seqences,1); % gap between each member of the sequence
-noise = 0.001; % probability of added noise in each bin
-jitter = 0*ones(number_of_seqences,1); % Jitter std
-participation = 1.*ones(number_of_seqences,1); % Participation parameter = 100%
-gap = 100;
-neg = 0;
-bin = 0;
-[X, W, H, ~] = generate_data(T,Nneurons,Dt,noise,jitter,participation,gap,0,bin,neg,1);
-L = size(W,3);
-
-opts_default = tfocs_SCD;
-opts = opts_default;
-opts.continuation = 1;
-opts.tol = 1e-6;
-opts.stopCrit = 4;
-opts.maxIts = 5000;
-
-mu = 1e6;
-N = size(X,1);
-A = @(Y, mode)Beckmann_UOT_constraint(N, T, Y, mode);
-W = @(Y, mode)Beckmann_UOT_obj(N, T, mu, Y, mode);
-
-for warp=0:2
-    [Xwarp, Wwarp, Hwarp, ~] = generate_data(T,Nneurons,Dt,noise,jitter,participation,gap,warp,bin,neg,1);
+    [d, M, R, out] = compute_EMD(X, Xwarp, opts);
+    EMDs_warp(j+1) = d;
     b = Xwarp-X;
-    [Y, out] = solver_sBPDN_W(A,W,b,0,1,[],[],opts);
-    M = Y(1:N,:);
-    R = Y(N+1:2*N,:);
-    EMDs(warp) = norm(M(:),1)+mu*norm(R(:),1);
+    L2_warp(j+1) = norm(b(:))^2;
 end
 
 figure;
-plot(0:2, EMDs, 'LineWidth',2)
-ylabel('EMD')
-xlabel('Warping level')
+plot(0:4, EMDs_shift, 'LineWidth',2)
+hold on
+plot(0:4, L2_shift, 'LineWidth',2)
+ylabel('Distance')
+xlabel('Shift step')
+legend({'EMD', 'L2-square'})
+save2pdf('EMD_vs_shift.pdf')
+
+figure;
+plot(0:4, EMDs_warp, 'LineWidth',2)
+hold on
+plot(0:4, L2_warp, 'LineWidth',2)
+ylabel('Distance')
+xlabel('Warp step')
+legend({'EMD', 'L2-square'})
+save2pdf('EMD_vs_warp.pdf')
+
+%% Compute EMD under noise
+opts_default = tfocs_SCD;
+opts = opts_default;
+opts.continuation = 1;
+opts.tol = 1e-6;
+opts.stopCrit = 4;
+opts.maxIts = 500;
+% opts.alg = 'N83';
+
+X = generate_sequence(T,N,3, 'len_burst', 5, 'dynamic', 1);
+X_noise = generate_sequence(T,N,3, 'noise', .01, 'len_burst', 5, 'dynamic', 1);
+X_warp = generate_sequence(T,N,3, 'noise', .01, 'warp', 1, 'len_burst', 5, 'dynamic', 1);
+figure; SimpleXplot_patch(X)
+save2pdf('Sequence_dynamic.pdf')
+figure; SimpleXplot_patch(X_noise)
+save2pdf('Sequence_dynamic_noise.pdf')
+figure; SimpleXplot_patch(X_warp)
+save2pdf('Sequence_dynamic_warp.pdf')
+
+[d, M, R, out] = compute_EMD(X_noise, X_warp, opts);
+
+figure;
+ax_res = subplot('Position', [0.05, 0.55, 0.8, 0.4]);
+imagesc(R)
+title('R', 'FontSize', 16)
+set(ax_res, 'XTickLabel', [], 'YTickLabel', []);
+colorbar('Position', [0.9 0.55 0.05 0.4], 'FontSize', 14);
+ax_flux = subplot('Position', [0.05, 0.05, 0.8, 0.4]);
+imagesc(M)
+title('M', 'FontSize', 16)
+set(ax_flux, 'XTickLabel', [], 'YTickLabel', []);
+colorbar('Position', [0.9 0.05 0.05 0.4], 'FontSize', 14);
+set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
+save2pdf('EMD_noise_dynamic_demo.pdf')
+
+% Check constraint
+[N,T] = size(X_warp);
+D = eye(T) - diag(ones(T-1,1),-1);
+C = M*D'-R-(X_warp-X_noise);
+figure;
+imagesc(C)
+set(gca, 'XTickLabel', [], 'YTickLabel', []);
+title('Constraint error')
+colorbar

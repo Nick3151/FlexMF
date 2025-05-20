@@ -1,5 +1,5 @@
 function y = tensor_conv_H(W, T, H, mode)
-% smooth cross orthogonal operator on H
+% convolution operator on H
 [N, K, L] = size(W);
 
 switch mode
