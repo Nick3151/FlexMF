@@ -1,8 +1,9 @@
-function y = f1_EMD_H(A, N, H_, mode)
-% off-diagnal part of the smooth cross orthogonal operator on H_
+function y = cross_orth_EMD_H(A, N, H_, mode)
+% off-diagnal part of the smooth cross orthogonal operator on H
 % A = WTXS 
 % H_ = [H M R]'
-% f1*(Y) = [(Y.*Q)'*A; zeros(2*N,T)]
+% f(H_) = Q.*(AH')
+% f*(Y) = [(Y.*Q)'*A; zeros(2*N,T)]
 
 [K, T] = size(A);
 Q = ones(K);

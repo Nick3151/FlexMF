@@ -1,9 +1,9 @@
-function y = f1_EMD_W(X, H, L, W_, mode)
-% off-diagnal part of the smooth cross orthogonal operator on W_
+function y = cross_orth_EMD_W(X, H, L, W_, mode)
+% off-diagnal part of the smooth cross orthogonal operator on W
 % W_ = [W_flat M R]
 % W_flat: N*(KL)
-% f1(W_) = Q.*(transconv(W,X)*S*H')
-% f1*(Y) = [flatten(X(<--l)*S*H'*(Y.*Q)'); zeros(N,2T)]
+% f(W_) = Q.*(transconv(W,X)*S*H')
+% f*(Y) = [flatten(X(<--l)*S*H'*(Y.*Q)'); zeros(N,2T)]
 
 [N, T] = size(X);
 [K, ~] = size(H);

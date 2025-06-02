@@ -20,34 +20,46 @@ smoothkernel = ones(1,(2*L)-1);  % for factor competition
 WTX = helper.transconv(W, X);
 WTXS = conv2(abs(WTX), smoothkernel, 'same');
 A = WTXS;
-op_f1 = @(H_, mode)f1_EMD_H(A, N, H_, mode);
-op_f2 = @(H_, mode)f2_EMD_H(M0, K, H_, mode);
-op_f3 = @(H_, mode)f3_EMD_H(R0, K, H_, mode);
-op_f4 = @(H_, mode)f4_EMD_H(W, T, H_, mode);
+op_cross_orth_H = @(H_, mode)cross_orth_EMD_H(A, N, H_, mode);
+op_M = @(H_, mode)M_EMD_H(M0, K, H_, mode);
+op_R = @(H_, mode)R_EMD_H(R0, K, H_, mode);
+op_H = @(H_, mode)H_EMD_H(M0, K, H_, mode);
+op_constraint = @(H_, mode)constraint_EMD_H(W, T, H_, mode);
 
 
-normf12 = linop_normest(op_f1).^2;
-normf22 = linop_normest(op_f2).^2;
-normf32 = linop_normest(op_f3).^2;
-normf42 = linop_normest(op_f4).^2;
+norm_cross_orth2 = linop_normest(op_cross_orth_H).^2;
+norm_M2 = linop_normest(op_M).^2;
+norm_R2 = linop_normest(op_R).^2;
+norm_H2 = linop_normest(op_H).^2;
+norm_constraint2 = linop_normest(op_constraint).^2;
 
-proxScale1 = sqrt(normf12/normf42);
-proxScale2 = sqrt(normf22/normf42);
-proxScale3 = sqrt(normf32/normf42);
+proxScale_corss_orth = sqrt(norm_cross_orth2/norm_constraint2);
+proxScale_M = sqrt(norm_M2/norm_constraint2);
+proxScale_R = sqrt(norm_R2/norm_constraint2);
+proxScale_H = sqrt(norm_H2/norm_constraint2);
 %% Optimize with tfocs
 lambda = params.lambda;
 lambda_R = params.lambda_R;
+lambdaL1H = params.lambdaL1H;
 mu = 1e-3;
 
+affineF = {linop_compose(op_M, 1/proxScale_M), 0; ...
+           linop_compose(op_R, 1/proxScale_R), 0; ...
+           op_constraint, X};
+conjnegF = {proj_linf(proxScale_M), proj_linf(lambda_R*proxScale_R), proj_Rn};
+
 if lambda>0
-    [H_, out] = tfocs_SCD(proj_Rplus_H(K), {linop_compose(op_f1, 1/proxScale1), 0; ...
-        linop_compose(op_f2, 1/proxScale2), 0; linop_compose(op_f3, 1/proxScale3), 0; op_f4, X}, ...
-        {proj_linf(lambda*proxScale1), proj_linf(proxScale2), proj_linf(lambda_R*proxScale3), proj_Rn}, mu, H0_, [], opts);
-else
-    [H_, out] = tfocs_SCD(proj_Rplus_H(K), {linop_compose(op_f2, 1/proxScale2), 0; ...
-        linop_compose(op_f3, 1/proxScale3), 0; op_f4, X}, ...
-        {proj_linf(proxScale2), proj_linf(lambda_R*proxScale3), proj_Rn}, mu, H0_, [], opts);
+    affineF(end+1,:) = {linop_compose(op_cross_orth_H, 1/proxScale_corss_orth), 0};
+    conjnegF{end+1} = proj_linf(lambda*proxScale_corss_orth);
 end
+
+if lambdaL1H>0
+    affineF(end+1,:) = {linop_compose(op_H, 1/proxScale_H), 0};
+    conjnegF{end+1} = proj_linf(lambdaL1H*proxScale_H);
+end
+
+[H_, out] = tfocs_SCD(proj_Rplus_H(K), affineF, conjnegF, mu, H0_, [], opts);
+
 
 H = H_(1:K,:);
 M = H_(K+(1:N),:);
@@ -67,6 +79,7 @@ if params.verbal
     Xhat = helper.reconstruct(W, H);
     fprintf('reg=%f\n',sum(Q(:).*AH(:)));
     fprintf('recon=%f\n',sum((X(:)-Xhat(:)).^2)/2);
+    fprintf('L1_H=%f\n',sum(abs(H(:))));
     fprintf('L1_M=%f\n',sum(abs(M(:))));
     fprintf('L1_R=%f\n',sum(abs(R(:))));
     fprintf('Constraint=%f\n', sum(constraint(:).^2/2))

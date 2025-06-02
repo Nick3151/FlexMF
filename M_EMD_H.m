@@ -1,7 +1,8 @@
-function y = f2_EMD_H(M0, K, H_, mode)
+function y = M_EMD_H(M0, K, H_, mode)
+% Motion field M of H_
 % H_ = [H M R]'
-% f2(H_) = M
-% f2*(Y) = [zeros(K,T);Y;zeros(N,T)]
+% f(H_) = M
+% f*(Y) = [zeros(K,T);Y;zeros(N,T)]
 
 [N,T] = size(M0);
 

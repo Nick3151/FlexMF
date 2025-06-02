@@ -1,8 +1,8 @@
-function y = f4_EMD_W(H, N, L, W_, mode)
+function y = constraint_EMD_W(H, N, L, W_, mode)
 % linear constraint operator on W_
 % W_ = [W_flat M R]
-% f4(W_) = div(M)-R-conv(W,H)
-% f4*(Y) = [-flatten(Y*H(-->l)'), Y*D, -Y]
+% f(W_) = div(M)-R-conv(W,H)
+% f*(Y) = [-flatten(Y*H(-->l)'), Y*D, -Y]
 
 [K,T] = size(H);
 % divergence matrix

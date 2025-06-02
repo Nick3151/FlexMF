@@ -1,7 +1,8 @@
-function y = f3_EMD_H(R0, K, H_, mode)
+function y = R_EMD_H(R0, K, H_, mode)
+% Residual Error R of H_
 % H_ = [H M R]'
-% f3(H_) = R
-% f3*(Y) = [zeros(K+N,T);Y]
+% f(H_) = R
+% f*(Y) = [zeros(K+N,T);Y]
 
 [N,T] = size(R0);
 

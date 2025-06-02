@@ -1,9 +1,10 @@
-function y = f2_EMD_W(M, K, L, W_, mode)
+function y = M_EMD_W(M0, K, L, W_, mode)
+% Motion field M of H_
 % W_ = [W_flat M R]
-% f2(W_) = M
-% f2*(Y) = [zeros(N,K*L), Y, zeros(N,T)]
+% f(W_) = M
+% f*(Y) = [zeros(N,K*L), Y, zeros(N,T)]
 
-[N,T] = size(M);
+[N,T] = size(M0);
 
 switch mode
     case 0

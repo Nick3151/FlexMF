@@ -1,9 +1,10 @@
-function y = f3_EMD_W(R, K, L, W_, mode)
+function y = R_EMD_W(R0, K, L, W_, mode)
+% Residual Error R of W_
 % W_ = [W_flat M R]
-% f3(W_) = R
-% f3*(Y) = [zeros(N,(K*L+T)), Y]
+% f(W_) = R
+% f*(Y) = [zeros(N,(K*L+T)), Y]
 
-[N,T] = size(R);
+[N,T] = size(R0);
 
 switch mode
     case 0
