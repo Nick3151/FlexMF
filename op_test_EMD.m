@@ -28,6 +28,9 @@ linop_test(op, 'R2R');
 op = @(H_, mode)H_EMD_H(M, K, H_, mode);
 linop_test(op, 'R2R');
 
+op = @(H_, mode)obj_EMD_H(M, K, mu, H_, mode);
+linop_test(op, 'R2R');
+
 L = 50;
 W = rand(N,K,L);
 op = @(H_, mode)constraint_EMD_H(W, T, H_, mode);

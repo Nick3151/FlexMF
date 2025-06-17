@@ -61,12 +61,12 @@ Xwarp = Xwarp/frob_norm*K;
 figure;
 L = 50;
 [What, Hhat, cost, errors, loadings, power, M, R] = FlexMF(Xwarp, 'K', K, 'L', L, ...
-    'W_init', Wwarp, 'H_init', Hwarp, 'W_fixed', 1, 'EMD',1, 'lambda', 1e-2, 'lambda_R', 1e4, 'lambdaL1H', 1);
+    'W_init', Wwarp, 'H_init', Hwarp, 'W_fixed', 1, 'EMD',1, 'lambda', 1e-2, 'lambda_R', 1e4, 'lambdaL1H', 1e1, 'maxiter', 1);
 
 figure;
-SimpleWHPlot_patch(What, Hhat, 'Data', Xwarp, 'plotAll', 1)
+SimpleWHPlot(What, Hhat, 'Data', Xwarp, 'plotAll', 1, 'neg', 1)
 figure;
-SimpleWHPlot_patch(What, Hhat, 'plotAll', 1)
+SimpleWHPlot(What, Hhat, 'plotAll', 1, 'neg', 1)
 % save2pdf('EMD_warp_lambda=1e-4_lambdaR=1e4_results')
 
 tmp = helper.reconstruct(What,Hhat)-Xwarp;

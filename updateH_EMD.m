@@ -24,6 +24,8 @@ op_cross_orth_H = @(H_, mode)cross_orth_EMD_H(A, N, H_, mode);
 op_M = @(H_, mode)M_EMD_H(M0, K, H_, mode);
 op_R = @(H_, mode)R_EMD_H(R0, K, H_, mode);
 op_H = @(H_, mode)H_EMD_H(M0, K, H_, mode);
+lambda_R = params.lambda_R;
+op_obj = @(H_, mode)obj_EMD_H(M0, K, lambda_R, H_, mode);
 op_constraint = @(H_, mode)constraint_EMD_H(W, T, H_, mode);
 
 
@@ -43,22 +45,24 @@ lambda_R = params.lambda_R;
 lambdaL1H = params.lambdaL1H;
 mu = 1e-3;
 
-affineF = {linop_compose(op_M, 1/proxScale_M), 0; ...
-           linop_compose(op_R, 1/proxScale_R), 0; ...
-           op_constraint, X};
-conjnegF = {proj_linf(proxScale_M), proj_linf(lambda_R*proxScale_R), proj_Rn};
+% affineF = {linop_compose(op_M, 1/proxScale_M), 0; ...
+%            linop_compose(op_R, 1/proxScale_R), 0; ...
+%            op_constraint, X};
+% conjnegF = {proj_linf(proxScale_M), proj_linf(lambda_R*proxScale_R), proj_Rn};
+% 
+% if lambda>0
+%     affineF(end+1,:) = {linop_compose(op_cross_orth_H, 1/proxScale_corss_orth), 0};
+%     conjnegF{end+1} = proj_linf(lambda*proxScale_corss_orth);
+% end
+% 
+% if lambdaL1H>0
+%     affineF(end+1,:) = {linop_compose(op_H, 1/proxScale_H), 0};
+%     conjnegF{end+1} = proj_linf(lambdaL1H*proxScale_H);
+% end
+% 
+% [H_, out] = tfocs_SCD(proj_Rplus_H(K), affineF, conjnegF, mu, H0_, [], opts);
 
-if lambda>0
-    affineF(end+1,:) = {linop_compose(op_cross_orth_H, 1/proxScale_corss_orth), 0};
-    conjnegF{end+1} = proj_linf(lambda*proxScale_corss_orth);
-end
-
-if lambdaL1H>0
-    affineF(end+1,:) = {linop_compose(op_H, 1/proxScale_H), 0};
-    conjnegF{end+1} = proj_linf(lambdaL1H*proxScale_H);
-end
-
-[H_, out] = tfocs_SCD(proj_Rplus_H(K), affineF, conjnegF, mu, H0_, [], opts);
+[H_, out] = solver_sBPDN_W(op_constraint,op_obj,-X,0,mu,[],[],opts);
 
 
 H = H_(1:K,:);
