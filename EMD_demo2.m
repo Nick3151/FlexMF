@@ -1,10 +1,11 @@
 %% Demo script showing detecing sequences with EMD as cost function
 clear all
 close all
+clc
 root = fileparts(pwd);
 addpath(fullfile(root, 'TFOCS'))
 addpath(genpath(fullfile(root, 'CoDybase-MATLAB')))
-rmpath(genpath(fullfile(root, 'seqNMF-master')));
+% rmpath(genpath(fullfile(root, 'seqNMF-master')));
 addpath(genpath(fullfile(root, 'FlexMF')));
 %% Generate some synthetic data with temporal jittering or time warping
 number_of_seqences = 3;
@@ -44,13 +45,19 @@ frob_norm = norm(X(:));
 X = X/frob_norm*K;
 
 figure;
-[What, Hhat, cost, errors, loadings, power, M, R] = FlexMF(X, 'K', K, 'EMD',1, 'lambda', 1e-6);
+L = 60;
+lambdaL1H = 1e-2;
+lambda = 1e-4;
+lambda_M = 1e-4;
+lambda_R = 1e2;
+[What, Hhat, cost, errors, loadings, power, M, R] = FlexMF(X, 'K', K, 'L', L, ...
+    'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'lambdaL1H', lambdaL1H, 'tol', 1e-4, 'maxiter', 100);
 
 figure;
 SimpleWHPlot_patch(What, Hhat, 'Data', X, 'plotAll', 1)
 figure;
 SimpleWHPlot_patch(What, Hhat, 'plotAll', 1)
-save2pdf('EMD_raw_lambda=1e-6_results')
+save2pdf(sprintf('EMD_raw_lambda=%0.2e_lambdaM=%0.2e_lambdaR=%0.2e_lambdaL1H=%0.2e_results.pdf', lambda, lambda_M, lambda_R, lambdaL1H))
 
 %% EMD for sequence detection, warping data
 % Normalize data
@@ -60,42 +67,58 @@ Xwarp = Xwarp/frob_norm*K;
 
 figure;
 L = 50;
-[What, Hhat, cost, errors, loadings, power, M, R] = FlexMF(Xwarp, 'K', K, 'L', L, ...
-    'W_init', Wwarp, 'H_init', Hwarp, 'W_fixed', 1, 'EMD',1, 'lambda', 1e-2, 'lambda_R', 1e4, 'lambdaL1H', 1e1, 'maxiter', 1);
+lambdaL1H = 1e-2;
+lambda = 1e-4;
+lambda_M = 1e-4;
+lambda_R = 1e2;
 
+% Fix W and fit H, params may be different...
+% [What, Hhat, cost, errors, loadings, power, M, R] = FlexMF(Xwarp, 'K', K, 'L', L, ...
+%     'W_init', Wwarp, 'H_init', Hwarp, 'W_fixed', 1, 'EMD',1, 'lambda', 1e-4, 'lambda_R', 1, 'lambda_M', 1e-6, 'lambdaL1H', lambdaL1H, 'maxiter', 10);
+
+[What, Hhat, cost, errors, loadings, power, M, R] = FlexMF(Xwarp, 'K', K, 'L', L, ...
+    'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'lambdaL1H', lambdaL1H, 'maxiter', 50);
+
+% figure;
+% SimpleWHPlot(What, Hhat, 'Data', Xwarp, 'plotAll', 1, 'neg', 1)
+% figure;
+% SimpleWHPlot(What, Hhat, 'plotAll', 1, 'neg', 1)
 figure;
-SimpleWHPlot(What, Hhat, 'Data', Xwarp, 'plotAll', 1, 'neg', 1)
+SimpleWHPlot_patch(What, Hhat, 'Data', Xwarp, 'plotAll', 1)
 figure;
-SimpleWHPlot(What, Hhat, 'plotAll', 1, 'neg', 1)
-% save2pdf('EMD_warp_lambda=1e-4_lambdaR=1e4_results')
+SimpleWHPlot_patch(What, Hhat, 'plotAll', 1)
+save2pdf(sprintf('EMD_warp_lambda=%0.2e_lambdaM=%0.2e_lambdaR=%0.2e_lambdaL1H=%0.2e_results.pdf', lambda, lambda_M, lambda_R, lambdaL1H))
 
 tmp = helper.reconstruct(What,Hhat)-Xwarp;
+% sum(tmp(:).^2/2)
 
 %% Plot EMD and other costs as a funciton of iterations
 figure; 
 plot(cost(2:end))
 hold on
 plot(errors(2:end,2))
+plot(errors(2:end,4))
 xlabel('Iteration #')
-legend('EMD', 'Regularization')
+legend('EMD', 'Regularization', 'L1H')
 title('EMD')
-% save2pdf('EMD_raw_lambda=1e-6_costs')
-% save2pdf('EMD_warp_lambda=1e-4_lambdaR=1e4_costs')
+save2pdf(sprintf('EMD_warp_lambda=%0.2e_lambdaM=%0.2e_lambdaR=%0.2e_lambdaL1H=%0.2e_costs.pdf', lambda, lambda_M, lambda_R, lambdaL1H))
 
 %% Plot M and R 
 
 figure;
 ax_res = subplot('Position', [0.05, 0.55, 0.8, 0.4]);
-imagesc(R)
+imagesc(R,[-max(abs(R(:))),max(abs(R(:)))])
 title('R', 'FontSize', 16)
 set(ax_res, 'XTickLabel', [], 'YTickLabel', []);
 colorbar('Position', [0.9 0.55 0.05 0.4], 'FontSize', 14);
+
 ax_flux = subplot('Position', [0.05, 0.05, 0.8, 0.4]);
-imagesc(M)
+imagesc(M, [-max(abs(M(:))),max(abs(M(:)))])
 title('M', 'FontSize', 16)
 set(ax_flux, 'XTickLabel', [], 'YTickLabel', []);
 colorbar('Position', [0.9 0.05 0.05 0.4], 'FontSize', 14);
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
+% save2pdf(sprintf('EMD_warp_lambda=%0.2e_lambdaM=%0.2e_lambdaR=%0.2e_lambdaL1H=%0.2e_MR', lambda, lambda_M, lambda_R, lambdaL1H))
 
 %% EMD between X and Xwarp
 opts_default = tfocs_SCD;

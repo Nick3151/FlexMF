@@ -42,6 +42,7 @@ proxScale_H = sqrt(norm_H2/norm_constraint2);
 %% Optimize with tfocs
 lambda = params.lambda;
 lambda_R = params.lambda_R;
+lambda_M = params.lambda_M;
 lambdaL1H = params.lambdaL1H;
 mu = 1e-3;
 
@@ -62,7 +63,24 @@ mu = 1e-3;
 % 
 % [H_, out] = tfocs_SCD(proj_Rplus_H(K), affineF, conjnegF, mu, H0_, [], opts);
 
-[H_, out] = solver_sBPDN_W(op_constraint,op_obj,-X,0,mu,[],[],opts);
+conjnegF = {proj_Rn, proj_linf(lambda_R), proj_linf(lambda_M)};
+affineF = {op_constraint, X; ...
+           op_R, 0; ...
+           op_M, 0 };
+
+if lambda>0
+    affineF(end+1,:) = {op_cross_orth_H, 0};
+    conjnegF{end+1} = proj_linf(lambda);
+end
+
+if lambdaL1H>0
+    affineF(end+1,:) = {op_H, 0};
+    conjnegF{end+1} = proj_linf(lambdaL1H);
+end
+
+[H_, out] = tfocs_SCD(proj_Rplus_H(K), affineF, conjnegF, mu, H0_, [], opts);
+
+% [H_, out] = solver_sBPDN_W(op_constraint,op_obj,-X,0,mu,[],[],opts);
 
 
 H = H_(1:K,:);

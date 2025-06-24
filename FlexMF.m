@@ -54,8 +54,8 @@ function [W, H, cost, errors, loadings, power, M, R] = FlexMF(X, varargin)
 % 'M'               ones(N,T)                           Masking matrix if excluding a random test set from the fit
 % 'neg_prop'        0.2                                 Proportion of negative indices
 % 'EMD              0                                   Optimize EMD instead of reconstruction error
-% 'lambda_R'        1e2                                 Penalty coefficient on residual term for unbalanced EMD
-% 
+% 'lambda_R'        1                                   Penalty coefficient on residual term for unbalanced EMD
+% 'lambda_M'        1e-4                                Penalty coefficient on motion field for unbalanced EMD
 % 'verbal'          1                                   Print intermediate output?
 % ------------------------------------------------------------------------
 % OUTPUTS:
@@ -269,7 +269,8 @@ end
         addOptional(p,'M',nan); % Masking matrix: default is ones; set elements to zero to hold out as masked test set
         addOptional(p, 'neg_prop', 0.2); % proportion of negative indices
         addOptional(p, 'EMD', 0);  % Optimize EMD instead of reconstruction error
-        addOptional(p, 'lambda_R', 1e2); % Penalty coefficient on residual term for unbalanced EMD
+        addOptional(p, 'lambda_R', 1); % Penalty coefficient on residual term for unbalanced EMD
+        addOptional(p, 'lambda_M', 1e-4); % Penalty coefficient on motion field for unbalanced EMD
         parse(p,inputs{:});
         L = p.Results.L; 
         K = p.Results.K; 

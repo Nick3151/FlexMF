@@ -37,22 +37,40 @@ proxScale_W = sqrt(norm_W2/norm_constraint2);
 %% Optimize with tfocs
 lambda = params.lambda;
 lambda_R = params.lambda_R;
+lambda_M = params.lambda_M;
 lambdaL1W = params.lambdaL1W;
 mu = 1e-3;
 
-affineF = {linop_compose(op_M, 1/proxScale_M), 0; ...
-           linop_compose(op_R, 1/proxScale_R), 0; ...
-           op_constraint, X};
-conjnegF = {proj_linf(proxScale_M), proj_linf(lambda_R*proxScale_R), proj_Rn};
+% affineF = {linop_compose(op_M, 1/proxScale_M), 0; ...
+%            linop_compose(op_R, 1/proxScale_R), 0; ...
+%            op_constraint, X};
+% conjnegF = {proj_linf(proxScale_M), proj_linf(lambda_R*proxScale_R), proj_Rn};
+% 
+% if lambda>0
+%     affineF(end+1,:) = {linop_compose(op_cross_orth_W, 1/proxScale_corss_orth), 0};
+%     conjnegF{end+1} = proj_linf(lambda*proxScale_corss_orth);
+% end
+% 
+% if lambdaL1W>0
+%     affineF(end+1,:) = {linop_compose(op_W, 1/proxScale_W), 0};
+%     conjnegF{end+1} = proj_linf(lambdaL1W*proxScale_W);
+% end
+% 
+% [W_, out] = tfocs_SCD(proj_Rplus_W(K*L), affineF, conjnegF, mu, W0_, [], opts);
+
+conjnegF = {proj_Rn, proj_linf(lambda_R), proj_linf(lambda_M)};
+affineF = {op_constraint, X; ...
+           op_R, 0; ...
+           op_M, 0 };
 
 if lambda>0
-    affineF(end+1,:) = {linop_compose(op_cross_orth_W, 1/proxScale_corss_orth), 0};
-    conjnegF{end+1} = proj_linf(lambda*proxScale_corss_orth);
+    affineF(end+1,:) = {op_cross_orth_W, 0};
+    conjnegF{end+1} = proj_linf(lambda);
 end
 
 if lambdaL1W>0
-    affineF(end+1,:) = {linop_compose(op_W, 1/proxScale_W), 0};
-    conjnegF{end+1} = proj_linf(lambdaL1W*proxScale_W);
+    affineF(end+1,:) = {op_W, 0};
+    conjnegF{end+1} = proj_linf(lambdaL1H);
 end
 
 [W_, out] = tfocs_SCD(proj_Rplus_W(K*L), affineF, conjnegF, mu, W0_, [], opts);
@@ -82,6 +100,7 @@ if params.verbal
     fprintf('L1_W=%f\n',sum(abs(W(:))));
     fprintf('L1_M=%f\n',sum(abs(M(:))));
     fprintf('L1_R=%f\n',sum(abs(R(:))));
+    fprintf('Constraint=%f\n', sum(constraint(:).^2/2))
     fprintf('dW=%f\n', dW);
     fprintf('dM=%f\n', dM);
     fprintf('dR=%f\n', dR);

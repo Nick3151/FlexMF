@@ -12,7 +12,7 @@ switch nargin
 	case 2
 		if nargout == 2
 			error( 'This function is not differentiable.' );
-        elseif any( x(1:K,:) < 0 )
+        elseif any( x(1:K,:) < 0, 'all')
             v = Inf;
         end
 	case 3
