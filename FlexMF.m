@@ -48,6 +48,7 @@ function [W, H, cost, errors, loadings, power, M, R] = FlexMF(X, varargin)
 % 'shift'           1                                   Shift factors to center; Helps avoid local minima
 % 'lambdaL1W'       0                                   L1 sparsity parameter; Increase to make W's more sparse
 % 'lambdaL1H'       0                                   L1 sparsity parameter; Increase to make H's more sparse
+% 'Reweight'        0                                   Whether to use reweighted L1 minimization
 % 'W_fixed'         0                                   Fix W during the fitting proceedure   
 % 'SortFactors'     1                                   Sort factors by loadings
 % 'useWupdate'      1                                   Wupdate for cross orthogonality often doesn't change results much, and can be slow, so option to remove  
@@ -121,6 +122,7 @@ end
 errors(1,:) = [recon_err, reg_cross, reg_W, reg_H];
 
 for iter = 1 : params.maxiter
+    params.currentiter = iter;
     if params.verbal
         fprintf('Iter %d\n', iter);
     end
@@ -261,6 +263,7 @@ end
         addOptional(p,'shift',1);
         addOptional(p,'lambdaL1W',0);
         addOptional(p,'lambdaL1H',0);
+        addOptional(p,'Reweight',0);
         addOptional(p,'W_fixed',0);
         addOptional(p,'W_init', nan); % depends on K--initialize post parse
         addOptional(p,'H_init', nan); % depends on K--initialize post parse

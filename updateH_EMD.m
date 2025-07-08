@@ -44,6 +44,7 @@ lambda = params.lambda;
 lambda_R = params.lambda_R;
 lambda_M = params.lambda_M;
 lambdaL1H = params.lambdaL1H;
+Reweight = params.Reweight;
 mu = 1e-3;
 
 % affineF = {linop_compose(op_M, 1/proxScale_M), 0; ...
@@ -75,7 +76,12 @@ end
 
 if lambdaL1H>0
     affineF(end+1,:) = {op_H, 0};
-    conjnegF{end+1} = proj_linf(lambdaL1H);
+    if Reweight && (params.currentiter > 10)
+        epsilon = 1e-2;
+        conjnegF{end+1} = proj_abs_box(lambdaL1H./(abs(H0)+epsilon));
+    else
+        conjnegF{end+1} = proj_linf(lambdaL1H);
+    end
 end
 
 [H_, out] = tfocs_SCD(proj_Rplus_H(K), affineF, conjnegF, mu, H0_, [], opts);

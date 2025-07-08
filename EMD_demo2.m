@@ -46,19 +46,36 @@ X = X/frob_norm*K;
 
 figure;
 L = 60;
-lambdaL1H = 1e-2;
+lambdaL1H = 1e-3;
 lambda = 1e-4;
 lambda_M = 1e-4;
 lambda_R = 1e2;
 [What, Hhat, cost, errors, loadings, power, M, R] = FlexMF(X, 'K', K, 'L', L, ...
-    'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'lambdaL1H', lambdaL1H, 'tol', 1e-4, 'maxiter', 100);
+    'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'lambdaL1H', lambdaL1H, 'tol', 1e-4, 'maxiter', 20, 'Reweight', 1);
+
+% figure;
+% SimpleWHPlot_patch(What, Hhat, 'Data', X, 'plotAll', 1)
+% figure;
+% SimpleWHPlot_patch(What, Hhat, 'plotAll', 1)
+% save2pdf(sprintf('EMD_raw_lambda=%0.2e_lambdaM=%0.2e_lambdaR=%0.2e_lambdaL1H=%0.2e_results.pdf', lambda, lambda_M, lambda_R, lambdaL1H))
 
 figure;
 SimpleWHPlot_patch(What, Hhat, 'Data', X, 'plotAll', 1)
 figure;
 SimpleWHPlot_patch(What, Hhat, 'plotAll', 1)
-save2pdf(sprintf('EMD_raw_lambda=%0.2e_lambdaM=%0.2e_lambdaR=%0.2e_lambdaL1H=%0.2e_results.pdf', lambda, lambda_M, lambda_R, lambdaL1H))
-
+save2pdf(sprintf('EMD_raw_reweighted_lambda=%0.2e_lambdaM=%0.2e_lambdaR=%0.2e_lambdaL1H=%0.2e_results.pdf', lambda, lambda_M, lambda_R, lambdaL1H))
+%% Plot L1W and L1H as a funciton of iterations
+figure; 
+yyaxis left
+plot(cost(2:end))
+yyaxis right
+hold on
+plot(errors(2:end,3))
+plot(errors(2:end,4))
+xlabel('Iteration #')
+legend('EMD', 'L1W', 'L1H')
+xline(10, '--', 'Reweighted L1')
+save2pdf(sprintf('EMD_raw_reweighted_lambda=%0.2e_lambdaM=%0.2e_lambdaR=%0.2e_lambdaL1H=%0.2e_costs.pdf', lambda, lambda_M, lambda_R, lambdaL1H))
 %% EMD for sequence detection, warping data
 % Normalize data
 K = 3;
@@ -66,8 +83,8 @@ frob_norm = norm(Xwarp(:));
 Xwarp = Xwarp/frob_norm*K;
 
 figure;
-L = 50;
-lambdaL1H = 1e-2;
+L = 60;
+lambdaL1H = 1e-3;
 lambda = 1e-4;
 lambda_M = 1e-4;
 lambda_R = 1e2;
@@ -77,7 +94,7 @@ lambda_R = 1e2;
 %     'W_init', Wwarp, 'H_init', Hwarp, 'W_fixed', 1, 'EMD',1, 'lambda', 1e-4, 'lambda_R', 1, 'lambda_M', 1e-6, 'lambdaL1H', lambdaL1H, 'maxiter', 10);
 
 [What, Hhat, cost, errors, loadings, power, M, R] = FlexMF(Xwarp, 'K', K, 'L', L, ...
-    'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'lambdaL1H', lambdaL1H, 'maxiter', 50);
+    'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'lambdaL1H', lambdaL1H, 'maxiter', 50, 'Reweight', 1);
 
 % figure;
 % SimpleWHPlot(What, Hhat, 'Data', Xwarp, 'plotAll', 1, 'neg', 1)
@@ -87,21 +104,26 @@ figure;
 SimpleWHPlot_patch(What, Hhat, 'Data', Xwarp, 'plotAll', 1)
 figure;
 SimpleWHPlot_patch(What, Hhat, 'plotAll', 1)
-save2pdf(sprintf('EMD_warp_lambda=%0.2e_lambdaM=%0.2e_lambdaR=%0.2e_lambdaL1H=%0.2e_results.pdf', lambda, lambda_M, lambda_R, lambdaL1H))
+% save2pdf(sprintf('EMD_warp_lambda=%0.2e_lambdaM=%0.2e_lambdaR=%0.2e_lambdaL1H=%0.2e_results.pdf', lambda, lambda_M, lambda_R, lambdaL1H))
+save2pdf(sprintf('EMD_warp_reweighted_lambda=%0.2e_lambdaM=%0.2e_lambdaR=%0.2e_lambdaL1H=%0.2e_results.pdf', lambda, lambda_M, lambda_R, lambdaL1H))
 
 tmp = helper.reconstruct(What,Hhat)-Xwarp;
 % sum(tmp(:).^2/2)
 
 %% Plot EMD and other costs as a funciton of iterations
 figure; 
+yyaxis left
 plot(cost(2:end))
 hold on
 plot(errors(2:end,2))
+yyaxis right
+hold on
+plot(errors(2:end,3))
 plot(errors(2:end,4))
 xlabel('Iteration #')
-legend('EMD', 'Regularization', 'L1H')
+legend('EMD', 'Regularization', 'L1W', 'L1H')
 title('EMD')
-save2pdf(sprintf('EMD_warp_lambda=%0.2e_lambdaM=%0.2e_lambdaR=%0.2e_lambdaL1H=%0.2e_costs.pdf', lambda, lambda_M, lambda_R, lambdaL1H))
+% save2pdf(sprintf('EMD_warp_lambda=%0.2e_lambdaM=%0.2e_lambdaR=%0.2e_lambdaL1H=%0.2e_costs.pdf', lambda, lambda_M, lambda_R, lambdaL1H))
 
 %% Plot M and R 
 
