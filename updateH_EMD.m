@@ -74,11 +74,18 @@ if lambda>0
     conjnegF{end+1} = proj_linf(lambda);
 end
 
+smooth_win = 10;
+[K,T] = size(H0);
+H0_smooth = zeros(K,T);
+for k=1:K
+    H0_smooth(k,:) = filtfilt(ones(1,smooth_win)/smooth_win, 1, H0(k,:));
+end
+
 if lambdaL1H>0
     affineF(end+1,:) = {op_H, 0};
     if Reweight && (params.currentiter > 10)
         epsilon = 1e-2;
-        conjnegF{end+1} = proj_abs_box(lambdaL1H./(abs(H0)+epsilon));
+        conjnegF{end+1} = proj_abs_box(lambdaL1H./(abs(H0_smooth)+epsilon));
     else
         conjnegF{end+1} = proj_linf(lambdaL1H);
     end

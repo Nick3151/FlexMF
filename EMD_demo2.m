@@ -63,7 +63,8 @@ figure;
 SimpleWHPlot_patch(What, Hhat, 'Data', X, 'plotAll', 1)
 figure;
 SimpleWHPlot_patch(What, Hhat, 'plotAll', 1)
-save2pdf(sprintf('EMD_raw_reweighted_lambda=%0.2e_lambdaM=%0.2e_lambdaR=%0.2e_lambdaL1H=%0.2e_results.pdf', lambda, lambda_M, lambda_R, lambdaL1H))
+% save2pdf(sprintf('EMD_raw_reweighted_lambda=%0.2e_lambdaM=%0.2e_lambdaR=%0.2e_lambdaL1H=%0.2e_results.pdf', lambda, lambda_M, lambda_R, lambdaL1H))
+save2pdf(sprintf('EMD_raw_smooth_reweighted_lambda=%0.2e_lambdaM=%0.2e_lambdaR=%0.2e_lambdaL1H=%0.2e_results.pdf', lambda, lambda_M, lambda_R, lambdaL1H))
 %% Plot L1W and L1H as a funciton of iterations
 figure; 
 yyaxis left
@@ -88,13 +89,15 @@ lambdaL1H = 1e-3;
 lambda = 1e-4;
 lambda_M = 1e-4;
 lambda_R = 1e2;
+lambda_TV = 1e-4;
 
 % Fix W and fit H, params may be different...
 % [What, Hhat, cost, errors, loadings, power, M, R] = FlexMF(Xwarp, 'K', K, 'L', L, ...
 %     'W_init', Wwarp, 'H_init', Hwarp, 'W_fixed', 1, 'EMD',1, 'lambda', 1e-4, 'lambda_R', 1, 'lambda_M', 1e-6, 'lambdaL1H', lambdaL1H, 'maxiter', 10);
 
 [What, Hhat, cost, errors, loadings, power, M, R] = FlexMF(Xwarp, 'K', K, 'L', L, ...
-    'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'lambdaL1H', lambdaL1H, 'maxiter', 50, 'Reweight', 1);
+    'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, ...
+    'lambda_TV', lambda_TV, 'lambdaL1H', lambdaL1H, 'maxiter', 50, 'Reweight', 1);
 
 % figure;
 % SimpleWHPlot(What, Hhat, 'Data', Xwarp, 'plotAll', 1, 'neg', 1)
@@ -105,10 +108,14 @@ SimpleWHPlot_patch(What, Hhat, 'Data', Xwarp, 'plotAll', 1)
 figure;
 SimpleWHPlot_patch(What, Hhat, 'plotAll', 1)
 % save2pdf(sprintf('EMD_warp_lambda=%0.2e_lambdaM=%0.2e_lambdaR=%0.2e_lambdaL1H=%0.2e_results.pdf', lambda, lambda_M, lambda_R, lambdaL1H))
-save2pdf(sprintf('EMD_warp_reweighted_lambda=%0.2e_lambdaM=%0.2e_lambdaR=%0.2e_lambdaL1H=%0.2e_results.pdf', lambda, lambda_M, lambda_R, lambdaL1H))
+% save2pdf(sprintf('EMD_warp_reweighted_lambda=%0.2e_lambdaM=%0.2e_lambdaR=%0.2e_lambdaL1H=%0.2e_results.pdf', lambda, lambda_M, lambda_R, lambdaL1H))
+save2pdf(sprintf('EMD_warp_reweighted_TVnorm_lambda=%0.2e_lambdaM=%0.2e_lambdaR=%0.2e_lambdaL1H=%0.2e_results.pdf', lambda, lambda_M, lambda_R, lambdaL1H))
 
 tmp = helper.reconstruct(What,Hhat)-Xwarp;
-% sum(tmp(:).^2/2)
+% sum(tmp(:).^2/2)save2pdf(sprintf('EMD_warp_reweighted_TVnorm_lambda=%0.2e_lambdaM=%0.2e_lambdaR=%0.2e_lambdaL1H=%0.2e_results.pdf', lambda, lambda_M, lambda_R, lambdaL1H))
+
+% Compute similarity to ground truth
+[coeffs_W, coeffs_H, ids] = helper.similarity_WH(W, H, What, Hhat);
 
 %% Plot EMD and other costs as a funciton of iterations
 figure; 

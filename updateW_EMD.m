@@ -22,6 +22,7 @@ op_M = @(W_, mode)M_EMD_W(M0, K, L, W_, mode);
 op_R = @(W_, mode)R_EMD_W(R0, K, L, W_, mode);
 op_W = @(W_, mode)W_EMD_W(M0, K, L, W_, mode);
 op_constraint = @(W_, mode)constraint_EMD_W(H, N, L, W_, mode);
+op_TV = @(W, mode)total_variation_W(N, K, L, W, mode);
 
 norm_cross_orth2 = linop_normest(op_cross_orth_W).^2;
 norm_M2 = linop_normest(op_M).^2;
@@ -39,6 +40,7 @@ lambda = params.lambda;
 lambda_R = params.lambda_R;
 lambda_M = params.lambda_M;
 lambdaL1W = params.lambdaL1W;
+lambda_TV = params.lambda_TV;
 mu = 1e-3;
 
 % affineF = {linop_compose(op_M, 1/proxScale_M), 0; ...
@@ -70,7 +72,12 @@ end
 
 if lambdaL1W>0
     affineF(end+1,:) = {op_W, 0};
-    conjnegF{end+1} = proj_linf(lambdaL1H);
+    conjnegF{end+1} = proj_linf(lambdaL1W);
+end
+
+if lambda_TV>0
+    affineF(end+1,:) = {linop_compose(op_TV, op_W), 0};
+    conjnegF{end+1} = proj_linf(lambda_TV);
 end
 
 [W_, out] = tfocs_SCD(proj_Rplus_W(K*L), affineF, conjnegF, mu, W0_, [], opts);

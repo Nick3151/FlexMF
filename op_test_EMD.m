@@ -36,6 +36,9 @@ W = rand(N,K,L);
 op = @(H_, mode)constraint_EMD_H(W, T, H_, mode);
 linop_test(op, 'R2R');
 
+op = @(W, mode)total_variation_W(N, K, L, W, mode);
+linop_test(op, 'R2R');
+
 H = rand(K,T);
 X_pad = [zeros(N,L),X,zeros(N,L)];
 H_pad = [zeros(K,L),H,zeros(K,L)];
