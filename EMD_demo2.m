@@ -43,6 +43,7 @@ save2pdf('EMD_simulated_data_jitter.pdf')
 K = 10;
 frob_norm = norm(X(:));
 X = X/frob_norm*K;
+W = W/frob_norm*K;
 
 figure;
 L = 60;
@@ -60,7 +61,7 @@ lambda_R = 1e2;
 % save2pdf(sprintf('EMD_raw_lambda=%0.2e_lambdaM=%0.2e_lambdaR=%0.2e_lambdaL1H=%0.2e_results.pdf', lambda, lambda_M, lambda_R, lambdaL1H))
 
 figure;
-SimpleWHPlot_patch(What, Hhat, 'Data', X, 'plotAll', 1)
+SimpleWHPlot_patch(What, Hhat, 'Data', X, 'plotAll', 1, 'compare', true)
 figure;
 SimpleWHPlot_patch(What, Hhat, 'plotAll', 1)
 % save2pdf(sprintf('EMD_raw_reweighted_lambda=%0.2e_lambdaM=%0.2e_lambdaR=%0.2e_lambdaL1H=%0.2e_results.pdf', lambda, lambda_M, lambda_R, lambdaL1H))
@@ -115,7 +116,9 @@ tmp = helper.reconstruct(What,Hhat)-Xwarp;
 % sum(tmp(:).^2/2)save2pdf(sprintf('EMD_warp_reweighted_TVnorm_lambda=%0.2e_lambdaM=%0.2e_lambdaR=%0.2e_lambdaL1H=%0.2e_results.pdf', lambda, lambda_M, lambda_R, lambdaL1H))
 
 % Compute similarity to ground truth
-[coeffs_W, coeffs_H, ids] = helper.similarity_WH(W, H, What, Hhat);
+[emds_W, emds_H, ids] = helper.similarity_WH_EMD(W, H, What, Hhat);
+sum(W,[1,3]);
+sum(H,2)
 
 %% Plot EMD and other costs as a funciton of iterations
 figure; 

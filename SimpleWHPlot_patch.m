@@ -14,6 +14,7 @@ addOptional(p, 'onsets', [])
 addOptional(p, 'is_significant', [])
 addOptional(p, 'Data', [])
 addOptional(p, 'plotAll',0)
+addOptional(p, 'compare', false)
 parse(p, varargin{:});
 trials = p.Results.trials;
 frames = p.Results.frames;
@@ -21,6 +22,7 @@ onsets = p.Results.onsets;
 is_significant = p.Results.is_significant;
 Data = p.Results.Data;
 plotAll = p.Results.plotAll;
+compare = p.Results.compare;
 
 [N,K,L] = size(W); 
 [~,T] = size(H);
@@ -108,19 +110,33 @@ end
 %% plot data
 axIm = subplot('Position', [m+ww m wdata hdata]);
 Xs = [1 1:length(indplot) length(indplot)]; 
+Dhat = helper.reconstruct(W,H);
 
 for ni=1:N
+    hold on
     if plotData
         dnX = prctile(Data(:),99.9);
         Ys = [dnW*(N-ni) dnW*(N-ni)+Data(ni,indplot)/dnX*dnW dnW*(N-ni)];
+        if compare
+            Dhat_pos = Dhat(ni,indplot)>0;
+            D = diff([0, Dhat_pos]);
+            first = find(D>0);  %  start values of consecutive blocks
+            last = find(D<0);  % end values of consecutive blocks
+            blocks = length(first);
+            if length(last)<blocks
+                last(end+1) = length(indplot);
+            end
+            Ys_hat = dnW*(N-ni)+Dhat(ni,indplot)/dnX*dnW;
+            for b=1:blocks
+                plot(Xs(1+first(b):1+last(b)), Ys_hat(first(b):last(b)), 'r');
+            end
+        end
     else
-        Dhat = helper.reconstruct(W,H);
         dnX = prctile(Dhat(:),99.9); 
         Ys = [dnW*(N-ni) dnW*(N-ni)+Dhat(ni,indplot)/dnX*dnW dnW*(N-ni)];
     end
     
     patch(Xs,Ys, 'k', 'edgecolor', 'none')
-    hold on
 end
 
 if plotTrials
