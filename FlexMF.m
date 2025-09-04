@@ -113,7 +113,9 @@ if params.EMD
     opts.stopCrit = 4;
     opts.maxIts = 500;
     opts.printEvery = 0;
-    cost(1) = compute_EMD(X,Xhat,opts);
+    continue_opts = continuation();
+    continue_opts.verbose = 0;
+    cost(1) = compute_EMD(X,Xhat,opts, 'continuationOptions', continue_opts);
     M_pre = zeros(N,T);
     R_pre = zeros(N,T);
 else
@@ -198,7 +200,7 @@ for iter = 1 : params.maxiter
     mask = find(params.M == 0); % find masked (held-out) indices 
     X(mask) = Xhat(mask); % replace data at masked elements with reconstruction, so masked datapoints do not effect fit
     if params.EMD
-        cost(iter+1) = compute_EMD(X,Xhat,opts);
+        cost(iter+1) = compute_EMD(X,Xhat,opts, 'continuationOptions', continue_opts);
     else
         cost(iter+1) = sqrt(mean((X(:)-Xhat(:)).^2));
     end

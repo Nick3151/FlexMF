@@ -55,8 +55,8 @@ shift = nan(K,Khat);
 
 for ii = 1:K
     for jj = 1:Khat
-        disp(sprintf('K=%d, K_hat=%d', ii, jj));
-        tic
+        fprintf('K=%d, K_hat=%d\n', ii, jj);
+%         tic
         wk = squeeze(W(:,ii,:));
         wk_hat = squeeze(W_hat(:,jj,:));
         wpad = cat(2,zeros(N,Lhat),wk,zeros(N,Lhat));
@@ -73,7 +73,7 @@ for ii = 1:K
         end
         [S(ii,jj), idx] = min(Stmp);
         shift(ii,jj) = idx-Lhat-1;
-        toc
+%         toc
     end
 end
 % S(isnan(S)) = 0;

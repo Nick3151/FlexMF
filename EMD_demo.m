@@ -7,19 +7,23 @@ addpath(fullfile(root, 'Utils'))
 rmpath(genpath(fullfile(root, 'seqNMF-master')));
 addpath(genpath(fullfile(root, 'FlexMF')));
 %% Generate some synthetic sequence with temporal shifting or time warping
-T = 100;
+T = 50;
 N = 10;
 X = generate_sequence(T,N,3);
-figure; SimpleXplot(X)
-save2pdf('Sequence_raw.pdf')
-
 Xwarp = generate_sequence(T,N,3,'warp',1);
-figure; SimpleXplot(Xwarp)
-save2pdf('Sequence_warp.pdf')
+Xshift = generate_sequence(T,N,3,'shift',2);
 
-Xshift = generate_sequence(T,N,3,'shift',1);
-figure; SimpleXplot(Xshift)
-save2pdf('Sequence_shift.pdf')
+figure; 
+subplot('Position', [0.05 0.65 0.9 0.3])
+SimpleXplot(X)
+set(gca, 'Position', [0.05 0.65 0.9 0.3], 'XTick', [], 'YTick', [], 'xlabel', [], 'ylabel', [])
+subplot('Position', [0.05 0.35 0.9 0.3])
+SimpleXplot(Xwarp)
+set(gca, 'Position', [0.05 0.35 0.9 0.3], 'XTick', [], 'YTick', [], 'xlabel', [], 'ylabel', [])
+subplot('Position', [0.05 0.05 0.9 0.3])
+SimpleXplot(Xshift)
+set(gca, 'Position', [0.05 0.05 0.9 0.3], 'XTick', [], 'YTick', [], 'xlabel', [], 'ylabel', [])
+save2pdf('Sequence_simulated.pdf')
 
 %% Compute EMD demo
 opts_default = tfocs_SCD;
@@ -30,22 +34,13 @@ opts.stopCrit = 4;
 opts.maxIts = 500;
 % opts.alg = 'N83';
 
-[d, M, R, out] = compute_EMD(X, Xshift, opts);
+[d, M, R, out] = compute_EMD(X, Xwarp, opts);
+% [d, M, R, out] = compute_EMD(X, Xshift, opts);
 
 figure;
-ax_res = subplot('Position', [0.05, 0.55, 0.8, 0.4]);
-imagesc(R)
-title('R', 'FontSize', 16)
-set(ax_res, 'XTickLabel', [], 'YTickLabel', []);
-colorbar('Position', [0.9 0.55 0.05 0.4], 'FontSize', 14);
-ax_flux = subplot('Position', [0.05, 0.05, 0.8, 0.4]);
-imagesc(M)
-title('M', 'FontSize', 16)
-set(ax_flux, 'XTickLabel', [], 'YTickLabel', []);
-colorbar('Position', [0.9 0.05 0.05 0.4], 'FontSize', 14);
-set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-% save2pdf('EMD_warp_demo.pdf')
-save2pdf('EMD_shift_demo.pdf')
+plot_MR(M,R)
+save2pdf('EMD_warp_demo.pdf')
+% save2pdf('EMD_shift_demo.pdf')
 
 figure;
 plot(out.f)
@@ -53,7 +48,8 @@ title('out.f')
 
 % Check constraint
 D = eye(T) - diag(ones(T-1,1),-1);
-C = M*D'-R-(Xshift-X);
+% C = M*D'-R-(Xshift-X);
+C = M*D'-R-(Xwarp-X);
 figure;
 imagesc(C)
 set(gca, 'XTickLabel', [], 'YTickLabel', []);
@@ -124,17 +120,7 @@ save2pdf('Sequence_dynamic_warp.pdf')
 [d, M, R, out] = compute_EMD(X_noise, X_warp, opts);
 
 figure;
-ax_res = subplot('Position', [0.05, 0.55, 0.8, 0.4]);
-imagesc(R)
-title('R', 'FontSize', 16)
-set(ax_res, 'XTickLabel', [], 'YTickLabel', []);
-colorbar('Position', [0.9 0.55 0.05 0.4], 'FontSize', 14);
-ax_flux = subplot('Position', [0.05, 0.05, 0.8, 0.4]);
-imagesc(M)
-title('M', 'FontSize', 16)
-set(ax_flux, 'XTickLabel', [], 'YTickLabel', []);
-colorbar('Position', [0.9 0.05 0.05 0.4], 'FontSize', 14);
-set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
+plot_MR(M,R)
 save2pdf('EMD_noise_dynamic_demo.pdf')
 
 % Check constraint

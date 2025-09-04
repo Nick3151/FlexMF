@@ -6,11 +6,17 @@ function [W, M, R, out] = updateW_EMD(W0, H, X, M0, R0, params)
 opts_default = tfocs_SCD;
 opts = opts_default;
 opts.continuation = 1;
-opts.tol = 1e-4;
+opts.tol = 1e-3;
 opts.stopCrit = 4;
 opts.maxIts = 500;
 opts.alg = 'N83';
+continue_opts = continuation();
 % opts.debug = true;
+
+if ~params.verbal
+    opts.printEvery = 0;
+    continue_opts.verbose = 0;
+end
 
 %% Initialization
 W0_flat = reshape(W0, [N,K*L]);
@@ -80,7 +86,7 @@ if lambda_TV>0
     conjnegF{end+1} = proj_linf(lambda_TV);
 end
 
-[W_, out] = tfocs_SCD(proj_Rplus_W(K*L), affineF, conjnegF, mu, W0_, [], opts);
+[W_, out] = tfocs_SCD(proj_Rplus_W(K*L), affineF, conjnegF, mu, W0_, [], opts, continue_opts);
 
 Wflat = W_(:,1:K*L);
 W = reshape(Wflat, [N,K,L]);

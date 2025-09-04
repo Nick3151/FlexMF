@@ -6,11 +6,17 @@ function [H, M, R, out] = updateH_EMD(W, H0, X, M0, R0, params)
 opts_default = tfocs_SCD;
 opts = opts_default;
 opts.continuation = 1;
-opts.tol = 1e-4;
+opts.tol = 1e-3;
 opts.stopCrit = 4;
 opts.maxIts = 500;
 opts.alg = 'N83';
+continue_opts = continuation();
 % opts.debug = true;
+
+if ~params.verbal
+    opts.printEvery = 0;
+    continue_opts.verbose = 0;
+end
 
 %% Initialization
 H0_ = [H0; M0; R0];
@@ -91,7 +97,7 @@ if lambdaL1H>0
     end
 end
 
-[H_, out] = tfocs_SCD(proj_Rplus_H(K), affineF, conjnegF, mu, H0_, [], opts);
+[H_, out] = tfocs_SCD(proj_Rplus_H(K), affineF, conjnegF, mu, H0_, [], opts, continue_opts);
 
 % [H_, out] = solver_sBPDN_W(op_constraint,op_obj,-X,0,mu,[],[],opts);
 
