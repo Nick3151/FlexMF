@@ -41,10 +41,11 @@ end
 %% EMD options
 opts = tfocs_SCD;
 opts.continuation = 1;
-opts.tol = 1e-6;
+opts.tol = 1e-4;
 opts.stopCrit = 4;
 opts.maxIts = 500;
 opts.printEvery = 0;
+opts.alg = 'N83';
 continue_opts = continuation();
 continue_opts.verbose = 0;
 
@@ -55,7 +56,7 @@ shift = nan(K,Khat);
 
 for ii = 1:K
     for jj = 1:Khat
-        fprintf('K=%d, K_hat=%d\n', ii, jj);
+%         fprintf('K=%d, K_hat=%d\n', ii, jj);
 %         tic
         wk = squeeze(W(:,ii,:));
         wk_hat = squeeze(W_hat(:,jj,:));
@@ -80,8 +81,8 @@ end
 % S(S<0) = eps;
 %%
 temp = S;
-emds_W = zeros(1,Khat);
-emds_H = zeros(1,Khat);
+emds_W = nan(1,Khat);
+emds_H = nan(1,Khat);
 ids = zeros(1, Khat);
 
 % Matching each non-zero factor to all the factors of another reconstruction
@@ -105,7 +106,7 @@ for ii = 1:min(K,Khat)
 
 end
 
-emds_H(~emds_W) = [];
-ids(~emds_W) = [];
-emds_W(~emds_W) = [];
+emds_H(isnan(emds_W)) = [];
+ids(isnan(emds_W)) = [];
+emds_W(isnan(emds_W)) = [];
 end

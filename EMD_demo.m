@@ -11,17 +11,21 @@ T = 50;
 N = 10;
 X = generate_sequence(T,N,3);
 Xwarp = generate_sequence(T,N,3,'warp',1);
+Xwarp_noise = Xwarp;
+Xwarp_noise(1:5, end-1) = 1;
 Xshift = generate_sequence(T,N,3,'shift',2);
+Xshift_noise = Xshift;
+Xshift_noise(1:5, end-3) = 1;
 
 figure; 
 subplot('Position', [0.05 0.65 0.9 0.3])
 SimpleXplot(X)
 set(gca, 'Position', [0.05 0.65 0.9 0.3], 'XTick', [], 'YTick', [], 'xlabel', [], 'ylabel', [])
 subplot('Position', [0.05 0.35 0.9 0.3])
-SimpleXplot(Xwarp)
+SimpleXplot(Xwarp_noise)
 set(gca, 'Position', [0.05 0.35 0.9 0.3], 'XTick', [], 'YTick', [], 'xlabel', [], 'ylabel', [])
 subplot('Position', [0.05 0.05 0.9 0.3])
-SimpleXplot(Xshift)
+SimpleXplot(Xshift_noise)
 set(gca, 'Position', [0.05 0.05 0.9 0.3], 'XTick', [], 'YTick', [], 'xlabel', [], 'ylabel', [])
 save2pdf('Sequence_simulated.pdf')
 
@@ -34,13 +38,14 @@ opts.stopCrit = 4;
 opts.maxIts = 500;
 % opts.alg = 'N83';
 
-[d, M, R, out] = compute_EMD(X, Xwarp, opts);
-% [d, M, R, out] = compute_EMD(X, Xshift, opts);
+% tic
+% [d, M, R, out] = compute_EMD(X, Xwarp, opts);
+% toc
 
 figure;
 plot_MR(M,R)
-save2pdf('EMD_warp_demo.pdf')
-% save2pdf('EMD_shift_demo.pdf')
+% save2pdf('EMD_warp_demo.pdf')
+save2pdf('EMD_shift_demo.pdf')
 
 figure;
 plot(out.f)
@@ -48,13 +53,38 @@ title('out.f')
 
 % Check constraint
 D = eye(T) - diag(ones(T-1,1),-1);
-% C = M*D'-R-(Xshift-X);
-C = M*D'-R-(Xwarp-X);
+C = M*D'-R-(Xshift_noise-X);
+% C = M*D'-R-(Xwarp_noise-X);
 figure;
 imagesc(C)
 set(gca, 'XTickLabel', [], 'YTickLabel', []);
 title('Constraint error')
 colorbar
+
+%% Choose mu
+Mus = 1:.5:10;
+nMu = length(Mus);
+Ms = cell(nMu,1);
+Rs = cell(nMu,1);
+ds = cell(nMu,1);
+for n=1:nMu
+    disp(n)
+    tic
+%     [ds{n}, Ms{n}, Rs{n}, out] = compute_EMD(X, Xshift_noise, opts, 'mu', Mus(n));
+    [ds{n}, Ms{n}, Rs{n}, out] = compute_EMD(X, zeros(N,T), opts, 'mu', Mus(n));
+    toc
+end
+M_norms = cellfun(@(x) norm(x(:),1), Ms);
+R_norms = cellfun(@(x) norm(x(:),1), Rs);
+
+figure;
+plot(Mus, M_norms, 'r', Mus, R_norms, 'b')
+xlabel('mu')
+legend('L1M', 'L1R')
+save2pdf('EMD_Choose_mu_warp_noise')
+
+figure;
+plot_MR(Ms{6},Rs{6})
 %% EMD vs different levels of warping/shift
 T = 100;
 N = 10;

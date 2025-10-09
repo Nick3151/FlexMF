@@ -43,7 +43,7 @@ function [W, H, cost, errors, loadings, power, M, R] = FlexMF(X, varargin)
 % 'H_init'          max(X(:))*rand(K,T)./(sqrt(T/3))    Initial H (rows have norm ~1 if max(data) is 1)
 % 'showPlot'        1                                   Plot every iteration? no=0
 % 'maxiter'         100                                 Maximum # iterations to run
-% 'tolerance'       1e-2                                Stop if improved less than this;  Set to -Inf to always run maxiter
+% 'tolerance'       1e-3                                Stop if improved less than this;  Set to -Inf to always run maxiter
 % 'alg'             'N83'                               Algorithm
 % 'shift'           1                                   Shift factors to center; Helps avoid local minima
 % 'lambdaL1W'       0                                   L1 sparsity parameter; Increase to make W's more sparse
@@ -109,17 +109,22 @@ errors = zeros(params.maxiter+1, 4);
 if params.EMD
     opts = tfocs_SCD;
     opts.continuation = 1;
-    opts.tol = 1e-6;
+    opts.tol = 1e-4;
     opts.stopCrit = 4;
     opts.maxIts = 500;
     opts.printEvery = 0;
+    opts.alg = 'N83';
     continue_opts = continuation();
     continue_opts.verbose = 0;
-    cost(1) = compute_EMD(X,Xhat,opts, 'continuationOptions', continue_opts);
     M_pre = zeros(N,T);
     R_pre = zeros(N,T);
+    X_ = [X M_pre R_pre];
+    Xhat_ = [Xhat M_pre R_pre];
+%     cost(1) = compute_EMD(X,Xhat,opts, 'continuationOptions', continue_opts);
+    cost(1) = norm(X_(:)-Xhat_(:));
 else
-    cost(1) = sqrt(mean((X(:)-Xhat(:)).^2));
+%     cost(1) = sqrt(mean((X(:)-Xhat(:)).^2));
+    cost(1) = norm(X(:)-Xhat(:));
 end
 [recon_err, reg_cross, reg_W, reg_H] = helper.get_FlexMF_cost(X,W_pre,H_pre);
 errors(1,:) = [recon_err, reg_cross, reg_W, reg_H];
@@ -131,13 +136,20 @@ for iter = 1 : params.maxiter
     end
     if iter > 5
         dcost = cost(iter) - mean(cost((iter-5):(iter-1)));
+        if params.EMD
+            X_ = [X M_pre R_pre];
+            dcost_norm = dcost/norm(X_(:));
+        else
+            dcost_norm = dcost/norm(X(:));
+        end
         if params.verbal
             fprintf('dcost=%f\n', dcost);
+            fprintf('dcost/X=%f\n', dcost_norm);
         end
     end
     % Stopping criteria... Stop if reach maxiter or if change in cost function is less than the tolerance
     % if (iter == params.maxiter) || ((iter>5) && (dW < params.tolerance))
-    if (iter == params.maxiter) || ((iter>5) && (abs(dcost) < params.tolerance))
+    if (iter == params.maxiter) || ((iter>5) && (abs(dcost_norm) < params.tolerance))
         cost = cost(1 : iter+1);  % trim vector
         errors = errors(1 : iter+1, :);
         lasttime = 1; 
@@ -157,7 +169,7 @@ for iter = 1 : params.maxiter
 %         M0 = zeros(N,T);
 %         R0 = zeros(N,T);
         if params.EMD
-            [W, M_pre, R_pre, out] = updateW_EMD(W0, H_pre, X, M0, R0, params);
+            [W, M, R, out] = updateW_EMD(W0, H_pre, X, M0, R0, params);
         else
             W = updateW(W0, H_pre, X, params); 
         end
@@ -170,8 +182,8 @@ for iter = 1 : params.maxiter
     end
 
     H0 = H_pre;
-    M0 = M_pre;
-    R0 = R_pre;
+    M0 = M;
+    R0 = R;
 %     M0 = zeros(N,T);
 %     R0 = zeros(N,T);
     if params.EMD
@@ -200,9 +212,13 @@ for iter = 1 : params.maxiter
     mask = find(params.M == 0); % find masked (held-out) indices 
     X(mask) = Xhat(mask); % replace data at masked elements with reconstruction, so masked datapoints do not effect fit
     if params.EMD
-        cost(iter+1) = compute_EMD(X,Xhat,opts, 'continuationOptions', continue_opts);
+%         cost(iter+1) = compute_EMD(X,Xhat,opts, 'continuationOptions', continue_opts);
+        X_ = [X M_pre R_pre];
+        Xhat_ = [Xhat M R];
+        cost(iter+1) = norm(X_(:)-Xhat_(:));
     else
-        cost(iter+1) = sqrt(mean((X(:)-Xhat(:)).^2));
+%         cost(iter+1) = sqrt(mean((X(:)-Xhat(:)).^2));
+        cost(iter+1) = norm(X(:)-Xhat(:));
     end
     [recon_err, reg_cross, reg_W, reg_H] = helper.get_FlexMF_cost(X,W,H);
     errors(iter+1,:) = [recon_err, reg_cross, reg_W, reg_H];
@@ -261,7 +277,7 @@ end
         addOptional(p,'showPlot',1);
         addOptional(p,'verbal',1);
         addOptional(p,'maxiter',100);
-        addOptional(p,'tolerance',1e-2);
+        addOptional(p,'tolerance',1e-3);
         addOptional(p,'alg','N83');
         addOptional(p,'shift',1);
         addOptional(p,'lambdaL1W',0);

@@ -37,7 +37,7 @@ function [W,H] = shiftFactors(W,H)
         % undo zero pad
         W = Wpad(:,:,(L+1):(end-L));
         
-        if K==1
+        if K==1 && length(szW) == 2
             W = reshape(W,[N,L]);
         end
 

@@ -70,14 +70,22 @@ mu = 1e-3;
 % 
 % [H_, out] = tfocs_SCD(proj_Rplus_H(K), affineF, conjnegF, mu, H0_, [], opts);
 
-conjnegF = {proj_Rn, proj_linf(lambda_R), proj_linf(lambda_M)};
-affineF = {op_constraint, X; ...
-           op_R, 0; ...
-           op_M, 0 };
+conjnegF = {proj_Rn};
+affineF = {op_constraint, X};
 
-if lambda>0
-    affineF(end+1,:) = {op_cross_orth_H, 0};
-    conjnegF{end+1} = proj_linf(lambda);
+if lambda_M>0
+    affineF(end+1,:) = {linop_compose(op_M, 1/proxScale_M), 0};
+    conjnegF{end+1} = proj_linf(lambda_M*proxScale_M);
+end
+
+if lambda_R>0
+    affineF(end+1,:) = {linop_compose(op_R, 1/proxScale_R), 0};
+    conjnegF{end+1} = proj_linf(lambda_R*proxScale_R);
+end
+
+if lambda>0 && proxScale_corss_orth>0
+    affineF(end+1,:) = {linop_compose(op_cross_orth_H, 1/proxScale_corss_orth), 0};
+    conjnegF{end+1} = proj_linf(lambda*proxScale_corss_orth);
 end
 
 smooth_win = 10;
@@ -120,11 +128,17 @@ if params.verbal
     Xhat = helper.reconstruct(W, H);
     fprintf('reg=%f\n',sum(Q(:).*AH(:)));
     fprintf('recon=%f\n',sum((X(:)-Xhat(:)).^2)/2);
-    fprintf('L1_H=%f\n',sum(abs(H(:))));
-    fprintf('L1_M=%f\n',sum(abs(M(:))));
-    fprintf('L1_R=%f\n',sum(abs(R(:))));
+%     fprintf('L1_H=%f\n',sum(abs(H(:))));
+%     fprintf('L1_M=%f\n',sum(abs(M(:))));
+%     fprintf('L1_R=%f\n',sum(abs(R(:))));
+    fprintf('L1_H/X=%f\n',norm(H(:),1)/norm(X(:),1));
+    fprintf('L1_M/X=%f\n',norm(M(:),1)/norm(X(:),1));
+    fprintf('L1_R/X=%f\n',norm(R(:),1)/norm(X(:),1));
     fprintf('Constraint=%f\n', sum(constraint(:).^2/2))
-    fprintf('dH=%f\n', dH);
-    fprintf('dM=%f\n', dM);
-    fprintf('dR=%f\n', dR);
+%     fprintf('dH=%f\n', dH);
+%     fprintf('dM=%f\n', dM);
+%     fprintf('dR=%f\n', dR);
+    fprintf('dH/X=%f\n', dH/norm(X(:)));
+    fprintf('dM/X=%f\n', dM/norm(X(:)));
+    fprintf('dR/X=%f\n', dR/norm(X(:)));
 end
