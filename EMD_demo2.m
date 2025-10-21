@@ -49,9 +49,9 @@ loadings = [];
 regularization = []; 
 cost = []; 
 for li = 1:length(lambdas)
-    [What_SeqNMF, Hhat_SeqNMF, ~,~,loadings(li,:),power]= seqNMF(Xwarp,'K',K,'L',L,...
+    [What_SeqNMF, Hhat_SeqNMF, ~,~,loadings(li,:),power]= seqNMF(Xjit,'K',K,'L',L,...
         'lambda', lambdas(li), 'maxiter', 100, 'showPlot', 0); 
-    [cost(li),regularization(li),~] = helper.get_seqNMF_cost(Xwarp,What_SeqNMF,Hhat_SeqNMF);
+    [cost(li),regularization(li),~] = helper.get_seqNMF_cost(Xjit,What_SeqNMF,Hhat_SeqNMF);
     display(['Testing lambda ' num2str(li) '/' num2str(length(lambdas))])
 end
 
@@ -77,7 +77,8 @@ xlabel('Lambda'); ylabel('Cost (au)')
 set(legend('Correlation cost', 'Reconstruction cost'), 'Box', 'on')
 set(gca, 'xscale', 'log', 'ytick', [], 'color', 'none')
 set(gca,'color','none','tickdir','out','ticklength', [0.025, 0.025])
-save2pdf('EMD_Simulate_choose_lambda_SeqNMF')
+% save2pdf('Simulate_warp_choose_lambda_SeqNMF')
+save2pdf('Simulate_jitter_choose_lambda_SeqNMF')
 
 %% Run SeqNMF
 lambda = .05;
@@ -87,7 +88,7 @@ lambdaOrthoH = 0;
 
 figure;
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-[What_SeqNMF, Hhat_SeqNMF, ~, errors_SeqNMF,loadings,power]= seqNMF(Xwarp,'K',K,'L',L,...
+[What_SeqNMF, Hhat_SeqNMF, ~, errors_SeqNMF,loadings,power]= seqNMF(Xjit,'K',K,'L',L,...
             'lambda', lambda, 'maxiter', 50, 'showPlot', 1); 
 
 % plot, sorting neurons by latency within each factor
@@ -98,40 +99,50 @@ indSort = hybrid(:,3);
 plotAll = 1;
 figure; SimpleWHPlot(What_SeqNMF, Hhat_SeqNMF, 'plotAll', plotAll); title('SeqNMF reconstruction')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-figure; SimpleWHPlot(What_SeqNMF, Hhat_SeqNMF, 'Data', Xwarp, 'plotAll', plotAll); title('SeqNMF factors, with raw data')
+figure; SimpleWHPlot(What_SeqNMF, Hhat_SeqNMF, 'Data', Xjit, 'plotAll', plotAll); title('SeqNMF factors, with raw data')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 
-save2pdf('EMD_Simulated_warp_data_SeqNMF.pdf', gcf)
+% save2pdf('Simulated_warp_result_SeqNMF.pdf', gcf)
+save2pdf('Simulated_jitter_result_SeqNMF.pdf', gcf)
 
 %% Run FlexMF with EMD
-lambda_M = 1e-3;
+lambda_M = 1e-2;
 lambda_R = 1;
 tic
 figure;
-[What_FlexMF, Hhat_FlexMF, cost, errors_FlexMF, loadings, power, M, R] = FlexMF(Xwarp, 'K', K, 'L', L, ...
-    'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50, 'tolerance', 1e-4);
+[What_FlexMF, Hhat_FlexMF, cost, errors_FlexMF, loadings, power, M, R] = FlexMF(Xjit, 'K', K, 'L', L, ...
+    'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50, 'tolerance', 1e-3);
 toc
 
 %% Look at factors
 plotAll = 1;
 figure; SimpleWHPlot(What_FlexMF, Hhat_FlexMF, 'plotAll', plotAll); title('FlexMF reconstruction')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-figure; SimpleWHPlot(What_FlexMF, Hhat_FlexMF, 'Data', Xwarp, 'plotAll', plotAll); title('FlexMF factors, with raw data')
+figure; SimpleWHPlot(What_FlexMF, Hhat_FlexMF, 'Data', Xjit, 'plotAll', plotAll); title('FlexMF factors, with raw data')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-save2pdf('EMD_Simulated_warp_data_FlexMF.pdf', gcf)
+% save2pdf('EMD_Simulated_warp_data_FlexMF.pdf', gcf)
+save2pdf('EMD_Simulated_jitter_data_FlexMF.pdf', gcf)
 
 %% Plot M, R
 figure;
 plot_MR(M,R)
-save2pdf('FlexMF_warp_demo.pdf')
+% save2pdf('FlexMF_warp_demo_MR.pdf')
+save2pdf('FlexMF_jitter_demo_MR.pdf')
 
 %% Compare algorithms
+% tic
+% [emds_W_SeqNMF, emds_H_SeqNMF, ids_SeqNMF] = helper.similarity_WH_EMD(Wwarp, Hwarp, What_SeqNMF, Hhat_SeqNMF);
+% [emds_W_FlexMF, emds_H_FlexMF, ids_FlexMF] = helper.similarity_WH_EMD(Wwarp, Hwarp, What_FlexMF, Hhat_FlexMF);
+% toc
+% [coeffs_W_SeqNMF, coeffs_H_SeqNMF, ~] = helper.similarity_WH(Wwarp, Hwarp, What_SeqNMF, Hhat_SeqNMF);
+% [coeffs_W_FlexMF, coeffs_H_FlexMF, ~] = helper.similarity_WH(Wwarp, Hwarp, What_FlexMF, Hhat_FlexMF);
+
 tic
-[emds_W_SeqNMF, emds_H_SeqNMF, ids_SeqNMF] = helper.similarity_WH_EMD(Wwarp, Hwarp, What_SeqNMF, Hhat_SeqNMF);
-[emds_W_FlexMF, emds_H_FlexMF, ids_FlexMF] = helper.similarity_WH_EMD(Wwarp, Hwarp, What_FlexMF, Hhat_FlexMF);
+[emds_W_SeqNMF, emds_H_SeqNMF, ids_SeqNMF] = helper.similarity_WH_EMD(Wjit, Hjit, What_SeqNMF, Hhat_SeqNMF);
+[emds_W_FlexMF, emds_H_FlexMF, ids_FlexMF] = helper.similarity_WH_EMD(Wjit, Hjit, What_FlexMF, Hhat_FlexMF);
 toc
-[coeffs_W_SeqNMF, coeffs_H_SeqNMF, ~] = helper.similarity_WH(Wwarp, Hwarp, What_SeqNMF, Hhat_SeqNMF);
-[coeffs_W_FlexMF, coeffs_H_FlexMF, ~] = helper.similarity_WH(Wwarp, Hwarp, What_FlexMF, Hhat_FlexMF);
+[coeffs_W_SeqNMF, coeffs_H_SeqNMF, ~] = helper.similarity_WH(Wjit, Hjit, What_SeqNMF, Hhat_SeqNMF);
+[coeffs_W_FlexMF, coeffs_H_FlexMF, ~] = helper.similarity_WH(Wjit, Hjit, What_FlexMF, Hhat_FlexMF);
 
 emds_W_all = zeros(2,K);
 emds_W_all(1, ids_SeqNMF) = emds_W_SeqNMF;
@@ -142,7 +153,8 @@ figure; bar(K:-1:1, emds_W_all);
 legend({'SeqNMF', 'FlexMF'}, 'Location', 'north')
 set(gca, 'FontSize', 14)
 title('EMDs of W', 'FontSize', 16)
-save2pdf('EMD_Simulated_warp_data_compare_W.pdf', gcf)
+% save2pdf('EMD_Simulated_warp_data_compare_W.pdf', gcf)
+save2pdf('EMD_Simulated_jitter_data_compare_W.pdf', gcf)
 
 emds_H_all = zeros(2,K);
 emds_H_all(1, ids_SeqNMF) = emds_H_SeqNMF;
@@ -152,4 +164,5 @@ figure; bar(K:-1:1, emds_H_all);
 legend({'SeqNMF', 'FlexMF'}, 'Location', 'north')
 set(gca, 'FontSize', 14)
 title('EMDs of H', 'FontSize', 16)
-save2pdf('EMD_Simulated_warp_data_compare_H.pdf', gcf)
+% save2pdf('EMD_Simulated_warp_data_compare_H.pdf', gcf)
+save2pdf('EMD_Simulated_jitter_data_compare_H.pdf', gcf)

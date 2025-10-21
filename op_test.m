@@ -1,3 +1,5 @@
+clear all
+close all
 root = fileparts(pwd);
 addpath(fullfile(root, 'TFOCS'))
 N = 20;

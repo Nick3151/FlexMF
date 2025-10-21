@@ -38,14 +38,14 @@ opts.stopCrit = 4;
 opts.maxIts = 500;
 % opts.alg = 'N83';
 
-% tic
-% [d, M, R, out] = compute_EMD(X, Xwarp, opts);
-% toc
+tic
+[d, M, R, out] = compute_EMD(X, Xshift, opts);
+toc
 
 figure;
 plot_MR(M,R)
-% save2pdf('EMD_warp_demo.pdf')
-save2pdf('EMD_shift_demo.pdf')
+% save2pdf('EMD_warp_demo_MR.pdf')
+save2pdf('EMD_shift_demo_MR.pdf')
 
 figure;
 plot(out.f)
@@ -53,7 +53,7 @@ title('out.f')
 
 % Check constraint
 D = eye(T) - diag(ones(T-1,1),-1);
-C = M*D'-R-(Xshift_noise-X);
+C = M*D'-R-(Xshift-X);
 % C = M*D'-R-(Xwarp_noise-X);
 figure;
 imagesc(C)
@@ -70,8 +70,8 @@ ds = cell(nMu,1);
 for n=1:nMu
     disp(n)
     tic
-%     [ds{n}, Ms{n}, Rs{n}, out] = compute_EMD(X, Xshift_noise, opts, 'mu', Mus(n));
-    [ds{n}, Ms{n}, Rs{n}, out] = compute_EMD(X, zeros(N,T), opts, 'mu', Mus(n));
+    [ds{n}, Ms{n}, Rs{n}, out] = compute_EMD(X, Xshift_noise, opts, 'mu', Mus(n));
+%     [ds{n}, Ms{n}, Rs{n}, out] = compute_EMD(X, zeros(N,T), opts, 'mu', Mus(n));
     toc
 end
 M_norms = cellfun(@(x) norm(x(:),1), Ms);
@@ -81,10 +81,13 @@ figure;
 plot(Mus, M_norms, 'r', Mus, R_norms, 'b')
 xlabel('mu')
 legend('L1M', 'L1R')
-save2pdf('EMD_Choose_mu_warp_noise')
+% save2pdf('EMD_Choose_mu_warp_noise')
+save2pdf('EMD_Choose_mu_shift_noise')
 
 figure;
-plot_MR(Ms{6},Rs{6})
+n = 9;
+plot_MR(Ms{n},Rs{n})
+save2pdf(sprintf('EMD_shift_noise_demo_mu=%0.1f_MR.pdf', Mus(n)))
 %% EMD vs different levels of warping/shift
 T = 100;
 N = 10;
@@ -128,7 +131,7 @@ xlabel('Warp step')
 legend({'EMD', 'L2-square'})
 save2pdf('EMD_vs_warp.pdf')
 
-%% Compute EMD under noise
+%% Compute EMD under noise and calcium dynamics
 opts_default = tfocs_SCD;
 opts = opts_default;
 opts.continuation = 1;
@@ -147,11 +150,11 @@ save2pdf('Sequence_dynamic_noise.pdf')
 figure; SimpleXplot_patch(X_warp)
 save2pdf('Sequence_dynamic_warp.pdf')
 
-[d, M, R, out] = compute_EMD(X_noise, X_warp, opts);
+[d, M, R, out] = compute_EMD(X_noise, X_warp, opts, 'mu', 5);
 
 figure;
 plot_MR(M,R)
-save2pdf('EMD_noise_dynamic_demo.pdf')
+save2pdf('EMD_noise_dynamic_demo_MR.pdf')
 
 % Check constraint
 [N,T] = size(X_warp);

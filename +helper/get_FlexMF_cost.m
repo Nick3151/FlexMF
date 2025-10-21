@@ -4,12 +4,7 @@ function [recon_err, reg_cross, reg_W, reg_H] = get_FlexMF_cost(X,W,H)
 [~,T] = size(H);
 Xhat = helper.reconstruct(W, H);
 smoothkernel = ones(1,(2*L)-1);  
-WTX = zeros(K, T);
-
-for l = 1 : L
-    X_shifted = [X(:, l:T) zeros(N, l-1)];
-    WTX = WTX + W(:, :, l)' * X_shifted;
-end   
+WTX = helper.transconv(W, X); 
 
 % Compute regularization terms for H update
 WTXSHT = (conv2(abs(WTX), smoothkernel, 'same')*H'); 

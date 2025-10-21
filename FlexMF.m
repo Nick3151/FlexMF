@@ -122,6 +122,10 @@ if params.EMD
     Xhat_ = [Xhat M_pre R_pre];
 %     cost(1) = compute_EMD(X,Xhat,opts, 'continuationOptions', continue_opts);
     cost(1) = norm(X_(:)-Xhat_(:));
+    L1_Ms = zeros(params.maxiter+1, 2); % L1 norms of M after updating W/H
+    L1_Rs = zeros(params.maxiter+1, 2); % L1 norms of R after updating W/H
+    L1_Ws = zeros(params.maxiter+1, 2); % L1 norms of W after updating W/H
+    L1_Hs = zeros(params.maxiter+1, 2); % L1 norms of H after updating W/H
 else
 %     cost(1) = sqrt(mean((X(:)-Xhat(:)).^2));
     cost(1) = norm(X(:)-Xhat(:));
@@ -152,6 +156,10 @@ for iter = 1 : params.maxiter
     if (iter == params.maxiter) || ((iter>5) && (abs(dcost_norm) < params.tolerance))
         cost = cost(1 : iter+1);  % trim vector
         errors = errors(1 : iter+1, :);
+        L1_Ms = L1_Ms(1: iter+1, :);
+        L1_Rs = L1_Rs(1: iter+1, :);
+        L1_Hs = L1_Hs(1: iter+1, :);
+        L1_Ws = L1_Ws(1: iter+1, :);
         lasttime = 1; 
 %         if iter>1
 %             params.lambda = 0; % Do one final CNMF iteration (no regularization, just prioritize reconstruction)
@@ -170,6 +178,10 @@ for iter = 1 : params.maxiter
 %         R0 = zeros(N,T);
         if params.EMD
             [W, M, R, out] = updateW_EMD(W0, H_pre, X, M0, R0, params);
+            L1_Ms(iter+1,1) = norm(M(:),1)/norm(X(:),1);
+            L1_Rs(iter+1,1) = norm(R(:),1)/norm(X(:),1);
+            L1_Ws(iter+1,1) = norm(W(:),1)/norm(X(:),1);
+            L1_Hs(iter+1,1) = norm(H_pre(:),1)/norm(X(:),1);
         else
             W = updateW(W0, H_pre, X, params); 
         end
@@ -188,6 +200,10 @@ for iter = 1 : params.maxiter
 %     R0 = zeros(N,T);
     if params.EMD
         [H, M, R, out] = updateH_EMD(W, H0, X, M0, R0, params);
+        L1_Ms(iter+1,2) = norm(M(:),1)/norm(X(:),1);
+        L1_Rs(iter+1,2) = norm(R(:),1)/norm(X(:),1);
+        L1_Ws(iter+1,2) = norm(W(:),1)/norm(X(:),1);
+        L1_Hs(iter+1,2) = norm(H(:),1)/norm(X(:),1);
     else
         H = updateH(W, H0, X, params);   
     end
@@ -259,6 +275,14 @@ power = (sum(X(:).^2)-sum((X(:)-Xhat(:)).^2))/sum(X(:).^2);  % fraction power ex
 if params.SortFactors
     W = W(:,ind,:);
     H = H(ind,:);
+end
+
+if params.verbal
+    figure;
+    plot(1:.5:iter+1.5, reshape(L1_Ms', 1, []), 1:.5:iter+1.5, reshape(L1_Rs', 1, []))
+    hold on
+    plot(1:.5:iter+1.5, reshape(L1_Ws', 1, []), 1:.5:iter+1.5, reshape(L1_Hs', 1, []))
+    legend('||M||_1', '||R||_1', '||W||_1', '||H||_1')
 end
 
     function [X,N,T,K,L,params] = parse_seqNMF_params(X, inputs)
