@@ -96,12 +96,12 @@ for k=1:K
 end
 
 if lambdaL1H>0
-    affineF(end+1,:) = {op_H, 0};
+    affineF(end+1,:) = {linop_compose(op_H,proxScale_H), 0};
     if Reweight && (params.currentiter > 10)
         epsilon = 1e-2;
-        conjnegF{end+1} = proj_abs_box(lambdaL1H./(abs(H0_smooth)+epsilon));
+        conjnegF{end+1} = proj_abs_box(lambdaL1H./(abs(H0_smooth)+epsilon)*proxScale_H);
     else
-        conjnegF{end+1} = proj_linf(lambdaL1H);
+        conjnegF{end+1} = proj_linf(lambdaL1H*proxScale_H);
     end
 end
 

@@ -187,6 +187,8 @@ for iter = 1 : params.maxiter
         end
     else
         W = W_pre;
+        M = M_pre;
+        R = R_pre;
     end
     
     if params.verbal
