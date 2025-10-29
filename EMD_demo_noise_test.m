@@ -64,6 +64,7 @@ figure; SimpleWHPlot(Whats{n}, Hhats{n}, 'Data', Xwarp, 'plotAll', plotAll); tit
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 figure;
 plot_MR(Ms{n},Rs{n})
+save2pdf(sprintf('FlexMF_noise_MR_test_lambdaL1H=%0.2f', lambdaL1Hs(n)))
 
 %% Errors vs lambdaL1H
 L1Hs = cellfun(@(x) norm(x(:),1), Hhats);

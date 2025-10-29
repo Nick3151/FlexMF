@@ -156,10 +156,12 @@ for iter = 1 : params.maxiter
     if (iter == params.maxiter) || ((iter>5) && (abs(dcost_norm) < params.tolerance))
         cost = cost(1 : iter+1);  % trim vector
         errors = errors(1 : iter+1, :);
-        L1_Ms = L1_Ms(1: iter+1, :);
-        L1_Rs = L1_Rs(1: iter+1, :);
-        L1_Hs = L1_Hs(1: iter+1, :);
-        L1_Ws = L1_Ws(1: iter+1, :);
+        if params.EMD
+            L1_Ms = L1_Ms(1: iter+1, :);
+            L1_Rs = L1_Rs(1: iter+1, :);
+            L1_Hs = L1_Hs(1: iter+1, :);
+            L1_Ws = L1_Ws(1: iter+1, :);
+        end
         lasttime = 1; 
 %         if iter>1
 %             params.lambda = 0; % Do one final CNMF iteration (no regularization, just prioritize reconstruction)
@@ -172,11 +174,11 @@ for iter = 1 : params.maxiter
             fprintf('Updating W\n');
         end
         W0 = W_pre;
-        M0 = M_pre;
-        R0 = R_pre;
-%         M0 = zeros(N,T);
-%         R0 = zeros(N,T);
         if params.EMD
+            M0 = M_pre;
+            R0 = R_pre;
+%             M0 = zeros(N,T);
+%             R0 = zeros(N,T);
             [W, M, R, out] = updateW_EMD(W0, H_pre, X, M0, R0, params);
             L1_Ms(iter+1,1) = norm(M(:),1)/norm(X(:),1);
             L1_Rs(iter+1,1) = norm(R(:),1)/norm(X(:),1);
@@ -187,8 +189,10 @@ for iter = 1 : params.maxiter
         end
     else
         W = W_pre;
-        M = M_pre;
-        R = R_pre;
+        if params.EMD
+            M = M_pre;
+            R = R_pre;
+        end
     end
     
     if params.verbal
@@ -196,11 +200,11 @@ for iter = 1 : params.maxiter
     end
 
     H0 = H_pre;
-    M0 = M;
-    R0 = R;
+    if params.EMD
+        M0 = M;
+        R0 = R;
 %     M0 = zeros(N,T);
 %     R0 = zeros(N,T);
-    if params.EMD
         [H, M, R, out] = updateH_EMD(W, H0, X, M0, R0, params);
         L1_Ms(iter+1,2) = norm(M(:),1)/norm(X(:),1);
         L1_Rs(iter+1,2) = norm(R(:),1)/norm(X(:),1);
@@ -253,8 +257,10 @@ for iter = 1 : params.maxiter
     
     W_pre = W;
     H_pre = H;
-    M_pre = M;
-    R_pre = R;
+    if params.EMD
+        M_pre = M;
+        R_pre = R;
+    end
     if lasttime
         break
     end
@@ -279,7 +285,7 @@ if params.SortFactors
     H = H(ind,:);
 end
 
-if params.verbal
+if params.verbal && params.EMD
     figure;
     plot(1:.5:iter+1.5, reshape(L1_Ms', 1, []), 1:.5:iter+1.5, reshape(L1_Rs', 1, []))
     hold on
