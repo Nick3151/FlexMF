@@ -1,4 +1,4 @@
-%% Demo script: FlexMF on warped/jittered data with noise
+%% Demo script: Comparing SeqNMF and FlexMF on temporal warped/jittered data
 clear all
 close all
 clc
@@ -13,15 +13,14 @@ number_of_seqences = 3;
 T = 800; % length of data to generate
 Nneurons = 10*ones(number_of_seqences,1); % number of neurons in each sequence
 Dt = 3.*ones(number_of_seqences,1); % gap between each member of the sequence
-noise = .001; % probability of added noise in each bin
+noise = 0; % probability of added noise in each bin
 jitter = 5*ones(number_of_seqences,1); % Jitter std
 participation = 1.*ones(number_of_seqences,1); % Participation parameter = 100%
 warp = 2; % stretch should be less than Dt
 gap = 100;
 neg = 0;
 seed = 1;
-[X, W, H, ~] = generate_data(T,Nneurons,Dt, 'noise',0, 'seed', seed, 'len_burst', 1, 'dynamic', 0);
-[Xnoise, Wnoise, Hnoise, ~] = generate_data(T,Nneurons,Dt, 'noise',noise, 'seed', seed, 'len_burst', 1, 'dynamic', 0);
+[X, W, H, ~] = generate_data(T,Nneurons,Dt, 'noise',noise, 'seed', seed, 'len_burst', 1, 'dynamic', 0);
 [Xwarp, Wwarp, Hwarp, ~] = generate_data(T,Nneurons,Dt, 'noise',noise, 'warp', warp, 'seed', seed, 'len_burst', 1, 'dynamic', 0);
 [Xjit, Wjit, Hjit, ~] = generate_data(T,Nneurons,Dt, 'noise',noise, 'jitter', jitter, 'seed', seed, 'len_burst', 1, 'dynamic', 0);
 L = size(W,3);
@@ -29,23 +28,19 @@ L = size(W,3);
 plotAll = 1;
 figure; SimpleWHPlot(W,H,'Data',X, 'plotAll', plotAll); title('generated data raw','Fontsize',16)
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-figure; SimpleWHPlot(W,H,'Data',Xnoise, 'plotAll', plotAll); title('generated data noise','Fontsize',16)
-set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
+save2pdf('EMD_simulated_data_raw.pdf')
 figure; SimpleWHPlot(Wwarp,Hwarp,'Data',Xwarp,'plotAll', plotAll); title('generated data warping','Fontsize',16)
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-save2pdf('EMD_simulated_data_warp_noise.pdf')
+save2pdf('EMD_simulated_data_warp.pdf')
 figure; SimpleWHPlot(Wjit,Hjit,'Data',Xjit,'plotAll',plotAll); title('generated data jittering','Fontsize',16)
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-save2pdf('EMD_simulated_data_jitter_noise.pdf')
+save2pdf('EMD_simulated_data_jitter.pdf')
 
 %% Normalize data
 K = 3;
 % frob_norm = norm(Xwarp(:));
 % Xwarp = Xwarp/frob_norm*K;
 % Wwarp = Wwarp/frob_norm*K;
-% frob_norm = norm(Xnoise(:));
-% Xnoise = Xnoise/frob_norm*K;
-% Wnoise = Wnoise/frob_norm*K;
 
 %% Procedure for choosing lambda in SeqNMF
 nLambdas = 20; % increase if you're patient
@@ -82,19 +77,17 @@ xlabel('Lambda'); ylabel('Cost (au)')
 set(legend('Correlation cost', 'Reconstruction cost'), 'Box', 'on')
 set(gca, 'xscale', 'log', 'ytick', [], 'color', 'none')
 set(gca,'color','none','tickdir','out','ticklength', [0.025, 0.025])
-% save2pdf('Simulate_warp_noise_choose_lambda_SeqNMF')
-save2pdf('Simulate_jitter_noise_choose_lambda_SeqNMF')
+% save2pdf('Simulate_warp_choose_lambda_SeqNMF')
+save2pdf('Simulate_jitter_choose_lambda_SeqNMF')
 
 %% Run SeqNMF
-lambda = .1;
+lambda = .05;
 lambdaL1H = 0;
 lambdaL1W = 0;
 lambdaOrthoH = 0;
 
 figure;
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-% [What_SeqNMF, Hhat_SeqNMF, ~, errors_SeqNMF,loadings,power]= seqNMF(Xwarp,'K',K,'L',L,...
-%             'lambda', lambda, 'maxiter', 50, 'showPlot', 1); 
 [What_SeqNMF, Hhat_SeqNMF, ~, errors_SeqNMF,loadings,power]= seqNMF(Xjit,'K',K,'L',L,...
             'lambda', lambda, 'maxiter', 50, 'showPlot', 1); 
 
@@ -104,48 +97,37 @@ indSort = hybrid(:,3);
 
 %% Look at factors
 plotAll = 1;
-figure; SimpleWHPlot_patch(What_SeqNMF, Hhat_SeqNMF, 'plotAll', plotAll); title('SeqNMF reconstruction')
+figure; SimpleWHPlot(What_SeqNMF, Hhat_SeqNMF, 'plotAll', plotAll); title('SeqNMF reconstruction')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-% save2pdf('Simulated_warp_noise_result_SeqNMF.pdf', gcf)
-save2pdf('Simulated_jitter_noise_result_SeqNMF.pdf', gcf)
+figure; SimpleWHPlot(What_SeqNMF, Hhat_SeqNMF, 'Data', Xjit, 'plotAll', plotAll); title('SeqNMF factors, with raw data')
+set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 
-% figure; SimpleWHPlot_patch(What_SeqNMF, Hhat_SeqNMF, 'Data', Xwarp, 'plotAll', plotAll); title('SeqNMF factors, with raw data')
-figure; SimpleWHPlot_patch(What_SeqNMF, Hhat_SeqNMF, 'Data', Xjit, 'plotAll', plotAll); title('SeqNMF factors, with raw data')
-set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
+% save2pdf('Simulated_warp_result_SeqNMF.pdf', gcf)
+save2pdf('Simulated_jitter_result_SeqNMF.pdf', gcf)
 
 %% Run FlexMF with EMD
-lambda = .1;
-lambda_M = .1;
+lambda_M = 1e-2;
 lambda_R = 1;
-lambdaL1H = 0;
 tic
 figure;
-% [What_FlexMF, Hhat_FlexMF, cost, errors_FlexMF, loadings, power, M, R] = FlexMF(Xwarp, 'K', K, 'L', L, ...
-%     'EMD',1, 'lambda', lambda, ...
-%     'lambdaL1H', lambdaL1H, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50, 'tolerance', 1e-6, ...
-%     'W_init', What_SeqNMF, 'H_init', Hhat_SeqNMF);
 [What_FlexMF, Hhat_FlexMF, cost, errors_FlexMF, loadings, power, M, R] = FlexMF(Xjit, 'K', K, 'L', L, ...
-    'EMD',1, 'lambda', lambda, ...
-    'lambdaL1H', lambdaL1H, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50, 'tolerance', 1e-4, ...
-    'W_init', What_SeqNMF, 'H_init', Hhat_SeqNMF);
+    'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50, 'tolerance', 1e-6);
 toc
 
 %% Look at factors
 plotAll = 1;
-figure; SimpleWHPlot_patch(What_FlexMF, Hhat_FlexMF, 'plotAll', plotAll); title('FlexMF reconstruction')
+figure; SimpleWHPlot(What_FlexMF, Hhat_FlexMF, 'plotAll', plotAll); title('FlexMF reconstruction')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-% save2pdf(sprintf('EMD_Simulated_warp_noise_data_FlexMF_lambda=%1.1e_lambdaM=%1.1e_lambdaR=%1.1e.pdf', lambda, lambda_M, lambda_R), gcf)
-save2pdf(sprintf('EMD_Simulated_jitter_noise_data_FlexMF_lambda=%1.1e_lambdaM=%1.1e_lambdaR=%1.1e.pdf', lambda, lambda_M, lambda_R), gcf)
-
-% figure; SimpleWHPlot_patch(What_FlexMF, Hhat_FlexMF, 'Data', Xwarp, 'plotAll', plotAll); title('FlexMF factors, with raw data')
-figure; SimpleWHPlot_patch(What_FlexMF, Hhat_FlexMF, 'Data', Xjit, 'plotAll', plotAll); title('FlexMF factors, with raw data')
+figure; SimpleWHPlot(What_FlexMF, Hhat_FlexMF, 'Data', Xjit, 'plotAll', plotAll); title('FlexMF factors, with raw data')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
+% save2pdf('EMD_Simulated_warp_data_FlexMF.pdf', gcf)
+% save2pdf('EMD_Simulated_jitter_data_FlexMF.pdf', gcf)
 
 %% Plot M, R
 figure;
 plot_MR(M,R)
-% save2pdf(sprintf('FlexMF_warp_noise_demo_MR_lambda=%1.1e_lambdaM=%1.1e_lambdaR=%1.1e.pdf', lambda, lambda_M, lambda_R))
-save2pdf(sprintf('FlexMF_jitter_noise_demo_MR_lambda=%1.1e_lambdaM=%1.1e_lambdaR=%1.1e.pdf', lambda, lambda_M, lambda_R))
+% save2pdf('FlexMF_warp_demo_MR.pdf')
+% save2pdf('FlexMF_jitter_demo_MR.pdf')
 
 %% Compare algorithms
 % tic
@@ -171,8 +153,8 @@ figure; bar(K:-1:1, emds_W_all);
 legend({'SeqNMF', 'FlexMF'}, 'Location', 'north')
 set(gca, 'FontSize', 14)
 title('EMDs of W', 'FontSize', 16)
-% save2pdf('EMD_Simulated_warp_noise_data_compare_W.pdf', gcf)
-save2pdf('EMD_Simulated_jitter_noise_data_compare_W.pdf', gcf)
+% save2pdf('EMD_Simulated_warp_data_compare_W.pdf', gcf)
+save2pdf('EMD_Simulated_jitter_data_compare_W.pdf', gcf)
 
 emds_H_all = zeros(2,K);
 emds_H_all(1, ids_SeqNMF) = emds_H_SeqNMF;
@@ -182,5 +164,5 @@ figure; bar(K:-1:1, emds_H_all);
 legend({'SeqNMF', 'FlexMF'}, 'Location', 'north')
 set(gca, 'FontSize', 14)
 title('EMDs of H', 'FontSize', 16)
-% save2pdf('EMD_Simulated_warp_noise_data_compare_H.pdf', gcf)
-save2pdf('EMD_Simulated_jitter_noise_data_compare_H.pdf', gcf)
+% save2pdf('EMD_Simulated_warp_data_compare_H.pdf', gcf)
+save2pdf('EMD_Simulated_jitter_data_compare_H.pdf', gcf)

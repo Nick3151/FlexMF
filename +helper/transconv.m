@@ -15,6 +15,6 @@ function WTX = transconv(W,X)
         WTX = WTX + W(:, :, l)' * X_shifted;
     end 
     
-    % undo zer0padding
+    % undo zeropadding
     WTX = WTX(:,(L+1):(end-L)); 
 end

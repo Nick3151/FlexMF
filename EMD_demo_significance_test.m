@@ -9,10 +9,10 @@ addpath(genpath(fullfile(root, 'FlexMF')));
 
 %% Generate some sequences with temporal warping
 number_of_seqences = 3;
-T = 2000; % length of data to generate
+T = 4000; % length of data to generate
 Nneurons = 5*ones(number_of_seqences,1); % number of neurons in each sequence
 Dt = 3.*ones(number_of_seqences,1); % gap between each member of the sequence
-noise = 0; % probability of added noise in each bin
+noise = .001; % probability of added noise in each bin
 warp = 2; % stretch should be less than Dt
 gap = 100;
 neg = 0;
@@ -24,39 +24,89 @@ Xtrain = Xwarp(:,1:round(T/2));
 Xtest = Xwarp(:,1+round(T/2):end);
 
 figure; SimpleWHPlot(Wwarp,Hwarp,'Data',Xwarp,'plotAll', 1, 'onsets', round(T/2)); 
-
 title('generated data warping','Fontsize',16)
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.5])
 
-%% Find sequence with FlexMF in training data
-L = size(Wwarp,3);
+%% Procedure for choosing lambda in SeqNMF
 K = 3;
-frob_norm = norm(Xtrain(:));
-Xtrain = Xtrain/frob_norm*K;
-Wwarp = Wwarp/frob_norm*K;
+L = 50;
+nLambdas = 20; % increase if you're patient
+lambdas = sort(logspace(0,-4,nLambdas), 'ascend'); 
+loadings = [];
+regularization = []; 
+cost = []; 
+for li = 1:length(lambdas)
+    [What_SeqNMF, Hhat_SeqNMF, ~,~,loadings(li,:),power]= seqNMF(Xtrain,'K',K,'L',L,...
+        'lambda', lambdas(li), 'maxiter', 100, 'showPlot', 0); 
+    [cost(li),regularization(li),~] = helper.get_seqNMF_cost(Xtrain,What_SeqNMF,Hhat_SeqNMF);
+    display(['Testing lambda ' num2str(li) '/' num2str(length(lambdas))])
+end
 
-lambda = 1e-2;
-lambda_M = 1e-2;
-lambda_R = 1e2;
+%% plot costs as a function of lambda
+windowSize = 3; 
+b = (1/windowSize)*ones(1,windowSize);
+a = 1;
+Rs = filtfilt(b,a,regularization); 
+minRs = prctile(regularization,10); maxRs= prctile(regularization,90);
+Rs = (Rs-minRs)/(maxRs-minRs); 
+R = (regularization-minRs)/(maxRs-minRs); 
+Cs = filtfilt(b,a,cost); 
+minCs =  prctile(cost,10); maxCs =  prctile(cost,90); 
+Cs = (Cs -minCs)/(maxCs-minCs); 
+C = (cost -minCs)/(maxCs-minCs); 
+
+figure; hold on
+plot(lambdas,Rs, 'b')
+plot(lambdas,Cs,'r')
+scatter(lambdas, R, 'b', 'markerfacecolor', 'flat');
+scatter(lambdas, C, 'r', 'markerfacecolor', 'flat');
+xlabel('Lambda'); ylabel('Cost (au)')
+set(legend('Correlation cost', 'Reconstruction cost'), 'Box', 'on')
+set(gca, 'xscale', 'log', 'ytick', [], 'color', 'none')
+set(gca,'color','none','tickdir','out','ticklength', [0.025, 0.025])
+
+%% Run SeqNMF on training data
+K = 3;
+L = 50;
+lambda = .05;
+lambdaL1H = 0;
+lambdaL1W = 0;
+lambdaOrthoH = 0;
+
+figure;
+set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
+[What_SeqNMF, Hhat_SeqNMF, ~, errors_SeqNMF,loadings,power]= seqNMF(Xtrain,'K',K,'L',L,...
+            'lambda', lambda, 'maxiter', 50, 'showPlot', 1); 
+
+%% Find sequence with FlexMF on training data
+lambda = 5e-2;
+lambda_M = 1e-1;
+lambda_R = 1;
 figure;
 [What, Hhat_train, cost_train, errors_train, loadings, power, M_train, R_train] = FlexMF(Xtrain, 'K', K, 'L', L, ...
-    'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50);
+    'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50, ...
+    'W_init', What_SeqNMF, 'H_init', Hhat_SeqNMF, 'tolerance', 1e-4);
 
-figure; SimpleWHPlot(What, Hhat_train, 'plotAll', 1); title('FlexMF recon')
+figure; SimpleWHPlot_patch(What, Hhat_train, 'plotAll', 1); title('FlexMF recon')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 
 %% Plot M, R
 figure; plot_MR(M_train, R_train)
 
-%% Fix What, rerun FlexMF on test data
-frob_norm = norm(Xtest(:));
-Xtest = Xtest/frob_norm*K;
+%% Look at factors
+plotAll = 1;
+figure; SimpleWHPlot_patch(What, Hhat_train, 'plotAll', plotAll); title('FlexMF reconstruction')
+set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 
+figure; SimpleWHPlot_patch(What, Hhat_train, 'Data', Xtrain, 'plotAll', plotAll); title('FlexMF factors, with raw data')
+set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
+
+%% Fix What, rerun FlexMF on test data
 figure;
 [What, Hhat_test, cost_test, errors_test, ~, ~, M_test, R_test] = FlexMF(Xtest, 'K', K, 'L', L, 'W_fixed', 1, 'W_init', What,...
     'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 1);
 
-figure; SimpleWHPlot(What, Hhat_test, 'plotAll', 1); title('FlexMF test recon')
+figure; SimpleWHPlot_patch(What, Hhat_test, 'plotAll', 1); title('FlexMF test recon')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 figure; plot_MR(M_test, R_test)
 

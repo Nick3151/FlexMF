@@ -7,6 +7,7 @@ function y = constraint_EMD_H(W, T, H_, mode)
 [N,K,L] = size(W);
 % divergence matrix
 D = eye(T) - diag(ones(T-1,1),-1);
+D(T,T) = 0;
 
 switch mode
     case 0

@@ -70,7 +70,7 @@ for ii = 1:K
         for l=-Lhat:Lhat            
             wtmp = circshift(wpad, [0,l]);
             wtmp = wtmp(:,(Lhat+1):(end-L));
-            Stmp(l+Lhat+1) = compute_EMD(wtmp, wk_hat, opts, 'continuationOptions', continue_opts);
+            Stmp(l+Lhat+1) = compute_EMD(wtmp, wk_hat, opts, 'continuationOptions', continue_opts, 'lambdaR', 1e3);
         end
         [S(ii,jj), idx] = min(Stmp);
         shift(ii,jj) = idx-Lhat-1;
@@ -98,7 +98,7 @@ for ii = 1:min(K,Khat)
     % Shift H to opposite direction
     Htmp = circshift(Hpad,-shift(r(1), c(1)));
     Htmp = Htmp((Lhat+1):(end-Lhat));
-    emds_H(c(1)) = compute_EMD(Htmp, Hk_hat, opts, 'continuationOptions', continue_opts);
+    emds_H(c(1)) = compute_EMD(Htmp, Hk_hat, opts, 'continuationOptions', continue_opts, 'lambdaR', 1e3);
     ids(c(1)) = r(1);
 
     temp(r(1),:) = nan;

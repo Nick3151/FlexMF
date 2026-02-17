@@ -3,13 +3,13 @@ function [d, M, R, out] = compute_EMD(X1, X2, opts, varargin)
 % along the time dimension
 
 p  = inputParser;
-addOptional(p, 'mu', 1e2);
+addOptional(p, 'lambdaR', 1e1);
 addOptional(p, 'continuationOptions', [])
 parse(p, varargin{:})
 
 [N,T] = size(X1);
 assert(isequal(size(X2), [N,T]), 'Dimensions of the two matrices should be the same!')
-mu = p.Results.mu;
+lambdaR = p.Results.lambdaR;
 continuationOptions = p.Results.continuationOptions;
 
 if isequal(X1,X2)
@@ -23,10 +23,10 @@ else
     end
     
     A = @(Y, mode)Beckmann_UOT_constraint(N, T, Y, mode);
-    W = @(Y, mode)Beckmann_UOT_obj(N, T, mu, Y, mode);
+    W = @(Y, mode)Beckmann_UOT_obj(N, T, lambdaR, Y, mode);
     
     b = X2-X1;
-    [Y, out] = solver_sBPDN_W(A,W,b,0,.001,[],[],opts, continuationOptions);
+    [Y, out] = solver_sBPDN_W(A,W,b,0,.1,[],[],opts, continuationOptions);
     M = Y(1:N,:);
     R = Y(N+1:2*N,:);
     d = norm(M(:),1);

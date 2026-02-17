@@ -5,6 +5,7 @@ function y = Beckmann_UOT_constraint(N, T, X, mode)
 % A*(y) = [YD;-Y]
 % divergence matrix
 D = eye(T) - diag(ones(T-1,1),-1);
+D(T,T) = 0;
 switch mode
     case 0
         y = {[2*N,T], [N,T]};

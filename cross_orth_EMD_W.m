@@ -8,6 +8,7 @@ function y = cross_orth_EMD_W(X, H, L, W_, mode)
 [N, T] = size(X);
 [K, ~] = size(H);
 assert((size(H,2)==T), 'Dimensions do not match!')
+T = T-2*L;  % Real length without zeropadding
 
 Q = ones(K);
 Q(1:K+1:end) = 0;   % off diagonal mask

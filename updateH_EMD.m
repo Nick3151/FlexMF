@@ -6,7 +6,7 @@ function [H, M, R, out] = updateH_EMD(W, H0, X, M0, R0, params)
 opts_default = tfocs_SCD;
 opts = opts_default;
 opts.continuation = 1;
-opts.tol = 1e-3;
+opts.tol = 1e-6;
 opts.stopCrit = 4;
 opts.maxIts = 500;
 opts.alg = 'N83';
@@ -22,8 +22,11 @@ end
 H0_ = [H0; M0; R0];
 
 %% Linear operators
+D = eye(T) - diag(ones(T-1,1),-1);
+D(T,T) = 0;
+X_corr = M0*D'+X;    % Correct data with warping/jitering
 smoothkernel = ones(1,(2*L)-1);  % for factor competition
-WTX = helper.transconv(W, X);
+WTX = helper.transconv(W, X_corr);
 WTXS = conv2(abs(WTX), smoothkernel, 'same');
 A = WTXS;
 op_cross_orth_H = @(H_, mode)cross_orth_EMD_H(A, N, H_, mode);
@@ -51,7 +54,7 @@ lambda_R = params.lambda_R;
 lambda_M = params.lambda_M;
 lambdaL1H = params.lambdaL1H;
 Reweight = params.Reweight;
-mu = 1e-3;
+mu = 1e-1;
 
 % affineF = {linop_compose(op_M, 1/proxScale_M), 0; ...
 %            linop_compose(op_R, 1/proxScale_R), 0; ...
@@ -96,8 +99,8 @@ for k=1:K
 end
 
 if lambdaL1H>0
-    affineF(end+1,:) = {linop_compose(op_H,proxScale_H), 0};
-    if Reweight && (params.currentiter > 10)
+    affineF(end+1,:) = {linop_compose(op_H, 1/proxScale_H), 0};
+    if Reweight && (params.currentiter > 0)
         epsilon = 1e-2;
         conjnegF{end+1} = proj_abs_box(lambdaL1H./(abs(H0_smooth)+epsilon)*proxScale_H);
     else
@@ -117,8 +120,8 @@ dH = norm(H(:)-H0(:));
 dM = norm(M(:)-M0(:));
 dR = norm(R(:)-R0(:));
 
-D = eye(T) - diag(ones(T-1,1),-1);
 constraint = M*D'-R-helper.reconstruct(W,H)+X;
+% X_corr = M*D'+X;
 
 %% Print intermediate results
 if params.verbal
@@ -134,7 +137,7 @@ if params.verbal
     fprintf('L1_H/X=%f\n',norm(H(:),1)/norm(X(:),1));
     fprintf('L1_M/X=%f\n',norm(M(:),1)/norm(X(:),1));
     fprintf('L1_R/X=%f\n',norm(R(:),1)/norm(X(:),1));
-    fprintf('Constraint=%f\n', sum(constraint(:).^2/2))
+    fprintf('Constraint=%f\n', norm(constraint(:),1))
 %     fprintf('dH=%f\n', dH);
 %     fprintf('dM=%f\n', dM);
 %     fprintf('dR=%f\n', dR);

@@ -122,10 +122,10 @@ if params.EMD
     Xhat_ = [Xhat M_pre R_pre];
 %     cost(1) = compute_EMD(X,Xhat,opts, 'continuationOptions', continue_opts);
     cost(1) = norm(X_(:)-Xhat_(:));
-    L1_Ms = zeros(params.maxiter+1, 2); % L1 norms of M after updating W/H
-    L1_Rs = zeros(params.maxiter+1, 2); % L1 norms of R after updating W/H
-    L1_Ws = zeros(params.maxiter+1, 2); % L1 norms of W after updating W/H
-    L1_Hs = zeros(params.maxiter+1, 2); % L1 norms of H after updating W/H
+    L1_Ms = zeros(params.maxiter, 2); % L1 norms of M after updating W/H
+    L1_Rs = zeros(params.maxiter, 2); % L1 norms of R after updating W/H
+    L1_Ws = zeros(params.maxiter, 2); % L1 norms of W after updating W/H
+    L1_Hs = zeros(params.maxiter, 2); % L1 norms of H after updating W/H
 else
 %     cost(1) = sqrt(mean((X(:)-Xhat(:)).^2));
     cost(1) = norm(X(:)-Xhat(:));
@@ -157,10 +157,10 @@ for iter = 1 : params.maxiter
         cost = cost(1 : iter+1);  % trim vector
         errors = errors(1 : iter+1, :);
         if params.EMD
-            L1_Ms = L1_Ms(1: iter+1, :);
-            L1_Rs = L1_Rs(1: iter+1, :);
-            L1_Hs = L1_Hs(1: iter+1, :);
-            L1_Ws = L1_Ws(1: iter+1, :);
+            L1_Ms = L1_Ms(1: iter, :);
+            L1_Rs = L1_Rs(1: iter, :);
+            L1_Hs = L1_Hs(1: iter, :);
+            L1_Ws = L1_Ws(1: iter, :);
         end
         lasttime = 1; 
 %         if iter>1
@@ -180,10 +180,14 @@ for iter = 1 : params.maxiter
 %             M0 = zeros(N,T);
 %             R0 = zeros(N,T);
             [W, M, R, out] = updateW_EMD(W0, H_pre, X, M0, R0, params);
-            L1_Ms(iter+1,1) = norm(M(:),1)/norm(X(:),1);
-            L1_Rs(iter+1,1) = norm(R(:),1)/norm(X(:),1);
-            L1_Ws(iter+1,1) = norm(W(:),1)/norm(X(:),1);
-            L1_Hs(iter+1,1) = norm(H_pre(:),1)/norm(X(:),1);
+            L1_Ms(iter,1) = norm(M(:),1)/norm(X(:),1);
+            L1_Rs(iter,1) = norm(R(:),1)/norm(X(:),1);
+            L1_Ws(iter,1) = norm(W(:),1)/norm(X(:),1);
+            L1_Hs(iter,1) = norm(H_pre(:),1)/norm(X(:),1);
+
+            Xhat = helper.reconstruct(W, H_pre);
+            SimpleWHPlot_patch(W, H_pre, 'Data', Xhat); 
+%             save2pdf(sprintf('Simulation_results_iterations/iteration #%i UpdateW',iter));
         else
             W = updateW(W0, H_pre, X, params); 
         end
@@ -206,10 +210,14 @@ for iter = 1 : params.maxiter
 %     M0 = zeros(N,T);
 %     R0 = zeros(N,T);
         [H, M, R, out] = updateH_EMD(W, H0, X, M0, R0, params);
-        L1_Ms(iter+1,2) = norm(M(:),1)/norm(X(:),1);
-        L1_Rs(iter+1,2) = norm(R(:),1)/norm(X(:),1);
-        L1_Ws(iter+1,2) = norm(W(:),1)/norm(X(:),1);
-        L1_Hs(iter+1,2) = norm(H(:),1)/norm(X(:),1);
+        L1_Ms(iter,2) = norm(M(:),1)/norm(X(:),1);
+        L1_Rs(iter,2) = norm(R(:),1)/norm(X(:),1);
+        L1_Ws(iter,2) = norm(W(:),1)/norm(X(:),1);
+        L1_Hs(iter,2) = norm(H(:),1)/norm(X(:),1);
+
+        Xhat = helper.reconstruct(W, H);
+        SimpleWHPlot_patch(W, H, 'Data', Xhat); 
+%         save2pdf(sprintf('Simulation_results_iterations/iteration #%i UpdateH',iter));
     else
         H = updateH(W, H0, X, params);   
     end
@@ -287,9 +295,9 @@ end
 
 if params.verbal && params.EMD
     figure;
-    plot(1:.5:iter+1.5, reshape(L1_Ms', 1, []), 1:.5:iter+1.5, reshape(L1_Rs', 1, []))
+    plot(1:.5:iter+.5, reshape(L1_Ms', 1, []), 1:.5:iter+.5, reshape(L1_Rs', 1, []))
     hold on
-    plot(1:.5:iter+1.5, reshape(L1_Ws', 1, []), 1:.5:iter+1.5, reshape(L1_Hs', 1, []))
+    plot(1:.5:iter+.5, reshape(L1_Ws', 1, []), 1:.5:iter+.5, reshape(L1_Hs', 1, []))
     legend('||M||_1', '||R||_1', '||W||_1', '||H||_1')
 end
 

@@ -1,4 +1,4 @@
-%% Test script: FlexMF on warped/jittered data with noise
+%% Test FlexMF parameters (Fix lambda_R, sweep lambda, lambda_M)
 clear all
 close all
 clc
@@ -13,27 +13,31 @@ number_of_seqences = 3;
 T = 2000; % length of data to generate
 Nneurons = 10*ones(number_of_seqences,1); % number of neurons in each sequence
 Dt = 3.*ones(number_of_seqences,1); % gap between each member of the sequence
-noise = .001; % probability of added noise in each bin
+noise = 0.001; % probability of added noise in each bin
 jitter = 5*ones(number_of_seqences,1); % Jitter std
 participation = 1.*ones(number_of_seqences,1); % Participation parameter = 100%
 warp = 2; % stretch should be less than Dt
 gap = 100;
 neg = 0;
 seed = 1;
-
+[X, W, H, ~] = generate_data(T,Nneurons,Dt, 'noise',noise, 'seed', seed, 'len_burst', 1, 'dynamic', 0);
 [Xwarp, Wwarp, Hwarp, ~] = generate_data(T,Nneurons,Dt, 'noise',noise, 'warp', warp, 'seed', seed, 'len_burst', 1, 'dynamic', 0);
+[Xjit, Wjit, Hjit, ~] = generate_data(T,Nneurons,Dt, 'noise',noise, 'jitter', jitter, 'seed', seed, 'len_burst', 1, 'dynamic', 0);
+L = size(W,3);
 
-L = size(Wwarp,3);
-
-plotAll = 1;
-figure; SimpleWHPlot(Wwarp,Hwarp,'Data',Xwarp,'plotAll', plotAll); title('generated data warping','Fontsize',16)
+%% Visualize data
+figure; SimpleWHPlot(Wwarp,Hwarp,'Data',Xwarp,'plotAll', 1); title('generated data warping','Fontsize',16)
+set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 
 %% Normalize data
 K = 3;
+% frob_norm = norm(Xwarp(:));
+% Xwarp = Xwarp/frob_norm*K;
+% Wwarp = Wwarp/frob_norm*K;
 
 %% Procedure for choosing lambda in SeqNMF
 nLambdas = 20; % increase if you're patient
-lambdas = sort(logspace(-1,-5,nLambdas), 'ascend'); 
+lambdas = sort(logspace(0,-4,nLambdas), 'ascend'); 
 loadings = [];
 regularization = []; 
 cost = []; 
@@ -78,67 +82,71 @@ set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 [What_SeqNMF, Hhat_SeqNMF, ~, errors_SeqNMF,loadings,power]= seqNMF(Xwarp,'K',K,'L',L,...
             'lambda', lambda, 'maxiter', 50, 'showPlot', 1); 
 
-% plot, sorting neurons by latency within each factor
-[max_factor, L_sort, max_sort, hybrid] = helper.ClusterByFactor(What_SeqNMF(:,:,:),1);
-indSort = hybrid(:,3);
-
-%% Look at factors
-plotAll = 1;
-figure; SimpleWHPlot_patch(What_SeqNMF, Hhat_SeqNMF, 'plotAll', plotAll); title('SeqNMF reconstruction')
-set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-figure; SimpleWHPlot_patch(What_SeqNMF, Hhat_SeqNMF, 'Data', Xwarp, 'plotAll', plotAll); title('SeqNMF factors, with raw data')
-set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-
-%% Consistency
-lambdaL1H = 0;
-lambdaL1W = 0;
-lambda = 1e-4;
-lambda_M = .1;
+%% Run FlexMF with different lambda and lambda_M
+n = 9;
 lambda_R = 1;
+lambdas = logspace(-4,0,n);
+lambda_Ms = logspace(-3,1,n);
 
-nRuns = 10;
-Whats = cell(nRuns,1);
-Hhats = cell(nRuns,1);
-errors = zeros(nRuns, 4);
-Ms = cell(nRuns,1);
-Rs = cell(nRuns,1);
+Whats = cell(n,n);
+Hhats = cell(n,n);
+Ms = cell(n,n);
+Rs = cell(n,n);
+emds_W = cell(n, n);
+emds_H = cell(n, n);
+num_detected = cell(n, n);
+ids_match = cell(n, n);
 
-parfor n=1:nRuns
-%     lambda = lambdas(n);
-    disp(lambda)
-    
-%     [Whats{n}, Hhats{n}, cost, error, loadings, power, Ms{n}, Rs{n}] = FlexMF(Xwarp, 'K', K, 'L', L, ...
-%         'EMD',1, 'lambda', lambda, ...
-%         'lambdaL1H', lambdaL1H, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 1, 'tolerance', 1e-3, ...
-%         'W_init', Wwarp, 'W_fixed', 1, 'showPlot', 0, 'verbal', 0);
-    figure;     
-    [Whats{n}, Hhats{n}, cost, error, loadings, power, Ms{n}, Rs{n}] = FlexMF(Xwarp, 'K', K, 'L', L, ...
-            'EMD',1, 'lambda', lambda, 'lambdaL1W', lambdaL1W, ...
-            'lambdaL1H', lambdaL1H, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50, 'tolerance', 1e-6, ...
+for Li = 1:n
+    lambda = lambdas(Li);
+    parfor Mi = 1:n       
+        lambda_M = lambda_Ms(Mi);
+        display(['Testing lambda=' num2str(lambda) ' lambda_M=' num2str(lambda_M)])
+        tic
+        [What, Hhat, cost, errors, loadings, power, M, R] = FlexMF(Xwarp, 'K', K, 'L', L, ...
+            'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50, 'tolerance', 1e-4,...
             'W_init', What_SeqNMF, 'H_init', Hhat_SeqNMF, 'showPlot', 0, 'verbal', 0);
+        toc
+        Whats{Li,Mi} = What;
+        Hhats{Li,Mi} = Hhat;
+        Ms{Li,Mi} = M;
+        Rs{Li,Mi} = R;
         
-    errors(n,:) = error(end,:);
+        disp('Evaluate EMDs of results')
+        tic
+        [emds_W{Li,Mi}, emds_H{Li,Mi}, ids] = helper.similarity_WH_EMD(Wwarp, Hwarp, What, Hhat);
+        num_detected{Li,Mi} = length(ids);
+        ids_match{Li,Mi} = ids;
+        toc
+    end
 end
 
+% save(sprintf('Simulation_Results/EMD_params_warp.mat'), ...
+%     "Hhats", "Whats", "Ms", "Rs", "lambda_Ms", "lambdas", "Xwarp")
+save(sprintf('Simulation_Results/EMD_params_warp_noise.mat'), ...
+    "Hhats", "Whats", "Ms", "Rs", "lambda_Ms", "lambdas", "Xwarp")
 %% Look at factors
+i = 6;
+j = 4;
 plotAll = 1;
-n = 7;
-figure; SimpleWHPlot_patch(Whats{n}, Hhats{n}, 'plotAll', plotAll); title('FlexMF reconstruction')
+figure; SimpleWHPlot_patch(Whats{i,j}, Hhats{i,j}, 'plotAll', plotAll); title('FlexMF reconstruction')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-figure; SimpleWHPlot_patch(Whats{n}, Hhats{n}, 'Data', Xwarp, 'plotAll', plotAll); title('FlexMF factors, with raw data')
-set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-% save2pdf(sprintf('EMD_Simulated_warp_noise_data_FlexMF_T=%d_lambda=%1.1e_lambdaM=%1.1e_lambdaR=%1.1e.pdf', T, lambda, lambda_M, lambda_R), gcf)
-figure;
-plot_MR(Ms{n},Rs{n})
-% save2pdf(sprintf('FlexMF_warp_noise_demo_MR_T=%d_lambda=%1.1e_lambdaM=%1.1e_lambdaR=%1.1e.pdf', T, lambda, lambda_M, lambda_R))
 
-L1Ms = cellfun(@(x) norm(x(:),1), Ms);
-L1Rs = cellfun(@(x) norm(x(:),1), Rs);
-L1Ws = cellfun(@(x) norm(x(:),1), Whats);
-L1Hs = cellfun(@(x) norm(x(:),1), Hhats);
-%% Errors vs lambdaL1H
 figure;
-plot(lambdas, errors(:,1), lambdas, L1Hs)
-legend('Recon', 'L1H')
-xlabel('Lambda')
-save2pdf('Error vs lambda')
+plot_MR(Ms{i,j},Rs{i,j})
+
+%% Visualize EMDs to ground truth
+mean_emd_Hs = zeros(n, n);
+mean_emd_Ws = zeros(n, n);
+num_detected_all = zeros(n, n);
+
+for Li=1:n
+    for Mi=1:n
+        mean_emd_Hs(Li,Mi) = mean(emds_H{Li,Mi});
+        mean_emd_Ws(Li,Mi) = mean(emds_W{Li,Mi});
+        num_detected_all(Li,Mi)  = num_detected{Li,Mi};
+    end
+end
+
+M_norms = cellfun(@(x) norm(x(:),1), Ms);
+R_norms = cellfun(@(x) norm(x(:),1), Rs);

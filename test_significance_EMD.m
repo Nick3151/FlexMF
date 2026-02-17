@@ -137,7 +137,11 @@ end
 allpvals(indempty|is_single) = Inf; 
 allpvals(~(indempty|is_single)) = pvals; 
 pvals = allpvals;
-is_significant = (pvals <= pValue/K);
+if K>0
+    is_significant = (pvals <= pValue/K);
+else
+    is_significant = (pvals <= 0);
+end
 
 if plot
     figure;
