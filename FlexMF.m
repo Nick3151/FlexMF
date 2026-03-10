@@ -52,7 +52,7 @@ function [W, H, cost, errors, loadings, power, M, R] = FlexMF(X, varargin)
 % 'W_fixed'         0                                   Fix W during the fitting proceedure   
 % 'SortFactors'     1                                   Sort factors by loadings
 % 'useWupdate'      1                                   Wupdate for cross orthogonality often doesn't change results much, and can be slow, so option to remove  
-% 'M'               ones(N,T)                           Masking matrix if excluding a random test set from the fit
+% 'Mask'            ones(N,T)                           Masking matrix if excluding a random test set from the fit
 % 'neg_prop'        0.2                                 Proportion of negative indices
 % 'EMD              0                                   Optimize EMD instead of reconstruction error
 % 'lambda_R'        1                                   Penalty coefficient on residual term for unbalanced EMD
@@ -94,13 +94,12 @@ function [W, H, cost, errors, loadings, power, M, R] = FlexMF(X, varargin)
 % Parse inputs
 [X,N,T,K,L,params] = parse_seqNMF_params(X, varargin);
 
-%% initialize
-W_pre = params.W_init;
-H_pre = params.H_init;
+%% Initialize
 W = params.W_init;
+H = params.H_init;
 
-Xhat = helper.reconstruct(W_pre, H_pre); 
-mask = find(params.M == 0); % find masked (held-out) indices 
+Xhat = helper.reconstruct(W, H); 
+mask = find(params.Mask == 0); % find masked (held-out) indices 
 X(mask) = Xhat(mask); % replace data at masked elements with reconstruction, so masked datapoints do not effect fit
 
 lasttime = 0;
@@ -116,12 +115,11 @@ if params.EMD
     opts.alg = 'N83';
     continue_opts = continuation();
     continue_opts.verbose = 0;
-    M_pre = zeros(N,T);
-    R_pre = zeros(N,T);
-    X_ = [X M_pre R_pre];
-    Xhat_ = [Xhat M_pre R_pre];
+    M = zeros(N,T);
+    R = zeros(N,T);
 %     cost(1) = compute_EMD(X,Xhat,opts, 'continuationOptions', continue_opts);
-    cost(1) = norm(X_(:)-Xhat_(:));
+    Xcorr = helper.correct_warp(X, M);
+    cost(1) = norm(Xcorr(:)-Xhat(:));
     L1_Ms = zeros(params.maxiter, 2); % L1 norms of M after updating W/H
     L1_Rs = zeros(params.maxiter, 2); % L1 norms of R after updating W/H
     L1_Ws = zeros(params.maxiter, 2); % L1 norms of W after updating W/H
@@ -130,7 +128,7 @@ else
 %     cost(1) = sqrt(mean((X(:)-Xhat(:)).^2));
     cost(1) = norm(X(:)-Xhat(:));
 end
-[recon_err, reg_cross, reg_W, reg_H] = helper.get_FlexMF_cost(X,W_pre,H_pre);
+[recon_err, reg_cross, reg_W, reg_H] = helper.get_FlexMF_cost(X,W,H);
 errors(1,:) = [recon_err, reg_cross, reg_W, reg_H];
 
 for iter = 1 : params.maxiter
@@ -140,12 +138,7 @@ for iter = 1 : params.maxiter
     end
     if iter > 5
         dcost = cost(iter) - mean(cost((iter-5):(iter-1)));
-        if params.EMD
-            X_ = [X M_pre R_pre];
-            dcost_norm = dcost/norm(X_(:));
-        else
-            dcost_norm = dcost/norm(X(:));
-        end
+        dcost_norm = dcost/norm(X(:));
         if params.verbal
             fprintf('dcost=%f\n', dcost);
             fprintf('dcost/X=%f\n', dcost_norm);
@@ -167,57 +160,30 @@ for iter = 1 : params.maxiter
 %             params.lambda = 0; % Do one final CNMF iteration (no regularization, just prioritize reconstruction)
 %         end
     end
-    
-    if ~params.W_fixed
-    %     tic
-        if params.verbal
-            fprintf('Updating W\n');
-        end
-        W0 = W_pre;
-        if params.EMD
-            M0 = M_pre;
-            R0 = R_pre;
-%             M0 = zeros(N,T);
-%             R0 = zeros(N,T);
-            [W, M, R, out] = updateW_EMD(W0, H_pre, X, M0, R0, params);
-            L1_Ms(iter,1) = norm(M(:),1)/norm(X(:),1);
-            L1_Rs(iter,1) = norm(R(:),1)/norm(X(:),1);
-            L1_Ws(iter,1) = norm(W(:),1)/norm(X(:),1);
-            L1_Hs(iter,1) = norm(H_pre(:),1)/norm(X(:),1);
 
-            Xhat = helper.reconstruct(W, H_pre);
-            SimpleWHPlot_patch(W, H_pre, 'Data', Xhat); 
-%             save2pdf(sprintf('Simulation_results_iterations/iteration #%i UpdateW',iter));
-        else
-            W = updateW(W0, H_pre, X, params); 
-        end
-    else
-        W = W_pre;
-        if params.EMD
-            M = M_pre;
-            R = R_pre;
-        end
-    end
-    
     if params.verbal
         fprintf('Updating H\n');
     end
 
-    H0 = H_pre;
+    H0 = H;
     if params.EMD
         M0 = M;
         R0 = R;
 %     M0 = zeros(N,T);
 %     R0 = zeros(N,T);
         [H, M, R, out] = updateH_EMD(W, H0, X, M0, R0, params);
-        L1_Ms(iter,2) = norm(M(:),1)/norm(X(:),1);
-        L1_Rs(iter,2) = norm(R(:),1)/norm(X(:),1);
-        L1_Ws(iter,2) = norm(W(:),1)/norm(X(:),1);
-        L1_Hs(iter,2) = norm(H(:),1)/norm(X(:),1);
+        L1_Ms(iter,1) = norm(M(:),1)/norm(X(:),1);
+        L1_Rs(iter,1) = norm(R(:),1)/norm(X(:),1);
+        L1_Ws(iter,1) = norm(W(:),1)/norm(X(:),1);
+        L1_Hs(iter,1) = norm(H(:),1)/norm(X(:),1);
 
-        Xhat = helper.reconstruct(W, H);
-        SimpleWHPlot_patch(W, H, 'Data', Xhat); 
-%         save2pdf(sprintf('Simulation_results_iterations/iteration #%i UpdateH',iter));
+        if params.showPlot
+            Xhat = helper.reconstruct(W, H);
+            SimpleWHPlot_patch(W, H, 'Data', Xhat); 
+            title(sprintf('iteration #%i',iter));
+            drawnow
+%             save2pdf(sprintf('Simulation_results_iterations/iteration #%i UpdateH',iter));
+        end
     else
         H = updateH(W, H0, X, params);   
     end
@@ -237,22 +203,42 @@ for iter = 1 : params.maxiter
         end 
     end
     
+    if ~params.W_fixed
+    %     tic
+        if params.verbal
+            fprintf('Updating W\n');
+        end
+        W0 = W;
+        if params.EMD
+            M0 = M;
+            R0 = R;
+    %     M0 = zeros(N,T);
+    %     R0 = zeros(N,T);
+            [W, M, R, out] = updateW_EMD(W0, H, X, M0, R0, params);
+            L1_Ms(iter,2) = norm(M(:),1)/norm(X(:),1);
+            L1_Rs(iter,2) = norm(R(:),1)/norm(X(:),1);
+            L1_Ws(iter,2) = norm(W(:),1)/norm(X(:),1);
+            L1_Hs(iter,2) = norm(H(:),1)/norm(X(:),1);
+        else
+            W = updateW(W0, H, X, params); 
+        end
+    end
+
     % Calculate cost for this iteration
     Xhat = helper.reconstruct(W, H);    
-    mask = find(params.M == 0); % find masked (held-out) indices 
+    mask = find(params.Mask == 0); % find masked (held-out) indices 
     X(mask) = Xhat(mask); % replace data at masked elements with reconstruction, so masked datapoints do not effect fit
     if params.EMD
 %         cost(iter+1) = compute_EMD(X,Xhat,opts, 'continuationOptions', continue_opts);
-        X_ = [X M_pre R_pre];
-        Xhat_ = [Xhat M R];
-        cost(iter+1) = norm(X_(:)-Xhat_(:));
+        Xcorr = helper.correct_warp(X, M);
+        cost(iter+1) = norm(Xcorr(:)-Xhat(:));
     else
 %         cost(iter+1) = sqrt(mean((X(:)-Xhat(:)).^2));
         cost(iter+1) = norm(X(:)-Xhat(:));
     end
     [recon_err, reg_cross, reg_W, reg_H] = helper.get_FlexMF_cost(X,W,H);
     errors(iter+1,:) = [recon_err, reg_cross, reg_W, reg_H];
-%     dW = sqrt(mean((W(:)-W_pre(:)).^2));
+%     dW = sqrt(mean((W(:)-W0(:)).^2));
 %     fprintf('dW=%f\n', dW);
     
     % Plot to show progress
@@ -261,26 +247,12 @@ for iter = 1 : params.maxiter
         SimpleWHPlot_patch(W, H, 'Data', Xhat); 
         title(sprintf('iteration #%i',iter));
         drawnow
+%         save2pdf(sprintf('Simulation_results_iterations/iteration #%i UpdateW',iter));
     end
-    
-    W_pre = W;
-    H_pre = H;
-    if params.EMD
-        M_pre = M;
-        R_pre = R;
-    end
+
     if lasttime
         break
     end
-end
-   
-% Undo zeropadding by truncating X, Xhat and H
-X = X(:,L+1:end-L);
-Xhat = Xhat(:,L+1:end-L);
-H = H(:,L+1:end-L);
-if params.EMD
-    M = M(:,L+1:end-L);
-    R = R(:,L+1:end-L);
 end
 
 % Compute explained power of whole reconstruction and each factor
@@ -328,7 +300,7 @@ end
         addOptional(p,'H_init', nan); % depends on K--initialize post parse
         addOptional(p,'SortFactors', 1); % sort factors by loading?
         addOptional(p,'useWupdate',1); % W update for cross orthogonality often doesn't change results much, and can be slow, so option to skip it 
-        addOptional(p,'M',nan); % Masking matrix: default is ones; set elements to zero to hold out as masked test set
+        addOptional(p,'Mask',nan); % Masking matrix: default is ones; set elements to zero to hold out as masked test set
         addOptional(p, 'neg_prop', 0.2); % proportion of negative indices
         addOptional(p, 'EMD', 0);  % Optimize EMD instead of reconstruction error
         addOptional(p, 'lambda_R', 1); % Penalty coefficient on residual term for unbalanced EMD
@@ -338,26 +310,18 @@ end
         L = p.Results.L; 
         K = p.Results.K; 
         params = p.Results; 
-        
-        % zeropad data by L
-        X = [zeros(N,L),X,zeros(N,L)];
-        [N, T] = size(X);
 
         % initialize W_init and H_init, if not provided
         if isnan(params.W_init)
             neg_indices = (rand(N, K, L) < params.neg_prop);
-            params.W_init = max(X(:))*rand(N, K, L);
+            params.W_init = max(X(:))*reshape(full(sprand(N,K*L,.05)),[N,K,L]);
             params.W_init(neg_indices) = -params.W_init(neg_indices);
         end
         if isnan(params.H_init)
             params.H_init = max(X(:))*rand(K,T)./(sqrt(T/3)); % normalize so frobenius norm of each row ~ 1
-        else
-            params.H_init = [zeros(K,L),params.H_init,zeros(K,L)];
         end
-        if isnan(params.M)
-            params.M = ones(N,T);
-        else
-            params.M = [ones(N,L),params.M,ones(N,L)];
+        if isnan(params.Mask)
+            params.Mask = ones(N,T);
         end
     end
 end

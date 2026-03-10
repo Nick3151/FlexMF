@@ -22,11 +22,9 @@ end
 H0_ = [H0; M0; R0];
 
 %% Linear operators
-D = eye(T) - diag(ones(T-1,1),-1);
-D(T,T) = 0;
-X_corr = M0*D'+X;    % Correct data with warping/jitering
+Xcorr = helper.correct_warp(X,M0);    % Correct data with warping/jitering
 smoothkernel = ones(1,(2*L)-1);  % for factor competition
-WTX = helper.transconv(W, X_corr);
+WTX = helper.transconv(W, Xcorr);
 WTXS = conv2(abs(WTX), smoothkernel, 'same');
 A = WTXS;
 op_cross_orth_H = @(H_, mode)cross_orth_EMD_H(A, N, H_, mode);
@@ -120,8 +118,8 @@ dH = norm(H(:)-H0(:));
 dM = norm(M(:)-M0(:));
 dR = norm(R(:)-R0(:));
 
-constraint = M*D'-R-helper.reconstruct(W,H)+X;
-% X_corr = M*D'+X;
+Xcorr = helper.correct_warp(X,M);
+constraint = Xcorr-R-helper.reconstruct(W,H);
 
 %% Print intermediate results
 if params.verbal

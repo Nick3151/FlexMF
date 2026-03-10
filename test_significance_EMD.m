@@ -66,8 +66,22 @@ if isempty(nNull)
 end
 
 % Correct the temporal warpped/jittered part of TestData
-D = eye(T) - diag(ones(T-1,1),-1);
-TestData_corr = M*D'+TestData;
+TestData_corr = helper.correct_warp(TestData,M);
+
+if plot
+    cmap = flipud(gray); 
+    maxValue = max([TestData_corr, TestData], [], 'all')+eps;
+    figure;
+    ax1 = subplot('Position', [0.05, 0.55, 0.8, 0.4]);
+    imagesc(TestData, [0,maxValue])
+    set(ax1, 'XTickLabel', [], 'YTickLabel', []);
+    colormap(cmap)
+    ax2 = subplot('Position', [0.05, 0.05, 0.8, 0.4]);
+    imagesc(TestData_corr, [0,maxValue])
+    set(ax2, 'XTickLabel', [], 'YTickLabel', []);
+    colormap(cmap)
+    set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
+end
 
 WTX = helper.transconv(W,TestData_corr);
 thresh = prctile(WTX', 95);
@@ -83,10 +97,19 @@ end
 
 if plot
     k_plot = 1;
-    nbins = 100;
-    figure; histogram(WTX(k_plot,:), nbins, 'FaceColor','k'); 
-    hold on
-    xline(thresh(k_plot), 'r', 'LineWidth',1)
+    Wk = squeeze(W(:,k_plot,:));
+    nbins = 20;
+    figure; 
+    subplot('Position', [0.1 0.1 0.2 0.8]);
+    imagesc(Wk, [0,max(Wk(:))])
+    cmap = flipud(gray); 
+    colormap(cmap)
+    ax(1) = subplot('Position', [0.4 0.1 0.5 0.8]);
+    histogram(WTX(k_plot,:), nbins, 'FaceColor','k'); 
+    if ~useSkew
+        hold on
+        xline(thresh(k_plot), 'r', 'LineWidth',1)
+    end
     title('WTX distribution')
     set(gca,'yscale','log')
 end
@@ -115,9 +138,18 @@ for n = 1:nnull
     end
     if plot
         if n<5
-            figure; histogram(WTX_null(k_plot,:), nbins, 'FaceColor','k'); 
-            hold on
-            xline(thresh_null(k_plot), 'r', 'LineWidth',1)
+            figure; 
+            Wk_null = squeeze(Wnull(:,k_plot,:));
+            subplot('Position', [0.1 0.1 0.2 0.8]);
+            imagesc(Wk_null, [0,max(Wk_null(:))])
+            cmap = flipud(gray); 
+            colormap(cmap)
+            ax(n+1) = subplot('Position', [0.4 0.1 0.5 0.8]);
+            histogram(WTX_null(k_plot,:), nbins, 'FaceColor','k'); 
+            if ~useSkew
+                hold on
+                xline(thresh_null(k_plot), 'r', 'LineWidth',1)
+            end
             title('WTX null distribution')
             set(gca,'yscale','log')
         end
@@ -144,6 +176,7 @@ else
 end
 
 if plot
+    linkaxes(ax, 'x')
     figure;
     if useSkew
         histogram(skewnull(k_plot,:))

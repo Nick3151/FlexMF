@@ -19,11 +19,9 @@ if ~params.verbal
 end
 
 %% Initialization
-D = eye(T) - diag(ones(T-1,1),-1);  % divergence matrix
-D(T,T) = 0;
-X_corr = M0*D'+X;
+Xcorr = helper.correct_warp(X,M0);
 W0_flat = reshape(W0, [N,K*L]);
-X_pad = [zeros(N,L),X_corr,zeros(N,L)];
+X_pad = [zeros(N,L),Xcorr,zeros(N,L)];
 H_pad = [zeros(K,L),H,zeros(K,L)];
 W0_ = [W0_flat, M0, R0];
 
@@ -108,7 +106,8 @@ dW = norm(W(:)-W0(:));
 dM = norm(M(:)-M0(:));
 dR = norm(R(:)-R0(:));
 
-constraint = M*D'-R-helper.reconstruct(W,H)+X;
+Xcorr = helper.correct_warp(X,M);
+constraint = Xcorr-R-helper.reconstruct(W,H);
 
 %% Print intermediate results
 if params.verbal

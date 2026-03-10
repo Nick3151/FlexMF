@@ -79,13 +79,13 @@ set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
             'lambda', lambda, 'maxiter', 50, 'showPlot', 1); 
 
 %% Find sequence with FlexMF on training data
-lambda = 5e-2;
+lambda = 0;
 lambda_M = 1e-1;
 lambda_R = 1;
 figure;
 [What, Hhat_train, cost_train, errors_train, loadings, power, M_train, R_train] = FlexMF(Xtrain, 'K', K, 'L', L, ...
     'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50, ...
-    'W_init', What_SeqNMF, 'H_init', Hhat_SeqNMF, 'tolerance', 1e-4);
+    'tolerance', 1e-4);
 
 figure; SimpleWHPlot_patch(What, Hhat_train, 'plotAll', 1); title('FlexMF recon')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
@@ -108,7 +108,11 @@ figure;
 
 figure; SimpleWHPlot_patch(What, Hhat_test, 'plotAll', 1); title('FlexMF test recon')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
+figure; SimpleWHPlot_patch(What, Hhat_test, 'Data', Xtest, 'plotAll', 1); title('FlexMF test raw')
+set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
+% save2pdf('Significance_test_data.pdf')
 figure; plot_MR(M_test, R_test)
+% save2pdf('Significance_test_MR.pdf')
 
 %% test significance
 [pvals,is_significant,is_single] = test_significance_EMD(Xtest, What, M_test, 'plot', 1);

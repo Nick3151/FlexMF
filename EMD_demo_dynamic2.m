@@ -116,7 +116,7 @@ lambda_M = 1e-2;
 lambda_R = 1;
 [What, Hhat, cost, errors, loadings, power, M, R] = FlexMF(Xtrain, 'K', K, 'L', L, ...
     'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'lambdaL1H', lambdaL1H, ...
-    'W_init', What_SeqNMF, 'H_init', Hhat_SeqNMF, 'maxiter', 50, 'Reweight', 1);
+    'maxiter', 50, 'Reweight', 1);
 
 % figure;
 % SimpleWHPlot_patch(What, Hhat, 'Data', Xtrain, 'plotAll', 1)
