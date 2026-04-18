@@ -54,6 +54,7 @@ norms_What = sum(W_hat,[1,3]);
 S = nan(K,Khat);
 shift = nan(K,Khat);
 
+% EMD between each pair of Wk and Wk_hat
 for ii = 1:K
     for jj = 1:Khat
 %         fprintf('K=%d, K_hat=%d\n', ii, jj);
@@ -74,39 +75,39 @@ for ii = 1:K
         end
         [S(ii,jj), idx] = min(Stmp);
         shift(ii,jj) = idx-Lhat-1;
+
+        [m,r] = helper.emd_match_classifier(Stmp);
+        if ~m   % failed matching
+            S(ii,jj) = nan;
+            shift(ii,jj) = nan;
+        end
 %         toc
     end
 end
 % S(isnan(S)) = 0;
 % S(S<0) = eps;
 %%
-temp = S;
 emds_W = nan(1,Khat);
 emds_H = nan(1,Khat);
 ids = zeros(1, Khat);
 
-% Matching each non-zero factor to all the factors of another reconstruction
-for ii = 1:min(K,Khat)
-    if ~any(temp(:))
-        break
+% Matching each non-zero sequence to the most similar ground-truth sequence
+for jj = 1:Khat
+    if ~any(S(:,jj))
+        continue
     end
-    [r,c]= find(temp == min(temp(:)));
-    emds_W(c(1)) = temp(r(1), c(1));
-    Hk = H(r(1),:);
-    Hk_hat = H_hat(c(1),:);
+    [~,ii] = min(S(:,jj));
+    ii = ii(1);
+    emds_W(jj) = S(ii, jj);
+    Hk = H(ii,:);
+    Hk_hat = H_hat(jj,:);
     Hpad = cat(2, zeros(1,Lhat),Hk,zeros(1,Lhat));
     % Shift H to opposite direction
-    Htmp = circshift(Hpad,-shift(r(1), c(1)));
+    Htmp = circshift(Hpad,-shift(ii, jj));
     Htmp = Htmp((Lhat+1):(end-Lhat));
-    emds_H(c(1)) = compute_EMD(Htmp, Hk_hat, opts, 'continuationOptions', continue_opts, 'lambdaR', 1e3);
-    ids(c(1)) = r(1);
-
-    temp(r(1),:) = nan;
-    temp(:,c(1)) = nan;
+    emds_H(jj) = compute_EMD(Htmp, Hk_hat, opts, 'continuationOptions', continue_opts, 'lambdaR', 1e3);
+    ids(jj) = ii;
 
 end
 
-emds_H(isnan(emds_W)) = [];
-ids(isnan(emds_W)) = [];
-emds_W(isnan(emds_W)) = [];
 end

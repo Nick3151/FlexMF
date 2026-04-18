@@ -75,8 +75,13 @@ conjnegF = {proj_Rn};
 affineF = {op_constraint, X};
 
 if lambda_M>0
-    affineF(end+1,:) = {linop_compose(op_M, 1/proxScale_M), 0};
-    conjnegF{end+1} = proj_linf(lambda_M*proxScale_M);
+    if params.currentiter < 10  % homotopy update
+        affineF(end+1,:) = {linop_compose(op_M, 1/proxScale_M), 0};
+        conjnegF{end+1} = proj_linf(lambda_M/10*params.currentiter*proxScale_M);
+    else
+        affineF(end+1,:) = {linop_compose(op_M, 1/proxScale_M), 0};
+        conjnegF{end+1} = proj_linf(lambda_M*proxScale_M);
+    end
 end
 
 if lambda_R>0

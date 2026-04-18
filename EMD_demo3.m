@@ -106,7 +106,7 @@ set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 save2pdf('Simulated_jitter_result_SeqNMF.pdf', gcf)
 
 %% Run FlexMF with EMD
-lambda_M = 1e-2;
+lambda_M = 3e-2;
 lambda_R = 1;
 tic
 figure;

@@ -103,7 +103,7 @@ for j = 1:nn
     if overlap_t
         temp = [temp;randi(gap)];
     else
-        temp = [temp;randi(gap)+max(lseq)];
+        temp = [temp;randi(gap)+2*max(lseq)];
     end
 end
 temp = cumsum(temp);

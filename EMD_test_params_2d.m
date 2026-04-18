@@ -31,9 +31,9 @@ set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 
 %% Normalize data
 K = 3;
-% frob_norm = norm(Xwarp(:));
-% Xwarp = Xwarp/frob_norm*K;
-% Wwarp = Wwarp/frob_norm*K;
+frob_norm = norm(Xwarp(:));
+Xwarp = Xwarp/frob_norm*K;
+Wwarp = Wwarp/frob_norm*K;
 
 %% Procedure for choosing lambda in SeqNMF
 nLambdas = 20; % increase if you're patient
@@ -104,8 +104,8 @@ for Li = 1:n
         display(['Testing lambda=' num2str(lambda) ' lambda_M=' num2str(lambda_M)])
         tic
         [What, Hhat, cost, errors, loadings, power, M, R] = FlexMF(Xwarp, 'K', K, 'L', L, ...
-            'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50, 'tolerance', 1e-4,...
-            'W_init', What_SeqNMF, 'H_init', Hhat_SeqNMF, 'showPlot', 0, 'verbal', 0);
+            'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50,...
+            'showPlot', 0, 'verbal', 0, 'neg_prop', 0);
         toc
         Whats{Li,Mi} = What;
         Hhats{Li,Mi} = Hhat;
@@ -123,11 +123,11 @@ end
 
 % save(sprintf('Simulation_Results/EMD_params_warp.mat'), ...
 %     "Hhats", "Whats", "Ms", "Rs", "lambda_Ms", "lambdas", "Xwarp")
-save(sprintf('Simulation_Results/EMD_params_warp_noise.mat'), ...
-    "Hhats", "Whats", "Ms", "Rs", "lambda_Ms", "lambdas", "Xwarp")
+% save(sprintf('Simulation_Results/EMD_params_warp_noise.mat'), ...
+%     "Hhats", "Whats", "Ms", "Rs", "lambda_Ms", "lambdas", "Xwarp", "emds_H", "emds_W")
 %% Look at factors
-i = 6;
-j = 4;
+i = 1;
+j = 3;
 plotAll = 1;
 figure; SimpleWHPlot_patch(Whats{i,j}, Hhats{i,j}, 'plotAll', plotAll); title('FlexMF reconstruction')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])

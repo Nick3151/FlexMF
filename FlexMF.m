@@ -314,7 +314,7 @@ end
         % initialize W_init and H_init, if not provided
         if isnan(params.W_init)
             neg_indices = (rand(N, K, L) < params.neg_prop);
-            params.W_init = max(X(:))*reshape(full(sprand(N,K*L,.05)),[N,K,L]);
+            params.W_init = max(X(:))*reshape(full(sprand(N,K*L,.2)),[N,K,L]);
             params.W_init(neg_indices) = -params.W_init(neg_indices);
         end
         if isnan(params.H_init)

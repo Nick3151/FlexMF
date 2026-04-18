@@ -79,13 +79,13 @@ set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
             'lambda', lambda, 'maxiter', 50, 'showPlot', 1); 
 
 %% Find sequence with FlexMF on training data
-lambda = 0;
-lambda_M = 1e-1;
+lambda = .05;
+lambda_M = 1e-2;
 lambda_R = 1;
 figure;
 [What, Hhat_train, cost_train, errors_train, loadings, power, M_train, R_train] = FlexMF(Xtrain, 'K', K, 'L', L, ...
     'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50, ...
-    'tolerance', 1e-4);
+    'tolerance', 1e-4, 'neg_prop', 0);
 
 figure; SimpleWHPlot_patch(What, Hhat_train, 'plotAll', 1); title('FlexMF recon')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
