@@ -25,6 +25,8 @@ end
 Lhat = size(W_hat, 3);
 
 %%
+S = zeros(K,Khat);
+shift = zeros(K,Khat);
 for ii = 1:K
     for jj = 1:Khat
         wk = squeeze(W(:,ii,:));
@@ -68,7 +70,7 @@ for ii = 1:min(K,Khat)
 
 end
 
-coeffs_H(~coeffs_W) = [];
-ids(~coeffs_W) = [];
-coeffs_W(~coeffs_W) = [];
+% coeffs_H(~coeffs_W) = [];
+% ids(~coeffs_W) = [];
+% coeffs_W(~coeffs_W) = [];
 end
