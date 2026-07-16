@@ -71,8 +71,10 @@ for i=1:nSim
         % pair with ground truth factor
         [coeff_W_SeqNMF, coeff_H_SeqNMF, ids_SeqNMF] = helper.similarity_WH(W, H, W_hat_SeqNMF, H_hat_SeqNMF);
         [coeff_W_SBI, coeff_H_SBI, ids_SBI] = helper.similarity_WH(W, H, W_hat_SBI, H_hat_SBI);
-        [S_W_SeqNMF, S_H_SeqNMF, ids_SeqNMF2, details_SeqNMF] = helper.similarity_WH_shape_activation(W, H, W_hat_SeqNMF, H_hat_SeqNMF);
-        [S_W_SBI, S_H_SBI, ids_SBI2, details_SBI] = helper.similarity_WH_shape_activation(W, H, W_hat_SBI, H_hat_SBI);
+        opts_f1.hMetric = 'f1';
+        opts_f1.eventTol = 5;
+        [S_W_SeqNMF, F1_H_SeqNMF, ids_SeqNMF2, details_SeqNMF] = helper.similarity_WH(W, H, W_hat_SeqNMF, H_hat_SeqNMF, opts_f1);
+        [S_W_SBI, F1_H_SBI, ids_SBI2, details_SBI] = helper.similarity_WH(W, H, W_hat_SBI, H_hat_SBI, opts_f1);
 
         assert(isequal(ids_SeqNMF2, ids_SeqNMF), 'SeqNMF ids do not match!')
         assert(isequal(ids_SBI2, ids_SBI), 'SBI ids do not match!')
@@ -102,19 +104,19 @@ for i=1:nSim
 
         coeff_W_SeqNMF(~ids_SeqNMF) = [];
         coeff_H_SeqNMF(~ids_SeqNMF) = [];
-        S_H_SeqNMF(~ids_SeqNMF) = [];
+        F1_H_SeqNMF(~ids_SeqNMF) = [];
         ids_SeqNMF(~ids_SeqNMF) = [];
         coeff_W_SBI(~ids_SBI) = [];
         coeff_H_SBI(~ids_SBI) = [];
-        S_H_SBI(~ids_SBI) = [];
+        F1_H_SBI(~ids_SBI) = [];
         ids_SBI(~ids_SBI) = [];
     
         coeffs_W_SeqNMF(i,ids_SeqNMF,j) = coeff_W_SeqNMF;
         coeffs_W_SBI(i,ids_SBI,j) = coeff_W_SBI;
         coeffs_H_SeqNMF(i,ids_SeqNMF,j) = coeff_H_SeqNMF;
         coeffs_H_SBI(i,ids_SBI,j) = coeff_H_SBI;
-        F1s_H_SeqNMF(i,ids_SeqNMF,j) = S_H_SeqNMF;
-        F1s_H_SBI(i,ids_SBI,j) = S_H_SBI;
+        F1s_H_SeqNMF(i,ids_SeqNMF,j) = F1_H_SeqNMF;
+        F1s_H_SBI(i,ids_SBI,j) = F1_H_SBI;
 
         sparsity_W_SeqNMF(i,j) = mean(W_hat_SeqNMF>1e-3, "all");
         sparsity_H_SeqNMF(i,j) = mean(H_hat_SeqNMF>1e-3, "all");
