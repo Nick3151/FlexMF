@@ -6,38 +6,41 @@ root = fileparts(pwd);
 addpath(fullfile(root, 'Utils'))
 addpath(genpath(fullfile(root, 'CoDybase-MATLAB')))
 
+outdir = 'Simulation_SBI';
+if ~exist(outdir, 'dir'); mkdir(outdir); end
+
 %% Noise conditions
 sel = 1;    % Selected noise level
 noise_type = 'shape';
-[f1,f2,f3] = simulation_plot_motifs(noise_type, sel);
+[f1,f2,f3] = simulation_plot_motifs(noise_type, sel, outdir);
 close all
 
 sel = 5;    % Selected noise level
 noise_type = 'noise';
-[f1,f2,f3] = simulation_plot_motifs(noise_type, sel);
+[f1,f2,f3] = simulation_plot_motifs(noise_type, sel, outdir);
 close all
 
 sel = 5;    % Selected noise level
 noise_type = 'participate';
-[f1,f2,f3] = simulation_plot_motifs(noise_type, sel);
+[f1,f2,f3] = simulation_plot_motifs(noise_type, sel, outdir);
 close all
 
 sel = 5;    % Selected noise level
 noise_type = 'jitter';
-[f1,f2,f3] = simulation_plot_motifs(noise_type, sel);
+[f1,f2,f3] = simulation_plot_motifs(noise_type, sel, outdir);
 close all
 
 sel = 5;    % Selected noise level
 noise_type = 'warp';
-[f1,f2,f3] = simulation_plot_motifs(noise_type, sel);
+[f1,f2,f3] = simulation_plot_motifs(noise_type, sel, outdir);
 close all
 
 sel = 5;    % Selected noise level
 noise_type = 'overlap';
-[f1,f2,f3] = simulation_plot_motifs(noise_type, sel);
+[f1,f2,f3] = simulation_plot_motifs(noise_type, sel, outdir);
 
 
-function [f1,f2,f3] = simulation_plot_motifs(noise_type, sel)
+function [f1,f2,f3] = simulation_plot_motifs(noise_type, sel, outdir)
 load(sprintf('simulate_results_%s.mat', noise_type))
 i = 1;  % Simulation seed
 
@@ -102,7 +105,7 @@ SimpleWHPlot_patch(W_hat_SBI_match,H_hat_SBI_match,'trials', training_trials, 'f
 title(sprintf('Simulated data %s SBI', noise_type))
 set(f3,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 
-exportgraphics(f1, sprintf('Simulated_data_%s.pdf', noise_type), "ContentType", "vector")
-exportgraphics(f2, sprintf('Simulated_data_%s_SeqNMF.pdf', noise_type), "ContentType", "vector")
-exportgraphics(f3, sprintf('Simulated_data_%s_SBI.pdf', noise_type), "ContentType", "vector")
+exportgraphics(f1, fullfile(outdir, sprintf('Simulated_data_%s.pdf', noise_type)), "ContentType", "vector")
+exportgraphics(f2, fullfile(outdir, sprintf('Simulated_data_%s_SeqNMF.pdf', noise_type)), "ContentType", "vector")
+exportgraphics(f3, fullfile(outdir, sprintf('Simulated_data_%s_SBI.pdf', noise_type)), "ContentType", "vector")
 end
