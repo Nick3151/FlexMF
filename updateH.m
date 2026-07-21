@@ -72,11 +72,12 @@ if params.lambda > 0
         B = B + AH - D;
         
         if params.verbal
-            fprintf('dH=%f\n',dH);
-            fprintf('reg=%f\n',sum(Q(:).*AH(:)));
-            fprintf('recon=%f\n',sum((X(:)-Xhat(:)).^2)/2);
-            fprintf('D=%f\n',sum(Q(:).*D(:)));
-            fprintf('B=%f\n',sum(Q(:).*B(:)));
+            fprintf('dH          = %.4f\n', dH);
+            fprintf('reg         = %.4f\n', sum(Q(:).*AH(:)));
+            fprintf('recon       = %.4f\n', sum((X(:)-Xhat(:)).^2)/2);
+            fprintf('norm D      = %.4f\n', norm(Q(:).*D(:), 1));
+            fprintf('norm B      = %.4f\n', norm(Q(:).*B(:), 1));
+            fprintf('\n')
         end
         
         H0 = H;

@@ -221,6 +221,7 @@ for iter = 1 : params.maxiter
             L1_Hs(iter,2) = norm(H(:),1)/norm(X(:),1);
         else
             W = updateW(W0, H, X, params); 
+%             W = updateW_pgd(W0, H, X, params); 
         end
     end
 
@@ -306,6 +307,9 @@ end
         addOptional(p, 'lambda_R', 1); % Penalty coefficient on residual term for unbalanced EMD
         addOptional(p, 'lambda_M', 1e-4); % Penalty coefficient on motion field for unbalanced EMD
         addOptional(p, 'lambda_TV', 0); % TV norm of W along the time dimension
+        addOptional(p, 'beta', 0.1); % Bregman penalty for TV term
+        addOptional(p, 'lr', 1e-3); % learning rate for projected gradient
+        addOptional(p, 'inner_iter', 5); % inner gradient steps per Bregman iteration
         parse(p,inputs{:});
         L = p.Results.L; 
         K = p.Results.K; 

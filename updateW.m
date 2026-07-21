@@ -28,6 +28,7 @@ if params.neg_prop==0 && params.lambda > 0
     
     tol_W = 1e-2;
     max_iter = 10;
+    op_TV = @(W, mode)total_variation_W(N, K, L, W, mode);
     for i=1:max_iter
         % Step 1: Update W
         op_recon = @(W, mode)tensor_conv_W(H_pad, N, L, W, mode);
@@ -35,6 +36,7 @@ if params.neg_prop==0 && params.lambda > 0
         op_reg = @(W, mode)smooth_cross_ortho_W(X_pad, H_pad, L, W, mode);
 %         op_reg_error = tfunc_scale(smooth_quad(params.lambda), 1, op_reg, B-D);
 %         op_smooth = tfunc_sum(op_recon_error, op_reg_error);
+        
         smoothF = {smooth_quad, smooth_quad(params.alpha_W)};
         affineF = {op_recon, -X_pad; op_reg, B-D};
         W = tfocs(smoothF, affineF, proj_Rplus, W0, opts);
