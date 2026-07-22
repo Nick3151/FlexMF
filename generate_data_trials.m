@@ -66,7 +66,7 @@ end
 
 %% Calculate useful things
 lmotif = Dt.*Nneurons+1; % the length of each motif
-if Dt>0
+if warp>0
     lseq_warp = (max(lmotif)/max(Dt)*(max(Dt)+warp)); % warping motif length
 else
     lseq_warp = 1;

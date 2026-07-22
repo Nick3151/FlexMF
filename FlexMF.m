@@ -92,7 +92,7 @@ function [W, H, cost, errors, loadings, power, M, R] = FlexMF(X, varargin)
 %% parse function inputs
 
 % Parse inputs
-[X,N,T,K,L,params] = parse_seqNMF_params(X, varargin);
+[X,N,T,K,L,params] = parse_FlexMF_params(X, varargin);
 
 %% Initialize
 W = params.W_init;
@@ -273,7 +273,7 @@ if params.verbal && params.EMD
     legend('||M||_1', '||R||_1', '||W||_1', '||H||_1')
 end
 
-    function [X,N,T,K,L,params] = parse_seqNMF_params(X, inputs)
+    function [X,N,T,K,L,params] = parse_FlexMF_params(X, inputs)
         % parse inputs, set unspecified parameters to the defaults
         
         % Get data dimensions

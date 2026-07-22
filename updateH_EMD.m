@@ -42,7 +42,7 @@ norm_R2 = linop_normest(op_R).^2;
 norm_H2 = linop_normest(op_H).^2;
 norm_constraint2 = linop_normest(op_constraint).^2;
 
-proxScale_corss_orth = sqrt(norm_cross_orth2/norm_constraint2);
+proxScale_cross_orth = sqrt(norm_cross_orth2/norm_constraint2);
 proxScale_M = sqrt(norm_M2/norm_constraint2);
 proxScale_R = sqrt(norm_R2/norm_constraint2);
 proxScale_H = sqrt(norm_H2/norm_constraint2);
@@ -60,8 +60,8 @@ mu = 1e-1;
 % conjnegF = {proj_linf(proxScale_M), proj_linf(lambda_R*proxScale_R), proj_Rn};
 % 
 % if lambda>0
-%     affineF(end+1,:) = {linop_compose(op_cross_orth_H, 1/proxScale_corss_orth), 0};
-%     conjnegF{end+1} = proj_linf(lambda*proxScale_corss_orth);
+%     affineF(end+1,:) = {linop_compose(op_cross_orth_H, 1/proxScale_cross_orth), 0};
+%     conjnegF{end+1} = proj_linf(lambda*proxScale_cross_orth);
 % end
 % 
 % if lambdaL1H>0
@@ -89,9 +89,9 @@ if lambda_R>0
     conjnegF{end+1} = proj_linf(lambda_R*proxScale_R);
 end
 
-if lambda>0 && proxScale_corss_orth>0
-    affineF(end+1,:) = {linop_compose(op_cross_orth_H, 1/proxScale_corss_orth), 0};
-    conjnegF{end+1} = proj_linf(lambda*proxScale_corss_orth);
+if lambda>0 && proxScale_cross_orth>0
+    affineF(end+1,:) = {linop_compose(op_cross_orth_H, 1/proxScale_cross_orth), 0};
+    conjnegF{end+1} = proj_linf(lambda*proxScale_cross_orth);
 end
 
 smooth_win = 10;
