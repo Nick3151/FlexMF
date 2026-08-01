@@ -1,6 +1,7 @@
 function [d, M, R, out] = compute_EMD(X1, X2, opts, varargin)
 % Unbalanced EMD between two matrices, or two 1d sequences, 
-% along the time dimension
+% along the time dimension. d is the full UOT objective
+% ||M||_1 + lambdaR*||R||_1.
 
 p  = inputParser;
 addOptional(p, 'lambdaR', 1e1);
@@ -29,5 +30,5 @@ else
     [Y, out] = solver_sBPDN_W(A,W,b,0,.1,[],[],opts, continuationOptions);
     M = Y(1:N,:);
     R = Y(N+1:2*N,:);
-    d = norm(M(:),1);
+    d = norm(M(:),1) + lambdaR*norm(R(:),1);
 end

@@ -114,9 +114,11 @@ T = 100;
 N = 10;
 X = generate_sequence(T,N,3);
 
-EMDs_shift = zeros(5,1);
+transport_shift = zeros(5,1);
+residual_shift = zeros(5,1);
 L2_shift = zeros(5,1);
-EMDs_warp = zeros(5,1);
+transport_warp = zeros(5,1);
+residual_warp = zeros(5,1);
 L2_warp = zeros(5,1);
 
 for j=0:4
@@ -124,30 +126,32 @@ for j=0:4
     Xwarp = generate_sequence(T,N,3,'warp',j);
 
     [d, M, R, out] = compute_EMD(X, Xshift, opts, 'lambdaR', 1e2);
-    EMDs_shift(j+1) = d;
+    transport_shift(j+1) = norm(M(:),1);
+    residual_shift(j+1) = norm(R(:),1);
     b = Xshift-X;
     L2_shift(j+1) = norm(b(:))^2;
 
     [d, M, R, out] = compute_EMD(X, Xwarp, opts, 'lambdaR', 1e2);
-    EMDs_warp(j+1) = d;
+    transport_warp(j+1) = norm(M(:),1);
+    residual_warp(j+1) = norm(R(:),1);
     b = Xwarp-X;
     L2_warp(j+1) = norm(b(:))^2;
 end
 
 figure;
-plot(0:4, EMDs_shift, 'LineWidth',2)
+plot(0:4, transport_shift, 'LineWidth',2)
 hold on
 plot(0:4, L2_shift, 'LineWidth',2)
 ylabel('Distance')
 xlabel('Shift step')
-legend({'EMD', 'L2-square'})
+legend({'Temporal transport', 'L2-square'})
 save2pdf('EMD_vs_shift.pdf')
 
 figure;
-plot(0:4, EMDs_warp, 'LineWidth',2)
+plot(0:4, transport_warp, 'LineWidth',2)
 hold on
 plot(0:4, L2_warp, 'LineWidth',2)
 ylabel('Distance')
 xlabel('Warp step')
-legend({'EMD', 'L2-square'})
+legend({'Temporal transport', 'L2-square'})
 save2pdf('EMD_vs_warp.pdf')
