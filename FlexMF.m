@@ -57,6 +57,7 @@ function [W, H, cost, errors, loadings, power, M, R] = FlexMF(X, varargin)
 % 'EMD              0                                   Optimize EMD instead of reconstruction error
 % 'lambda_R'        1                                   Penalty coefficient on residual term for unbalanced EMD
 % 'lambda_M'        1e-4                                Penalty coefficient on motion field for unbalanced EMD
+% 'homotopy'        10                                  # iters to ramp lambda_M from lambda_M/homotopy to lambda_M (0=off)
 % 'lambda_TV'       0                                   TV norm of W parmater; Increase to make W more smooth along the time dimension
 % 'verbal'          1                                   Print intermediate output?
 % ------------------------------------------------------------------------
@@ -305,6 +306,7 @@ end
         addOptional(p, 'EMD', 0);  % Optimize EMD instead of reconstruction error
         addOptional(p, 'lambda_R', 1); % Penalty coefficient on residual term for unbalanced EMD
         addOptional(p, 'lambda_M', 1e-4); % Penalty coefficient on motion field for unbalanced EMD
+        addOptional(p, 'homotopy', 10); % Ramp lambda_M over this many iters (0 disables)
         addOptional(p, 'lambda_TV', 0); % TV norm of W along the time dimension
         parse(p,inputs{:});
         L = p.Results.L; 

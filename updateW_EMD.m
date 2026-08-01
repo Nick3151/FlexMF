@@ -65,13 +65,16 @@ affineF = {op_constraint, X};
 % affineF = {op_recon, -M0*D'+R0-X};
 
 if lambda_M>0
-    if params.currentiter < 10  % homotopy update
-        affineF(end+1,:) = {linop_compose(op_M, 1/proxScale_M), 0};
-        conjnegF{end+1} = proj_linf(lambda_M/10*params.currentiter*proxScale_M);
+    % Homotopy: linearly ramp lambda_M from lambda_M/homotopy to lambda_M
+    % over the first homotopy iterations (homotopy=0 disables ramp)
+    nHomotopy = params.homotopy;
+    if nHomotopy > 0 && params.currentiter <= nHomotopy
+        lambda_M_eff = lambda_M * params.currentiter / nHomotopy;
     else
-        affineF(end+1,:) = {linop_compose(op_M, 1/proxScale_M), 0};
-        conjnegF{end+1} = proj_linf(lambda_M*proxScale_M);
+        lambda_M_eff = lambda_M;
     end
+    affineF(end+1,:) = {linop_compose(op_M, 1/proxScale_M), 0};
+    conjnegF{end+1} = proj_linf(lambda_M_eff*proxScale_M);
 end
 
 if lambda_R>0
