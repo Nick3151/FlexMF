@@ -10,7 +10,8 @@ function [data,W,H,X_hat,motif_ind] = generate_data_trials(Trials, Length, Nmoti
 % noise = 0.001; % probability of added noise in each bin
 % jitter = zeros(number_of_seqences,1); % Jitter time std
 % participation = 1.*ones(number_of_seqences,1); % Participation probability = 100%
-% warp = 0; % the maximum warping time
+% warp = 0; % the maximum warping time; each instance is stretched by a
+%            random amount in [0, warp], so warp may exceed Dt
 % overlap_t = 0; if temporal overlap between different motifs is allowed
 % overlap_n = 0; The proportion of shared neurons between different motifs
 % len_burst = 10; The time of continuous firing
@@ -93,7 +94,7 @@ if overlap_t
     for k = 1:K
         motif_ind{k} = randperm(Trials, Nmotifs(k));
         if warp > 0
-            Hs{k} = randi([-warp, warp],Nmotifs(k),1);
+            Hs{k} = randi([0, warp],Nmotifs(k),1);
         else
             Hs{k} = zeros(Nmotifs(k),1);
         end
@@ -106,7 +107,7 @@ else
     for  k=1:K
         motif_ind{k} = motif_inds_all(inds_tmp(k)+1:inds_tmp(k+1));
         if warp > 0
-            Hs{k} = randi([-warp, warp],Nmotifs(k),1);
+            Hs{k} = randi([0, warp],Nmotifs(k),1);
         else
             Hs{k} = zeros(Nmotifs(k),1);
         end

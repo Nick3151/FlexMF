@@ -8,7 +8,8 @@ function [data,W,H,X_hat] = generate_data(T,Nneurons,Dt,varargin)
 % jitter = zeros(number_of_seqences,1); % Jitter time std
 % participation = 1.*ones(number_of_seqences,1); % Participation probability = 100%
 % gap = 100;  % the maximum gap between sequences
-% warp = 0; % the maximum warping time
+% warp = 0; % the maximum warping time; each instance is stretched by a
+%            random amount in [0, warp], so warp may exceed Dt
 % overlap_t = 0; if temporal overlap between different motifs is allowed
 % overlap_n = 0; The proportion of shared neurons between different motifs
 % len_burst = 10; The time of continuous firing
@@ -86,7 +87,7 @@ H = zeros(K,T);
 % end
 nn = K*1000; % make smaller
 if warp > 0
-    stretches = randi([-warp, warp],nn,1);
+    stretches = randi([0, warp],nn,1);
 else
     stretches = zeros(nn,1);
 end
