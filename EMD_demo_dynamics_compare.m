@@ -1,12 +1,10 @@
-%% Demo: Reweight L1H and TV-on-W under burst / calcium dynamics
+%% Demo: SeqNMF vs FlexMF (EMD) under warping/jittering + additive noise
 % Choose temporal distortion (jitter or warp), always with noise, plus
-% optional burst length and calcium dynamics. SeqNMF warm-starts all FlexMF
-% runs. Compares:
+% optional burst length and calcium dynamics. SeqNMF warm-starts FlexMF.
+% Compares only:
 %   1) SeqNMF
 %   2) FlexMF (no Reweight, no TV)
-%   3) FlexMF (Reweight, no TV)
-%   4) FlexMF (Reweight + TV on W)
-% Validates the EMD constraint after each FlexMF fit, and plots WH / MR.
+% Validates the EMD constraint after the FlexMF fit, and plots WH / MR.
 clear all
 close all
 clc
@@ -21,9 +19,8 @@ temporal = 'warp';      % 'jitter' | 'warp'
 use_burst = true;       % len_burst > 1
 use_dynamics = false;    % calcium / transient filter
 do_choose_lambda = true;  % true: sweep lambdas for SeqNMF before fitting
-do_reweight_tv = false;   % false: only SeqNMF + FlexMF (no Reweight, no TV)
 do_normalize = true;      % scale data Frobenius norm to Khat
-do_save = false;
+do_save = true;
 constraintTol = 0.05;   % flag if ||constraint||_1 / ||X||_1 exceeds this
 
 K = 3;
@@ -39,12 +36,11 @@ seed = 1;
 maxiter = 50;
 Lhat_min = 50;          % longer Lhat helps when dynamics/burst smear motifs
 
-% Shared FlexMF / SeqNMF params (same lambda; SeqNMF warm-start)
-lambda = 1e-2;
+% FlexMF warm-starts from SeqNMF; each method has its own lambda
+lambda_seqNMF = 1e-2;
+lambda_FlexMF = 5e-2;
 lambda_M = 0.05;
 lambda_R = 1;
-lambdaL1H = 1;          % used when Reweight is on
-lambda_TV = 1e-2;       % used in Reweight+TV condition
 tolerance = 1e-3;
 % TFOCS SCD (from test_mu_continuation: best on warp+noise+burst+dynamics)
 mu = .1;
@@ -141,22 +137,9 @@ if do_choose_lambda
 end
 
 %% -------- Method definitions --------
-% FlexMF variants share SeqNMF init; differ in Reweight / lambdaL1H / lambda_TV
+% Only SeqNMF and baseline FlexMF (no Reweight, no TV); FlexMF warm-starts from SeqNMF
 method_names = {'SeqNMF', 'FlexMF (no Reweight, no TV)'};
-flex_reweight = 0;
-flex_lambdaL1H = 0;
-flex_lambdaTV = 0;
-flex_labels_short = {'noRW_noTV'};
-if do_reweight_tv
-    method_names = [method_names, ...
-        {'FlexMF (Reweight, no TV)', 'FlexMF (Reweight + TV)'}];
-    flex_reweight = [0, 1, 1];
-    flex_lambdaL1H = [0, lambdaL1H, lambdaL1H];
-    flex_lambdaTV = [0, 0, lambda_TV];
-    flex_labels_short = {'noRW_noTV', 'RW_noTV', 'RW_TV'};
-end
 nMethod = numel(method_names);
-nFlex = numel(flex_reweight);
 
 What = cell(nMethod, 1);
 Hhat = cell(nMethod, 1);
@@ -166,12 +149,12 @@ times = nan(nMethod, 1);
 constraint_rel = nan(nMethod, 1);  % SeqNMF left NaN (no M,R)
 
 %% -------- 1) SeqNMF --------
-fprintf('\n=== %s (lambda=%g) ===\n', method_names{1}, lambda);
+fprintf('\n=== %s (lambda=%g) ===\n', method_names{1}, lambda_seqNMF);
 figure;
 set(gcf, 'Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8])
 t0 = tic;
 [What{1}, Hhat{1}, ~, ~, ~, ~] = seqNMF(X, 'K', Khat, 'L', Lhat, ...
-    'lambda', lambda, 'maxiter', maxiter, 'showPlot', 1);
+    'lambda', lambda_seqNMF, 'maxiter', maxiter, 'showPlot', 1);
 times(1) = toc(t0);
 fprintf('  time: %.2f s\n', times(1));
 
@@ -180,54 +163,50 @@ if do_save
     save2pdf(sprintf('Simulated_%s_SeqNMF_WH.pdf', data_file), gcf)
 end
 
-%% -------- 2+) FlexMF variants (SeqNMF warm-start) --------
-for fi = 1:nFlex
-    m = fi + 1;
-    fprintf('\n=== %s ===\n', method_names{m});
-    fprintf('  lambda=%g, lambda_M=%g, lambda_R=%g, lambdaL1H=%g, lambda_TV=%g, Reweight=%d, mu=%g, muDecrement=%g\n', ...
-        lambda, lambda_M, lambda_R, flex_lambdaL1H(fi), flex_lambdaTV(fi), flex_reweight(fi), mu, muDecrement);
+%% -------- 2) FlexMF (no Reweight, no TV; SeqNMF warm-start) --------
+fprintf('\n=== %s ===\n', method_names{2});
+fprintf('  lambda=%g, lambda_M=%g, lambda_R=%g, mu=%g, muDecrement=%g\n', ...
+    lambda_FlexMF, lambda_M, lambda_R, mu, muDecrement);
 
-    figure;
-    set(gcf, 'Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8])
-    t0 = tic;
-    [What{m}, Hhat{m}, ~, ~, ~, ~, Mhat{m}, Rhat{m}] = FlexMF(X, ...
-        'K', Khat, 'L', Lhat, 'EMD', 1, ...
-        'lambda', lambda, 'lambda_M', lambda_M, 'lambda_R', lambda_R, ...
-        'lambdaL1H', flex_lambdaL1H(fi), 'lambda_TV', flex_lambdaTV(fi), ...
-        'Reweight', flex_reweight(fi), ...
-        'mu', mu, 'muDecrement', muDecrement, ...
-        'maxiter', maxiter, 'tolerance', tolerance, 'neg_prop', 0, ...
-        'W_init', What{1}, 'H_init', Hhat{1});
-    times(m) = toc(t0);
-    fprintf('  time: %.2f s\n', times(m));
+figure;
+set(gcf, 'Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8])
+t0 = tic;
+[What{2}, Hhat{2}, ~, ~, ~, ~, Mhat{2}, Rhat{2}] = FlexMF(X, ...
+    'K', Khat, 'L', Lhat, 'EMD', 1, ...
+    'lambda', lambda_FlexMF, 'lambda_M', lambda_M, 'lambda_R', lambda_R, ...
+    'lambdaL1H', 0, 'lambda_TV', 0, 'Reweight', 0, ...
+    'mu', mu, 'muDecrement', muDecrement, ...
+    'maxiter', maxiter, 'tolerance', tolerance, 'neg_prop', 0, ...
+    'W_init', What{1}, 'H_init', Hhat{1});
+times(2) = toc(t0);
+fprintf('  time: %.2f s\n', times(2));
 
-    % Constraint: X_corr - R ≈ W(*)H
-    Xcorr = helper.correct_warp(X, Mhat{m});
-    constraint = Xcorr - Rhat{m} - helper.reconstruct(What{m}, Hhat{m});
-    constraint_rel(m) = norm(constraint(:), 1) / norm(X(:), 1);
-    fprintf('  constraint ||.||_1 / ||X||_1 = %.4g', constraint_rel(m));
-    if constraint_rel(m) > constraintTol
-        fprintf('  [FLAG > %.3g]\n', constraintTol);
-    else
-        fprintf('  [OK]\n');
-    end
+% Constraint: X_corr - R ≈ W(*)H
+Xcorr = helper.correct_warp(X, Mhat{2});
+constraint = Xcorr - Rhat{2} - helper.reconstruct(What{2}, Hhat{2});
+constraint_rel(2) = norm(constraint(:), 1) / norm(X(:), 1);
+fprintf('  constraint ||.||_1 / ||X||_1 = %.4g', constraint_rel(2));
+if constraint_rel(2) > constraintTol
+    fprintf('  [FLAG > %.3g]\n', constraintTol);
+else
+    fprintf('  [OK]\n');
+end
 
-    plot_WH(What{m}, Hhat{m}, X, method_names{m}, plotAll);
-    if do_save
-        save2pdf(sprintf('Simulated_%s_FlexMF_%s_WH.pdf', data_file, flex_labels_short{fi}), gcf)
-    end
+plot_WH(What{2}, Hhat{2}, X, method_names{2}, plotAll);
+if do_save
+    save2pdf(sprintf('Simulated_%s_FlexMF_WH.pdf', data_file), gcf)
+end
 
-    figure; plot_MR(Mhat{m}, Rhat{m}, method_names{m});
-    if do_save
-        save2pdf(sprintf('Simulated_%s_FlexMF_%s_MR.pdf', data_file, flex_labels_short{fi}), gcf)
-    end
+figure; plot_MR(Mhat{2}, Rhat{2}, method_names{2});
+if do_save
+    save2pdf(sprintf('Simulated_%s_FlexMF_MR.pdf', data_file), gcf)
+end
 
-    figure; imagesc(constraint); colorbar
-    title(sprintf('Constraint residual — %s (rel=%.3g)', method_names{m}, constraint_rel(m)))
-    set(gca, 'XTickLabel', [], 'YTickLabel', [])
-    if do_save
-        save2pdf(sprintf('Simulated_%s_FlexMF_%s_constraint.pdf', data_file, flex_labels_short{fi}), gcf)
-    end
+figure; imagesc(constraint); colorbar
+title(sprintf('Constraint residual — %s (rel=%.3g)', method_names{2}, constraint_rel(2)))
+set(gca, 'XTickLabel', [], 'YTickLabel', [])
+if do_save
+    save2pdf(sprintf('Simulated_%s_FlexMF_constraint.pdf', data_file), gcf)
 end
 
 %% -------- Match to ground truth --------
@@ -248,22 +227,6 @@ for m = 1:nMethod
     n_detected(m) = sum(matched);
     fprintf('  %-32s  n_detected=%d  mean EMD_W=%.4g  mean EMD_H=%.4g\n', ...
         method_names{m}, n_detected(m), mean(eW, 'omitnan'), mean(eH, 'omitnan'));
-end
-
-%% -------- Sparsity / smoothness metrics --------
-H_nnz_tol = 1e-3;   % threshold for L0 count on H
-L0H = zeros(nMethod, 1);
-TV_W = zeros(nMethod, 1);
-L1M_rel = nan(nMethod, 1);  % SeqNMF has no M,R
-L1R_rel = nan(nMethod, 1);
-normX1 = norm(X(:), 1);
-for m = 1:nMethod
-    L0H(m) = sum(Hhat{m}(:) > H_nnz_tol);
-    TV_W(m) = tv_norm_W(What{m});
-    if ~isempty(Mhat{m})
-        L1M_rel(m) = norm(Mhat{m}(:), 1) / normX1;
-        L1R_rel(m) = norm(Rhat{m}(:), 1) / normX1;
-    end
 end
 
 %% -------- Comparison plots --------
@@ -287,74 +250,32 @@ if do_save
     save2pdf(sprintf('Simulated_%s_compare_EMD_H.pdf', data_file), gcf)
 end
 
-figure;
-bar(L0H);
-set(gca, 'XTickLabel', method_names, 'XTickLabelRotation', 20, 'FontSize', 11)
-ylabel(sprintf('L0(H)  (# entries > %g)', H_nnz_tol))
-title(sprintf('Sparsity of H (%s)', data_tag), 'FontSize', 14)
-if do_save
-    save2pdf(sprintf('Simulated_%s_compare_L0H.pdf', data_file), gcf)
-end
-
-figure;
-bar(TV_W);
-set(gca, 'XTickLabel', method_names, 'XTickLabelRotation', 20, 'FontSize', 11)
-ylabel('TV(W) = ||W D^T||_1')
-title(sprintf('TV norm of W (%s)', data_tag), 'FontSize', 14)
-if do_save
-    save2pdf(sprintf('Simulated_%s_compare_TV_W.pdf', data_file), gcf)
-end
-
-figure;
-bar(constraint_rel(2:end));
-set(gca, 'XTickLabel', method_names(2:end), 'XTickLabelRotation', 20, 'FontSize', 11)
-ylabel('||constraint||_1 / ||X||_1')
-yline(constraintTol, 'k--', 'tolerance')
-title('EMD constraint validation', 'FontSize', 14)
-if do_save
-    save2pdf(sprintf('Simulated_%s_compare_constraint.pdf', data_file), gcf)
-end
-
 %% -------- Summary --------
 fprintf('\n========== Summary (%s) ==========\n', data_tag);
-fprintf('%-32s %10s %12s %12s %12s %12s %12s %12s %12s\n', ...
-    'Method', 'time(s)', 'EMD_W', 'EMD_H', 'L0H', 'TV_W', 'L1M/X', 'L1R/X', 'constr_rel');
+fprintf('%-32s %10s %12s %12s %12s\n', ...
+    'Method', 'time(s)', 'EMD_W', 'EMD_H', 'constr_rel');
 for m = 1:nMethod
-    fprintf('%-32s %10.2f %12.4g %12.4g %12d %12.4g %12.4g %12.4g %12.4g\n', ...
+    fprintf('%-32s %10.2f %12.4g %12.4g %12.4g\n', ...
         method_names{m}, times(m), ...
-        mean(emds_W(m,:), 'omitnan'), mean(emds_H(m,:), 'omitnan'), ...
-        L0H(m), TV_W(m), L1M_rel(m), L1R_rel(m), constraint_rel(m));
+        mean(emds_W(m,:), 'omitnan'), mean(emds_H(m,:), 'omitnan'), constraint_rel(m));
 end
 fprintf('====================================\n');
 
 %% -------- Save results --------
 if do_save
-    save('EMD_demo_dynamic2.mat', ...
+    save('EMD_demo_dynamics_compare.mat', ...
         'data_tag', 'temporal', 'use_burst', 'use_dynamics', 'do_normalize', ...
         'X', 'W', 'H', 'L', 'Lhat', 'K', 'Khat', 'T', ...
         'method_names', 'What', 'Hhat', 'Mhat', 'Rhat', ...
         'times', 'constraint_rel', 'emds_W', 'emds_H', 'n_detected', ...
-        'L0H', 'TV_W', 'L1M_rel', 'L1R_rel', ...
-        'lambda', 'lambda_M', 'lambda_R', 'lambdaL1H', 'lambda_TV', ...
-        'mu', 'muDecrement', 'maxiter', 'tolerance', 'seed', ...
-        'flex_reweight', 'flex_lambdaL1H', 'flex_lambdaTV');
-    fprintf('Saved EMD_demo_dynamic2.mat\n');
+        'lambda_seqNMF', 'lambda_FlexMF', 'lambda_M', 'lambda_R', ...
+        'mu', 'muDecrement', 'maxiter', 'tolerance', 'seed');
+    fprintf('Saved EMD_demo_dynamics_compare.mat\n');
 end
 
 %% -------- Local helpers --------
 function name = sanitize_name(s)
 name = regexprep(s, '[^a-zA-Z0-9]+', '_');
-end
-
-function tv = tv_norm_W(W)
-% Anisotropic TV along motif time (same D as total_variation_W)
-[N, K, L] = size(W); %#ok<ASGLU>
-D = eye(L) - diag(ones(L-1, 1), -1);
-tv = 0;
-for k = 1:K
-    Wk = squeeze(W(:, k, :));
-    tv = tv + sum(abs(Wk * D'), 'all');
-end
 end
 
 function plot_WH(W, H, X, name, plotAll)

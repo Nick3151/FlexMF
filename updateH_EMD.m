@@ -6,12 +6,16 @@ function [H, M, R, out] = updateH_EMD(W, H0, X, M0, R0, params)
 opts_default = tfocs_SCD;
 opts = opts_default;
 opts.continuation = 1;
-opts.tol = 1e-6;
+opts.tol = 1e-4;
 opts.stopCrit = 4;
 opts.maxIts = 500;
 opts.alg = 'N83';
 continue_opts = continuation();
 % opts.debug = true;
+
+if isfield(params, 'muDecrement')
+    continue_opts.muDecrement = params.muDecrement;
+end
 
 if ~params.verbal
     opts.printEvery = 0;
@@ -52,7 +56,11 @@ lambda_R = params.lambda_R;
 lambda_M = params.lambda_M;
 lambdaL1H = params.lambdaL1H;
 Reweight = params.Reweight;
-mu = 1e-1;
+if isfield(params, 'mu') && ~isempty(params.mu)
+    mu = params.mu;
+else
+    mu = 1e-1;
+end
 
 % affineF = {linop_compose(op_M, 1/proxScale_M), 0; ...
 %            linop_compose(op_R, 1/proxScale_R), 0; ...
@@ -97,18 +105,12 @@ if lambda>0 && proxScale_cross_orth>0
     conjnegF{end+1} = proj_linf(lambda*proxScale_cross_orth);
 end
 
-smooth_win = 10;
-[K,T] = size(H0);
-H0_smooth = zeros(K,T);
-for k=1:K
-    H0_smooth(k,:) = filtfilt(ones(1,smooth_win)/smooth_win, 1, H0(k,:));
-end
-
 if lambdaL1H>0
     affineF(end+1,:) = {linop_compose(op_H, 1/proxScale_H), 0};
-    if Reweight && (params.currentiter > 0)
+    % IRL1 from iter 2 onward (after FlexMF row-normalizes H); iter 1 uses uniform L1
+    if Reweight && params.currentiter > 1
         epsilon = 1e-2;
-        conjnegF{end+1} = proj_abs_box(lambdaL1H./(abs(H0_smooth)+epsilon)*proxScale_H);
+        conjnegF{end+1} = proj_abs_box(lambdaL1H./(abs(H0)+epsilon)*proxScale_H);
     else
         conjnegF{end+1} = proj_linf(lambdaL1H*proxScale_H);
     end
@@ -143,7 +145,7 @@ if params.verbal
     fprintf('L1_H/X=%f\n',norm(H(:),1)/norm(X(:),1));
     fprintf('L1_M/X=%f\n',norm(M(:),1)/norm(X(:),1));
     fprintf('L1_R/X=%f\n',norm(R(:),1)/norm(X(:),1));
-    fprintf('Constraint=%f\n', norm(constraint(:),1))
+    fprintf('Constraint/X=%f\n', norm(constraint(:),1)/norm(X(:),1))
 %     fprintf('dH=%f\n', dH);
 %     fprintf('dM=%f\n', dM);
 %     fprintf('dR=%f\n', dR);

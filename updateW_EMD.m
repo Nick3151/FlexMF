@@ -13,6 +13,10 @@ opts.alg = 'N83';
 continue_opts = continuation();
 % opts.debug = true;
 
+if isfield(params, 'muDecrement')
+    continue_opts.muDecrement = params.muDecrement;
+end
+
 if ~params.verbal
     opts.printEvery = 0;
     continue_opts.verbose = 0;
@@ -57,7 +61,11 @@ lambda_R = params.lambda_R;
 lambda_M = params.lambda_M;
 lambdaL1W = params.lambdaL1W;
 lambda_TV = params.lambda_TV;
-mu = 1e-1;
+if isfield(params, 'mu') && ~isempty(params.mu)
+    mu = params.mu;
+else
+    mu = 1e-1;
+end
 
 % Linear constraint
 conjnegF = {proj_Rn};
@@ -134,7 +142,7 @@ if params.verbal
     fprintf('L1_W/X=%f\n',norm(W(:),1)/norm(X(:),1));
     fprintf('L1_M/X=%f\n',norm(M(:),1)/norm(X(:),1));
     fprintf('L1_R/X=%f\n',norm(R(:),1)/norm(X(:),1));
-    fprintf('Constraint=%f\n', norm(constraint(:),1))
+    fprintf('Constraint/X=%f\n', norm(constraint(:),1)/norm(X(:),1))
 %     fprintf('dW=%f\n', dW);
 %     fprintf('dM=%f\n', dM);
 %     fprintf('dR=%f\n', dR);

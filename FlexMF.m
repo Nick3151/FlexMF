@@ -48,7 +48,7 @@ function [W, H, cost, errors, loadings, power, M, R] = FlexMF(X, varargin)
 % 'shift'           1                                   Shift factors to center; Helps avoid local minima
 % 'lambdaL1W'       0                                   L1 sparsity parameter; Increase to make W's more sparse
 % 'lambdaL1H'       0                                   L1 sparsity parameter; Increase to make H's more sparse
-% 'Reweight'        0                                   Whether to use reweighted L1 minimization
+% 'Reweight'        0                                   Reweighted L1 on H (IRL1) from iter 2; needs lambdaL1H>0
 % 'W_fixed'         0                                   Fix W during the fitting proceedure   
 % 'SortFactors'     1                                   Sort factors by loadings
 % 'useWupdate'      1                                   Wupdate for cross orthogonality often doesn't change results much, and can be slow, so option to remove  
@@ -56,9 +56,11 @@ function [W, H, cost, errors, loadings, power, M, R] = FlexMF(X, varargin)
 % 'neg_prop'        0.2                                 Proportion of negative indices
 % 'EMD              0                                   Optimize EMD instead of reconstruction error
 % 'lambda_R'        1                                   Penalty coefficient on residual term for unbalanced EMD
-% 'lambda_M'        1e-4                                Penalty coefficient on motion field for unbalanced EMD
+% 'lambda_M'        1e-1                                Penalty coefficient on motion field for unbalanced EMD
 % 'homotopy'        10                                  # iters to ramp lambda_M from lambda_M/homotopy to lambda_M (0=off)
 % 'lambda_TV'       0                                   TV norm of W parmater; Increase to make W more smooth along the time dimension
+% 'mu'              1e-1                                TFOCS SCD smoothing parameter (larger => easier dual)
+% 'muDecrement'     1                                   Continuation: mu <- mu*muDecrement each step (1=fixed mu)
 % 'verbal'          1                                   Print intermediate output?
 % ------------------------------------------------------------------------
 % OUTPUTS:
@@ -125,6 +127,7 @@ if params.EMD
     L1_Rs = zeros(params.maxiter, 2); % L1 norms of R after updating W/H
     L1_Ws = zeros(params.maxiter, 2); % L1 norms of W after updating W/H
     L1_Hs = zeros(params.maxiter, 2); % L1 norms of H after updating W/H
+    EMD_objs = zeros(params.maxiter, 2); % EMD obj after updating H/W
 else
 %     cost(1) = sqrt(mean((X(:)-Xhat(:)).^2));
     cost(1) = norm(X(:)-Xhat(:));
@@ -155,6 +158,7 @@ for iter = 1 : params.maxiter
             L1_Rs = L1_Rs(1: iter, :);
             L1_Hs = L1_Hs(1: iter, :);
             L1_Ws = L1_Ws(1: iter, :);
+            EMD_objs = EMD_objs(1: iter, :);
         end
         lasttime = 1; 
 %         if iter>1
@@ -177,6 +181,7 @@ for iter = 1 : params.maxiter
         L1_Rs(iter,1) = norm(R(:),1)/norm(X(:),1);
         L1_Ws(iter,1) = norm(W(:),1)/norm(X(:),1);
         L1_Hs(iter,1) = norm(H(:),1)/norm(X(:),1);
+        EMD_objs(iter,1) = compute_EMD_obj(X, W, H, M, R, params, H0);
 
         if params.showPlot
             Xhat = helper.reconstruct(W, H);
@@ -220,6 +225,8 @@ for iter = 1 : params.maxiter
             L1_Rs(iter,2) = norm(R(:),1)/norm(X(:),1);
             L1_Ws(iter,2) = norm(W(:),1)/norm(X(:),1);
             L1_Hs(iter,2) = norm(H(:),1)/norm(X(:),1);
+            % H0 is pre-H-update loadings (IRL1 weights); reuse for this half-step
+            EMD_objs(iter,2) = compute_EMD_obj(X, W, H, M, R, params, H0);
         else
             W = updateW(W0, H, X, params); 
         end
@@ -266,13 +273,47 @@ if params.SortFactors
     H = H(ind,:);
 end
 
-if params.verbal && params.EMD
+if params.verbal && params.EMD && params.showPlot
+    t_half = 1:.5:iter+.5;
     figure;
-    plot(1:.5:iter+.5, reshape(L1_Ms', 1, []), 1:.5:iter+.5, reshape(L1_Rs', 1, []))
-    hold on
-    plot(1:.5:iter+.5, reshape(L1_Ws', 1, []), 1:.5:iter+.5, reshape(L1_Hs', 1, []))
-    legend('||M||_1', '||R||_1', '||W||_1', '||H||_1')
+    yyaxis left
+    plot(t_half, reshape(L1_Ms', 1, []), t_half, reshape(L1_Rs', 1, []), ...
+         t_half, reshape(L1_Ws', 1, []), t_half, reshape(L1_Hs', 1, []))
+    ylabel('||·||_1 / ||X||_1')
+    yyaxis right
+    plot(t_half, reshape(EMD_objs', 1, []), 'k-', 'LineWidth', 1.5)
+    ylabel('EMD objective')
+    xlabel('Iteration')
+    legend('||M||_1', '||R||_1', '||W||_1', '||H||_1', ...
+        'EMD obj', 'Location', 'best')
 end
+
+    function obj = compute_EMD_obj(X, W, H, M, R, params, H_prev)
+        % EMD selection / monitoring objective, including L1H (reweighted if on) and TV(W)
+        [~, reg_cross] = helper.get_FlexMF_cost(X, W, H);
+        obj = params.lambda * reg_cross ...
+            + params.lambda_M * norm(M(:), 1) ...
+            + params.lambda_R * norm(R(:), 1);
+
+        if params.lambdaL1H > 0
+            if params.Reweight && params.currentiter > 1
+                epsilon = 1e-2;
+                obj = obj + sum(params.lambdaL1H .* abs(H(:)) ./ (abs(H_prev(:)) + epsilon));
+            else
+                obj = obj + params.lambdaL1H * norm(H(:), 1);
+            end
+        end
+
+        if params.lambdaL1W > 0
+            obj = obj + params.lambdaL1W * norm(W(:), 1);
+        end
+
+        if params.lambda_TV > 0
+            [Nw, Kw, Lw] = size(W);
+            TV = total_variation_W(Nw, Kw, Lw, W, 1);
+            obj = obj + params.lambda_TV * norm(TV(:), 1);
+        end
+    end
 
     function [X,N,T,K,L,params] = parse_FlexMF_params(X, inputs)
         % parse inputs, set unspecified parameters to the defaults
@@ -305,9 +346,11 @@ end
         addOptional(p, 'neg_prop', 0.2); % proportion of negative indices
         addOptional(p, 'EMD', 0);  % Optimize EMD instead of reconstruction error
         addOptional(p, 'lambda_R', 1); % Penalty coefficient on residual term for unbalanced EMD
-        addOptional(p, 'lambda_M', 1e-4); % Penalty coefficient on motion field for unbalanced EMD
+        addOptional(p, 'lambda_M', 1e-1); % Penalty coefficient on motion field for unbalanced EMD
         addOptional(p, 'homotopy', 10); % Ramp lambda_M over this many iters (0 disables)
         addOptional(p, 'lambda_TV', 0); % TV norm of W along the time dimension
+        addOptional(p, 'mu', 1e-1); % TFOCS SCD smoothing parameter
+        addOptional(p, 'muDecrement', 1); % Continuation mu multiplier per step
         parse(p,inputs{:});
         L = p.Results.L; 
         K = p.Results.K; 
@@ -319,7 +362,13 @@ end
             params.W_init = max(X(:))*reshape(full(sprand(N,K*L,.2)),[N,K,L]);
             params.W_init(neg_indices) = -params.W_init(neg_indices);
         end
-        if isnan(params.H_init)
+        if isscalar(params.H_init) && isnan(params.H_init)
+            if params.Reweight
+                warning('FlexMF:ReweightNoHInit', ...
+                    ['Reweight=1 but H_init was not provided; iteration 1 uses uniform L1, ' ...
+                     'then IRL1 from iter 2 on row-normalized H. A structured H_init ' ...
+                     '(e.g. from SeqNMF) is still recommended.']);
+            end
             params.H_init = max(X(:))*rand(K,T)./(sqrt(T/3)); % normalize so frobenius norm of each row ~ 1
         end
         if isnan(params.Mask)
