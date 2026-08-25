@@ -1,4 +1,4 @@
-%% Demo script: Comparing SeqNMF and FlexMF on temporal warped/jittered data
+%% Demo script: Comparing SeqNMF and FlexMF on temporal warped/jittered data with additive noise
 clear all
 close all
 clc
@@ -16,9 +16,9 @@ Dt = 3.*ones(number_of_seqences,1); % gap between each member of the sequence
 noise = 0; % probability of added noise in each bin
 jitter = 5*ones(number_of_seqences,1); % Jitter std
 participation = 1.*ones(number_of_seqences,1); % Participation parameter = 100%
-warp = 2; % stretch should be less than Dt
+warp = 5; 
 gap = 100;
-neg = 0;
+neg = 0.005;
 seed = 1;
 [X, W, H, ~] = generate_data(T,Nneurons,Dt, 'noise',noise, 'seed', seed, 'len_burst', 1, 'dynamic', 0);
 [Xwarp, Wwarp, Hwarp, ~] = generate_data(T,Nneurons,Dt, 'noise',noise, 'warp', warp, 'seed', seed, 'len_burst', 1, 'dynamic', 0);

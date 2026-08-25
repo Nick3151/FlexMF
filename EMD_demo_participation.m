@@ -101,7 +101,7 @@ figure; SimpleWHPlot_patch(What_SeqNMF, Hhat_SeqNMF, 'Data', Xpart, 'plotAll', p
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 
 %% Run FlexMF with EMD
-lambda = .01;
+lambda = .1;
 lambda_M = .1;
 lambda_R = 1;
 lambdaL1H = 0;
@@ -142,8 +142,10 @@ toc
 [coeffs_W_FlexMF, coeffs_H_FlexMF, ~] = helper.similarity_WH(Wpart, Hpart, What_FlexMF, Hhat_FlexMF);
 
 emds_W_all = zeros(2,K);
-emds_W_all(1, ids_SeqNMF) = emds_W_SeqNMF;
-emds_W_all(2, ids_FlexMF) = emds_W_FlexMF;
+matched_SeqNMF = ids_SeqNMF > 0;
+matched_FlexMF = ids_FlexMF > 0;
+emds_W_all(1, ids_SeqNMF(matched_SeqNMF)) = emds_W_SeqNMF(matched_SeqNMF);
+emds_W_all(2, ids_FlexMF(matched_FlexMF)) = emds_W_FlexMF(matched_FlexMF);
 
 %% Plot and save results
 figure; bar(1:K, emds_W_all);
@@ -153,8 +155,8 @@ title('EMDs of W', 'FontSize', 16)
 save2pdf('EMD_Simulated_participation_data_compare_W.pdf', gcf)
 
 emds_H_all = zeros(2,K);
-emds_H_all(1, ids_SeqNMF) = emds_H_SeqNMF;
-emds_H_all(2, ids_FlexMF) = emds_H_FlexMF;
+emds_H_all(1, ids_SeqNMF(matched_SeqNMF)) = emds_H_SeqNMF(matched_SeqNMF);
+emds_H_all(2, ids_FlexMF(matched_FlexMF)) = emds_H_FlexMF(matched_FlexMF);
 
 figure; bar(1:K, emds_H_all);
 legend({'SeqNMF', 'FlexMF'}, 'Location', 'north')
