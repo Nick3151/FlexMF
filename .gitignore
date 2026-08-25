@@ -1,7 +1,9 @@
 *.asv
 *.jpg
+*.png
 *.pdf
 *.mat
 *.sh
 OTSU_thresh.m
+profile_results/
 
