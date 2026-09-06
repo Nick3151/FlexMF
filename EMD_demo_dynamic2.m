@@ -39,8 +39,9 @@ seed = 1;
 maxiter = 50;
 Lhat_min = 50;          % longer Lhat helps when dynamics/burst smear motifs
 
-% Shared FlexMF / SeqNMF params (same lambda; SeqNMF warm-start)
-lambda = 1e-2;
+% FlexMF / SeqNMF params (same value; SeqNMF warm-start)
+lambda_SeqNMF = 1e-2;
+lambda_FlexMF = 1e-2;
 lambda_M = 0.05;
 lambda_R = 1;
 lambdaL1H = 1;          % used when Reweight is on
@@ -75,7 +76,7 @@ data_tag = temporal;
 data_tag = [data_tag '+noise'];
 if use_burst, data_tag = [data_tag '+burst']; end
 if use_dynamics, data_tag = [data_tag '+dynamics']; end
-data_file = sanitize_name(data_tag);
+data_file = helper.sanitize_name(data_tag);
 
 %% -------- Generate data --------
 [X, W, H, ~] = generate_data(T, Nneurons, Dt, gen_args{:});
@@ -162,20 +163,26 @@ What = cell(nMethod, 1);
 Hhat = cell(nMethod, 1);
 Mhat = cell(nMethod, 1);
 Rhat = cell(nMethod, 1);
+match_ids = cell(nMethod, 1);
+match_emds_W = cell(nMethod, 1);
+match_emds_H = cell(nMethod, 1);
 times = nan(nMethod, 1);
 constraint_rel = nan(nMethod, 1);  % SeqNMF left NaN (no M,R)
 
 %% -------- 1) SeqNMF --------
-fprintf('\n=== %s (lambda=%g) ===\n', method_names{1}, lambda);
+fprintf('\n=== %s (lambda=%g) ===\n', method_names{1}, lambda_SeqNMF);
 figure;
 set(gcf, 'Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8])
 t0 = tic;
 [What{1}, Hhat{1}, ~, ~, ~, ~] = seqNMF(X, 'K', Khat, 'L', Lhat, ...
-    'lambda', lambda, 'maxiter', maxiter, 'showPlot', 1);
+    'lambda', lambda_SeqNMF, 'maxiter', maxiter, 'showPlot', 1);
 times(1) = toc(t0);
 fprintf('  time: %.2f s\n', times(1));
 
-plot_WH(What{1}, Hhat{1}, X, method_names{1}, plotAll);
+[match_emds_W{1}, match_emds_H{1}, match_ids{1}] = ...
+    helper.similarity_WH_EMD(W, H, What{1}, Hhat{1});
+[What_plot, Hhat_plot] = helper.sort_matched_factors(What{1}, Hhat{1}, match_ids{1});
+plot_WH(What_plot, Hhat_plot, X, method_names{1}, plotAll);
 if do_save
     save2pdf(sprintf('Simulated_%s_SeqNMF_WH.pdf', data_file), gcf)
 end
@@ -185,14 +192,14 @@ for fi = 1:nFlex
     m = fi + 1;
     fprintf('\n=== %s ===\n', method_names{m});
     fprintf('  lambda=%g, lambda_M=%g, lambda_R=%g, lambdaL1H=%g, lambda_TV=%g, Reweight=%d, mu=%g, muDecrement=%g\n', ...
-        lambda, lambda_M, lambda_R, flex_lambdaL1H(fi), flex_lambdaTV(fi), flex_reweight(fi), mu, muDecrement);
+        lambda_FlexMF, lambda_M, lambda_R, flex_lambdaL1H(fi), flex_lambdaTV(fi), flex_reweight(fi), mu, muDecrement);
 
     figure;
     set(gcf, 'Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8])
     t0 = tic;
     [What{m}, Hhat{m}, ~, ~, ~, ~, Mhat{m}, Rhat{m}] = FlexMF(X, ...
         'K', Khat, 'L', Lhat, 'EMD', 1, ...
-        'lambda', lambda, 'lambda_M', lambda_M, 'lambda_R', lambda_R, ...
+        'lambda', lambda_FlexMF, 'lambda_M', lambda_M, 'lambda_R', lambda_R, ...
         'lambdaL1H', flex_lambdaL1H(fi), 'lambda_TV', flex_lambdaTV(fi), ...
         'Reweight', flex_reweight(fi), ...
         'mu', mu, 'muDecrement', muDecrement, ...
@@ -212,7 +219,10 @@ for fi = 1:nFlex
         fprintf('  [OK]\n');
     end
 
-    plot_WH(What{m}, Hhat{m}, X, method_names{m}, plotAll);
+    [match_emds_W{m}, match_emds_H{m}, match_ids{m}] = ...
+        helper.similarity_WH_EMD(W, H, What{m}, Hhat{m});
+    [What_plot, Hhat_plot] = helper.sort_matched_factors(What{m}, Hhat{m}, match_ids{m});
+    plot_WH(What_plot, Hhat_plot, X, method_names{m}, plotAll);
     if do_save
         save2pdf(sprintf('Simulated_%s_FlexMF_%s_WH.pdf', data_file, flex_labels_short{fi}), gcf)
     end
@@ -241,7 +251,9 @@ emds_W = nan(nMethod, K);
 emds_H = nan(nMethod, K);
 n_detected = zeros(nMethod, 1);
 for m = 1:nMethod
-    [eW, eH, ids] = helper.similarity_WH_EMD(W, H, What{m}, Hhat{m});
+    eW = match_emds_W{m};
+    eH = match_emds_H{m};
+    ids = match_ids{m};
     matched = ids > 0;
     emds_W(m, ids(matched)) = eW(matched);
     emds_H(m, ids(matched)) = eH(matched);
@@ -333,19 +345,15 @@ if do_save
         'data_tag', 'temporal', 'use_burst', 'use_dynamics', 'do_normalize', ...
         'X', 'W', 'H', 'L', 'Lhat', 'K', 'Khat', 'T', ...
         'method_names', 'What', 'Hhat', 'Mhat', 'Rhat', ...
-        'times', 'constraint_rel', 'emds_W', 'emds_H', 'n_detected', ...
+        'match_ids', 'match_emds_W', 'match_emds_H', 'times', 'constraint_rel', 'emds_W', 'emds_H', 'n_detected', ...
         'L0H', 'TV_W', 'L1M_rel', 'L1R_rel', ...
-        'lambda', 'lambda_M', 'lambda_R', 'lambdaL1H', 'lambda_TV', ...
+        'lambda_SeqNMF', 'lambda_FlexMF', 'lambda_M', 'lambda_R', 'lambdaL1H', 'lambda_TV', ...
         'mu', 'muDecrement', 'maxiter', 'tolerance', 'seed', ...
         'flex_reweight', 'flex_lambdaL1H', 'flex_lambdaTV');
     fprintf('Saved EMD_demo_dynamic2.mat\n');
 end
 
 %% -------- Local helpers --------
-function name = sanitize_name(s)
-name = regexprep(s, '[^a-zA-Z0-9]+', '_');
-end
-
 function tv = tv_norm_W(W)
 % Anisotropic TV along motif time (same D as total_variation_W)
 [N, K, L] = size(W); %#ok<ASGLU>

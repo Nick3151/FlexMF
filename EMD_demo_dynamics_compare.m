@@ -71,7 +71,7 @@ data_tag = temporal;
 data_tag = [data_tag '+noise'];
 if use_burst, data_tag = [data_tag '+burst']; end
 if use_dynamics, data_tag = [data_tag '+dynamics']; end
-data_file = sanitize_name(data_tag);
+data_file = helper.sanitize_name(data_tag);
 
 %% -------- Generate data --------
 [X, W, H, ~] = generate_data(T, Nneurons, Dt, gen_args{:});
@@ -145,6 +145,9 @@ What = cell(nMethod, 1);
 Hhat = cell(nMethod, 1);
 Mhat = cell(nMethod, 1);
 Rhat = cell(nMethod, 1);
+match_ids = cell(nMethod, 1);
+match_emds_W = cell(nMethod, 1);
+match_emds_H = cell(nMethod, 1);
 times = nan(nMethod, 1);
 constraint_rel = nan(nMethod, 1);  % SeqNMF left NaN (no M,R)
 
@@ -158,7 +161,10 @@ t0 = tic;
 times(1) = toc(t0);
 fprintf('  time: %.2f s\n', times(1));
 
-plot_WH(What{1}, Hhat{1}, X, method_names{1}, plotAll);
+[match_emds_W{1}, match_emds_H{1}, match_ids{1}] = ...
+    helper.similarity_WH_EMD(W, H, What{1}, Hhat{1});
+[What_plot, Hhat_plot] = helper.sort_matched_factors(What{1}, Hhat{1}, match_ids{1});
+plot_WH(What_plot, Hhat_plot, X, method_names{1}, plotAll);
 if do_save
     save2pdf(sprintf('Simulated_%s_SeqNMF_WH.pdf', data_file), gcf)
 end
@@ -192,7 +198,10 @@ else
     fprintf('  [OK]\n');
 end
 
-plot_WH(What{2}, Hhat{2}, X, method_names{2}, plotAll);
+[match_emds_W{2}, match_emds_H{2}, match_ids{2}] = ...
+    helper.similarity_WH_EMD(W, H, What{2}, Hhat{2});
+[What_plot, Hhat_plot] = helper.sort_matched_factors(What{2}, Hhat{2}, match_ids{2});
+plot_WH(What_plot, Hhat_plot, X, method_names{2}, plotAll);
 if do_save
     save2pdf(sprintf('Simulated_%s_FlexMF_WH.pdf', data_file), gcf)
 end
@@ -220,7 +229,9 @@ emds_W = nan(nMethod, K);
 emds_H = nan(nMethod, K);
 n_detected = zeros(nMethod, 1);
 for m = 1:nMethod
-    [eW, eH, ids] = helper.similarity_WH_EMD(W, H, What{m}, Hhat{m});
+    eW = match_emds_W{m};
+    eH = match_emds_H{m};
+    ids = match_ids{m};
     matched = ids > 0;
     emds_W(m, ids(matched)) = eW(matched);
     emds_H(m, ids(matched)) = eH(matched);
@@ -267,17 +278,13 @@ if do_save
         'data_tag', 'temporal', 'use_burst', 'use_dynamics', 'do_normalize', ...
         'X', 'W', 'H', 'L', 'Lhat', 'K', 'Khat', 'T', ...
         'method_names', 'What', 'Hhat', 'Mhat', 'Rhat', ...
-        'times', 'constraint_rel', 'emds_W', 'emds_H', 'n_detected', ...
+        'match_ids', 'times', 'constraint_rel', 'emds_W', 'emds_H', 'n_detected', ...
         'lambda_seqNMF', 'lambda_FlexMF', 'lambda_M', 'lambda_R', ...
         'mu', 'muDecrement', 'maxiter', 'tolerance', 'seed');
     fprintf('Saved EMD_demo_dynamics_compare.mat\n');
 end
 
 %% -------- Local helpers --------
-function name = sanitize_name(s)
-name = regexprep(s, '[^a-zA-Z0-9]+', '_');
-end
-
 function plot_WH(W, H, X, name, plotAll)
 figure; SimpleWHPlot_patch(W, H, 'plotAll', plotAll);
 title(sprintf('%s reconstruction', name), 'Interpreter', 'none')

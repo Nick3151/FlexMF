@@ -75,7 +75,7 @@ set(gca,'color','none','tickdir','out','ticklength', [0.025, 0.025])
 % save2pdf('Simulate_jitter_noise_choose_lambda_SeqNMF')
 
 %% Run SeqNMF
-lambda = .1;
+lambda_SeqNMF = .1;
 lambdaL1H = 0;
 lambdaL1W = 0;
 lambdaOrthoH = 0;
@@ -83,7 +83,9 @@ lambdaOrthoH = 0;
 figure;
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 [What_SeqNMF, Hhat_SeqNMF, ~, errors_SeqNMF,loadings,power]= seqNMF(Xpart,'K',Khat,'L',L,...
-            'lambda', lambda, 'maxiter', 50, 'showPlot', 1); 
+            'lambda', lambda_SeqNMF, 'maxiter', 50, 'showPlot', 1); 
+[emds_W_SeqNMF, emds_H_SeqNMF, ids_SeqNMF] = helper.similarity_WH_EMD(Wpart, Hpart, What_SeqNMF, Hhat_SeqNMF);
+[What_SeqNMF_plot, Hhat_SeqNMF_plot] = helper.sort_matched_factors(What_SeqNMF, Hhat_SeqNMF, ids_SeqNMF);
 
 % plot, sorting neurons by latency within each factor
 [max_factor, L_sort, max_sort, hybrid] = helper.ClusterByFactor(What_SeqNMF(:,:,:),1);
@@ -91,17 +93,17 @@ indSort = hybrid(:,3);
 
 %% Look at factors
 plotAll = 1;
-figure; SimpleWHPlot_patch(What_SeqNMF, Hhat_SeqNMF, 'plotAll', plotAll); title('SeqNMF reconstruction')
+figure; SimpleWHPlot_patch(What_SeqNMF_plot, Hhat_SeqNMF_plot, 'plotAll', plotAll); title('SeqNMF reconstruction')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 
 save2pdf('Simulated_participation_result_SeqNMF.pdf', gcf)
 
-figure; SimpleWHPlot_patch(What_SeqNMF, Hhat_SeqNMF, 'Data', Xpart, 'plotAll', plotAll); title('SeqNMF factors, with raw data')
+figure; SimpleWHPlot_patch(What_SeqNMF_plot, Hhat_SeqNMF_plot, 'Data', Xpart, 'plotAll', plotAll); title('SeqNMF factors, with raw data')
 % figure; SimpleWHPlot_patch(What_SeqNMF, Hhat_SeqNMF, 'Data', Xjit, 'plotAll', plotAll); title('SeqNMF factors, with raw data')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 
 %% Run FlexMF with EMD
-lambda = .1;
+lambda_FlexMF = .1;
 lambda_M = .1;
 lambda_R = 1;
 lambdaL1H = 0;
@@ -109,23 +111,25 @@ lambdaL1H = 0;
 tic
 figure;
 [What_FlexMF, Hhat_FlexMF, cost, errors_FlexMF, loadings, power, M, R] = FlexMF(Xpart, 'K', Khat, 'L', L, ...
-    'EMD',1, 'lambda', lambda, ...
+    'EMD',1, 'lambda', lambda_FlexMF, ...
     'lambdaL1H', lambdaL1H, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50, 'tolerance', 1e-3, ...
     'neg_prop', 0, 'Reweight', 1);
+[emds_W_FlexMF, emds_H_FlexMF, ids_FlexMF] = helper.similarity_WH_EMD(Wpart, Hpart, What_FlexMF, Hhat_FlexMF);
+[What_FlexMF_plot, Hhat_FlexMF_plot] = helper.sort_matched_factors(What_FlexMF, Hhat_FlexMF, ids_FlexMF);
 % [What_FlexMF, Hhat_FlexMF, cost, errors_FlexMF, loadings, power, M, R] = FlexMF(Xpart, 'K', Khat, 'L', L, ...
-%     'EMD',1, 'lambda', lambda, ...
+%     'EMD',1, 'lambda', lambda_FlexMF, ...
 %     'lambdaL1H', lambdaL1H, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50, 'tolerance', 1e-3, ...
 %     'W_init', What_SeqNMF, 'H_init', Hhat_SeqNMF);
 toc
 
-obj = lambda*errors_FlexMF(end,2)+lambda_M*norm(M(:),1)+lambda_R*norm(R(:),1);
+obj = lambda_FlexMF*errors_FlexMF(end,2)+lambda_M*norm(M(:),1)+lambda_R*norm(R(:),1);
 %% Look at factors
 plotAll = 1;
-figure; SimpleWHPlot_patch(What_FlexMF, Hhat_FlexMF, 'plotAll', plotAll); title('FlexMF reconstruction')
+figure; SimpleWHPlot_patch(What_FlexMF_plot, Hhat_FlexMF_plot, 'plotAll', plotAll); title('FlexMF reconstruction')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-save2pdf(sprintf('EMD_Simulated_participation_data_FlexMF_lambda=%1.1e_lambdaM=%1.1e_lambdaR=%1.1e.pdf', lambda, lambda_M, lambda_R), gcf)
+save2pdf(sprintf('EMD_Simulated_participation_data_FlexMF_lambda=%1.1e_lambdaM=%1.1e_lambdaR=%1.1e.pdf', lambda_FlexMF, lambda_M, lambda_R), gcf)
 
-figure; SimpleWHPlot_patch(What_FlexMF, Hhat_FlexMF, 'Data', Xpart, 'plotAll', plotAll); title('FlexMF factors, with raw data')
+figure; SimpleWHPlot_patch(What_FlexMF_plot, Hhat_FlexMF_plot, 'Data', Xpart, 'plotAll', plotAll); title('FlexMF factors, with raw data')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 
 %% Plot M, R
@@ -134,10 +138,6 @@ plot_MR(M,R)
 save2pdf(sprintf('FlexMF_participation_demo_MR_lambda=%1.1e_lambdaM=%1.1e_lambdaR=%1.1e.pdf', lambda, lambda_M, lambda_R))
 
 %% Compare algorithms
-tic
-[emds_W_SeqNMF, emds_H_SeqNMF, ids_SeqNMF] = helper.similarity_WH_EMD(Wpart, Hpart, What_SeqNMF, Hhat_SeqNMF);
-[emds_W_FlexMF, emds_H_FlexMF, ids_FlexMF] = helper.similarity_WH_EMD(Wpart, Hpart, What_FlexMF, Hhat_FlexMF);
-toc
 [coeffs_W_SeqNMF, coeffs_H_SeqNMF, ~] = helper.similarity_WH(Wpart, Hpart, What_SeqNMF, Hhat_SeqNMF);
 [coeffs_W_FlexMF, coeffs_H_FlexMF, ~] = helper.similarity_WH(Wpart, Hpart, What_FlexMF, Hhat_FlexMF);
 

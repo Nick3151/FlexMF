@@ -32,7 +32,7 @@ K = 3;
 % Wwarp = Wwarp/frob_norm*K;
 
 %% Run SeqNMF
-lambda = .05;
+lambda_SeqNMF = .05;
 lambdaL1H = 0;
 lambdaL1W = 0;
 lambdaOrthoH = 0;
@@ -40,7 +40,7 @@ lambdaOrthoH = 0;
 figure;
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 [What_SeqNMF, Hhat_SeqNMF, ~, errors_SeqNMF,loadings,power]= seqNMF(Xwarp,'K',K,'L',L,...
-            'lambda', lambda, 'maxiter', 50, 'showPlot', 1); 
+            'lambda', lambda_SeqNMF, 'maxiter', 50, 'showPlot', 1); 
 
 %% Run FlexMF with different parameters
 nlambdas = 5;
@@ -58,13 +58,13 @@ ids_match = cell(nlambdas, nSim);
 
 for i=1:length(lambdas)
     display(['Testing lambda ' num2str(i) '/' num2str(nlambdas)])
-    lambda = lambdas(i);
+    lambda_FlexMF = lambdas(i);
     lambda_M = lambda_Ms(i);
     parfor n=1:nSim
         display(n)
         tic
         [What, Hhat, cost, errors, loadings, power, M, R] = FlexMF(Xwarp, 'K', K, 'L', L, ...
-            'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50, 'tolerance', 1e-4, ...
+            'EMD',1, 'lambda', lambda_FlexMF, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50, 'tolerance', 1e-4, ...
             'W_init', What_SeqNMF, 'H_init', Hhat_SeqNMF, 'showPlot', 0, 'verbal', 0);
         toc
         Whats{i,n} = What;
@@ -78,7 +78,7 @@ for i=1:length(lambdas)
         toc
     end
 end
-save('Simulation_Results/EMD_params_test1.mat', "Hhats", "Whats", "lambda_R", "lambda_Ms", "lambdas", "Xwarp")
+save('Simulation_Results/EMD_params_test1.mat', "Hhats", "Whats", "ids_match", "lambda_R", "lambda_Ms", "lambdas", "Xwarp")
 
 %% Look at factors
 % clear all
@@ -86,5 +86,6 @@ load('Simulation_Results/EMD_params_test1.mat')
 i = 3;
 n = 6;
 plotAll = 1;
-figure; SimpleWHPlot_patch(Whats{i,n}, Hhats{i,n}, 'plotAll', plotAll); title('FlexMF reconstruction')
+[What_plot, Hhat_plot] = helper.sort_matched_factors(Whats{i,n}, Hhats{i,n}, ids_match{i,n});
+figure; SimpleWHPlot_patch(What_plot, Hhat_plot, 'plotAll', plotAll); title('FlexMF reconstruction')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])

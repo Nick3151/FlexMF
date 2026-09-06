@@ -68,7 +68,7 @@ set(gca,'color','none','tickdir','out','ticklength', [0.025, 0.025])
 %% Run SeqNMF on training data
 K = 3;
 L = 50;
-lambda = .05;
+lambda_SeqNMF = .05;
 lambdaL1H = 0;
 lambdaL1W = 0;
 lambdaOrthoH = 0;
@@ -76,15 +76,15 @@ lambdaOrthoH = 0;
 figure;
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 [What_SeqNMF, Hhat_SeqNMF, ~, errors_SeqNMF,loadings,power]= seqNMF(Xtrain,'K',K,'L',L,...
-            'lambda', lambda, 'maxiter', 50, 'showPlot', 1); 
+            'lambda', lambda_SeqNMF, 'maxiter', 50, 'showPlot', 1); 
 
 %% Find sequence with FlexMF on training data
-lambda = .05;
+lambda_FlexMF = .05;
 lambda_M = 1e-2;
 lambda_R = 1;
 figure;
 [What, Hhat_train, cost_train, errors_train, loadings, power, M_train, R_train] = FlexMF(Xtrain, 'K', K, 'L', L, ...
-    'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50, ...
+    'EMD',1, 'lambda', lambda_FlexMF, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50, ...
     'tolerance', 1e-4, 'neg_prop', 0);
 
 figure; SimpleWHPlot_patch(What, Hhat_train, 'plotAll', 1); title('FlexMF recon')
@@ -104,7 +104,7 @@ set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 %% Fix What, rerun FlexMF on test data
 figure;
 [What, Hhat_test, cost_test, errors_test, ~, ~, M_test, R_test] = FlexMF(Xtest, 'K', K, 'L', L, 'W_fixed', 1, 'W_init', What,...
-    'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 1);
+    'EMD',1, 'lambda', lambda_FlexMF, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 1);
 
 figure; SimpleWHPlot_patch(What, Hhat_test, 'plotAll', 1); title('FlexMF test recon')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])

@@ -68,7 +68,7 @@ set(gca, 'xscale', 'log', 'ytick', [], 'color', 'none')
 set(gca,'color','none','tickdir','out','ticklength', [0.025, 0.025])
 
 %% Run SeqNMF
-lambda = .05;
+lambda_SeqNMF = .05;
 lambdaL1H = 0;
 lambdaL1W = 0;
 lambdaOrthoH = 0;
@@ -76,7 +76,7 @@ lambdaOrthoH = 0;
 figure;
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 [What_SeqNMF, Hhat_SeqNMF, ~, errors_SeqNMF,loadings,power]= seqNMF(Xwarp,'K',K,'L',L,...
-            'lambda', lambda, 'maxiter', 50, 'showPlot', 1); 
+            'lambda', lambda_SeqNMF, 'maxiter', 50, 'showPlot', 1); 
 
 % plot, sorting neurons by latency within each factor
 [max_factor, L_sort, max_sort, hybrid] = helper.ClusterByFactor(What_SeqNMF(:,:,:),1);
@@ -92,7 +92,7 @@ set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 %% Consistency
 lambdaL1H = 0;
 lambdaL1W = 0;
-lambda = 1e-4;
+lambda_FlexMF = 1e-4;
 lambda_M = .1;
 lambda_R = 1;
 
@@ -104,16 +104,16 @@ Ms = cell(nRuns,1);
 Rs = cell(nRuns,1);
 
 parfor n=1:nRuns
-%     lambda = lambdas(n);
-    disp(lambda)
+%     lambda_FlexMF = lambdas(n);
+    disp(lambda_FlexMF)
     
 %     [Whats{n}, Hhats{n}, cost, error, loadings, power, Ms{n}, Rs{n}] = FlexMF(Xwarp, 'K', K, 'L', L, ...
-%         'EMD',1, 'lambda', lambda, ...
+%         'EMD',1, 'lambda', lambda_FlexMF, ...
 %         'lambdaL1H', lambdaL1H, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 1, 'tolerance', 1e-3, ...
 %         'W_init', Wwarp, 'W_fixed', 1, 'showPlot', 0, 'verbal', 0);
     figure;     
     [Whats{n}, Hhats{n}, cost, error, loadings, power, Ms{n}, Rs{n}] = FlexMF(Xwarp, 'K', K, 'L', L, ...
-            'EMD',1, 'lambda', lambda, 'lambdaL1W', lambdaL1W, ...
+            'EMD',1, 'lambda', lambda_FlexMF, 'lambdaL1W', lambdaL1W, ...
             'lambdaL1H', lambdaL1H, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50, 'tolerance', 1e-6, ...
             'W_init', What_SeqNMF, 'H_init', Hhat_SeqNMF, 'showPlot', 0, 'verbal', 0);
         

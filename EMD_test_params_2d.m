@@ -72,7 +72,7 @@ set(gca, 'xscale', 'log', 'ytick', [], 'color', 'none')
 set(gca,'color','none','tickdir','out','ticklength', [0.025, 0.025])
 
 %% Run SeqNMF
-lambda = .05;
+lambda_SeqNMF = .05;
 lambdaL1H = 0;
 lambdaL1W = 0;
 lambdaOrthoH = 0;
@@ -80,7 +80,7 @@ lambdaOrthoH = 0;
 figure;
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 [What_SeqNMF, Hhat_SeqNMF, ~, errors_SeqNMF,loadings,power]= seqNMF(Xwarp,'K',K,'L',L,...
-            'lambda', lambda, 'maxiter', 50, 'showPlot', 1); 
+            'lambda', lambda_SeqNMF, 'maxiter', 50, 'showPlot', 1); 
 
 %% Run FlexMF with different lambda and lambda_M
 n = 9;
@@ -98,13 +98,13 @@ num_detected = cell(n, n);
 ids_match = cell(n, n);
 
 for Li = 1:n
-    lambda = lambdas(Li);
+    lambda_FlexMF = lambdas(Li);
     parfor Mi = 1:n       
         lambda_M = lambda_Ms(Mi);
-        display(['Testing lambda=' num2str(lambda) ' lambda_M=' num2str(lambda_M)])
+        display(['Testing lambda=' num2str(lambda_FlexMF) ' lambda_M=' num2str(lambda_M)])
         tic
         [What, Hhat, cost, errors, loadings, power, M, R] = FlexMF(Xwarp, 'K', K, 'L', L, ...
-            'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50,...
+            'EMD',1, 'lambda', lambda_FlexMF, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50,...
             'showPlot', 0, 'verbal', 0, 'neg_prop', 0);
         toc
         Whats{Li,Mi} = What;
@@ -129,7 +129,8 @@ end
 i = 1;
 j = 3;
 plotAll = 1;
-figure; SimpleWHPlot_patch(Whats{i,j}, Hhats{i,j}, 'plotAll', plotAll); title('FlexMF reconstruction')
+[What_plot, Hhat_plot] = helper.sort_matched_factors(Whats{i,j}, Hhats{i,j}, ids_match{i,j});
+figure; SimpleWHPlot_patch(What_plot, Hhat_plot, 'plotAll', plotAll); title('FlexMF reconstruction')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 
 figure;
