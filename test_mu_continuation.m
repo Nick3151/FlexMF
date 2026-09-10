@@ -210,19 +210,19 @@ figure; SimpleWHPlot_patch(What_star, Hhat_star, 'plotAll', 1);
 title(sprintf('FlexMF WH (mu=%g, muDec=%g)', mu_star, muDec_star))
 set(gcf, 'Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8])
 if opt.do_save
-    save2pdf(fullfile(opt.outDir, sprintf('test_mu_opt_WH_mu=%g_muDec=%g.pdf', mu_star, muDec_star)), gcf);
+    export_vector_pdf(fullfile(opt.outDir, sprintf('test_mu_opt_WH_mu=%g_muDec=%g.pdf', mu_star, muDec_star)), gcf);
 end
 
 figure; SimpleWHPlot_patch(What_star, Hhat_star, 'Data', X, 'plotAll', 1, 'compare', true);
 title(sprintf('FlexMF WH + data (mu=%g, muDec=%g)', mu_star, muDec_star))
 set(gcf, 'Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8])
 if opt.do_save
-    save2pdf(fullfile(opt.outDir, sprintf('test_mu_opt_WH_data_mu=%g_muDec=%g.pdf', mu_star, muDec_star)), gcf);
+    export_vector_pdf(fullfile(opt.outDir, sprintf('test_mu_opt_WH_data_mu=%g_muDec=%g.pdf', mu_star, muDec_star)), gcf);
 end
 
 figure; plot_MR(M_star, R_star, sprintf('mu=%g, muDec=%g', mu_star, muDec_star));
 if opt.do_save
-    save2pdf(fullfile(opt.outDir, sprintf('test_mu_opt_MR_mu=%g_muDec=%g.pdf', mu_star, muDec_star)), gcf);
+    export_vector_pdf(fullfile(opt.outDir, sprintf('test_mu_opt_MR_mu=%g_muDec=%g.pdf', mu_star, muDec_star)), gcf);
 end
 
 %% -------- Plots --------
@@ -234,7 +234,7 @@ xlabel('muDecrement'); ylabel('mu');
 title('log_{10}(constraint\_rel)'); hold on
 plot(jBest, iBest, 'w*', 'MarkerSize', 14, 'LineWidth', 1.5);
 if opt.do_save
-    save2pdf(fullfile(opt.outDir, 'test_mu_constraint_rel.pdf'), gcf);
+    export_vector_pdf(fullfile(opt.outDir, 'test_mu_constraint_rel.pdf'), gcf);
 end
 
 figure;
@@ -244,7 +244,7 @@ set(gca, 'XTick', 1:nDec, 'XTickLabel', muDecrements, ...
 xlabel('muDecrement'); ylabel('mu');
 title('Inner solve hit iteration limit (H or W)');
 if opt.do_save
-    save2pdf(fullfile(opt.outDir, 'test_mu_hit_limit.pdf'), gcf);
+    export_vector_pdf(fullfile(opt.outDir, 'test_mu_hit_limit.pdf'), gcf);
 end
 
 figure;
@@ -255,7 +255,7 @@ xlabel('muDecrement'); ylabel('mu');
 title(sprintf('Score (best: mu=%g, muDec=%g)', mu_star, muDec_star));
 hold on; plot(jBest, iBest, 'w*', 'MarkerSize', 14, 'LineWidth', 1.5);
 if opt.do_save
-    save2pdf(fullfile(opt.outDir, 'test_mu_score.pdf'), gcf);
+    export_vector_pdf(fullfile(opt.outDir, 'test_mu_score.pdf'), gcf);
 end
 
 %% -------- Pack / save --------

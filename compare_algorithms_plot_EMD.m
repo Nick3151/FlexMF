@@ -170,7 +170,7 @@ set(ax3, 'XTick', 1:nNoise, 'XTickLabel', string(noise_levels_plot));
 xlabel([data_type, ' Level']);
 ylabel('Number Significant');
 
-save2pdf(['Compare_FlexMF_SeqNMF_ ', data_type])
+export_vector_pdf(['Compare_FlexMF_SeqNMF_ ', data_type]);
 
 %% Look at factors
 i = 4;
@@ -180,13 +180,13 @@ figure; SimpleWHPlot(Whats_FlexMF{i,n}, Hhats_train_FlexMF{i,n}, 'plotAll', plot
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 figure; SimpleWHPlot(Whats_FlexMF{i,n}, Hhats_train_FlexMF{i,n}, 'Data', Xs_train{i,n}, 'plotAll', plotAll); title('FlexMF factors, with raw data')
 % set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-save2pdf(sprintf('FlexMF_EMD_%s = %0.2f.pdf', data_type, noise_levels_plot(i)))
+export_vector_pdf(sprintf('FlexMF_EMD_%s = %0.2f.pdf', data_type, noise_levels_plot(i)));
 
 figure; SimpleWHPlot(Whats_SeqNMF{i,n}, Hhats_train_SeqNMF{i,n}, 'plotAll', plotAll); title('SeqNMF reconstruction')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 figure; SimpleWHPlot(Whats_SeqNMF{i,n}, Hhats_train_SeqNMF{i,n}, 'Data', Xs_train{i,n}, 'plotAll', plotAll); title('SeqNMF factors, with raw data')
 % set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-save2pdf(sprintf('SeqNMF_%s = %0.2f.pdf', data_type, noise_levels_plot(i)))
+export_vector_pdf(sprintf('SeqNMF_%s = %0.2f.pdf', data_type, noise_levels_plot(i)));
 
 %%
 [emds_W_SeqNMF{i,n}, emds_H_SeqNMF{i,n}, ids_SeqNMF{i,n}] = helper.similarity_WH_EMD(Ws{i,n}, Hs_train{i,n}, Whats_SeqNMF{i,n}, Hhats_train_SeqNMF{i,n});

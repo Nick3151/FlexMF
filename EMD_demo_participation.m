@@ -96,7 +96,7 @@ plotAll = 1;
 figure; SimpleWHPlot_patch(What_SeqNMF_plot, Hhat_SeqNMF_plot, 'plotAll', plotAll); title('SeqNMF reconstruction')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 
-save2pdf('Simulated_participation_result_SeqNMF.pdf', gcf)
+export_vector_pdf('Simulated_participation_result_SeqNMF.pdf', gcf);
 
 figure; SimpleWHPlot_patch(What_SeqNMF_plot, Hhat_SeqNMF_plot, 'Data', Xpart, 'plotAll', plotAll); title('SeqNMF factors, with raw data')
 % figure; SimpleWHPlot_patch(What_SeqNMF, Hhat_SeqNMF, 'Data', Xjit, 'plotAll', plotAll); title('SeqNMF factors, with raw data')
@@ -127,7 +127,7 @@ obj = lambda_FlexMF*errors_FlexMF(end,2)+lambda_M*norm(M(:),1)+lambda_R*norm(R(:
 plotAll = 1;
 figure; SimpleWHPlot_patch(What_FlexMF_plot, Hhat_FlexMF_plot, 'plotAll', plotAll); title('FlexMF reconstruction')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-save2pdf(sprintf('EMD_Simulated_participation_data_FlexMF_lambda=%1.1e_lambdaM=%1.1e_lambdaR=%1.1e.pdf', lambda_FlexMF, lambda_M, lambda_R), gcf)
+export_vector_pdf(sprintf('EMD_Simulated_participation_data_FlexMF_lambda=%1.1e_lambdaM=%1.1e_lambdaR=%1.1e.pdf', lambda_FlexMF, lambda_M, lambda_R), gcf);
 
 figure; SimpleWHPlot_patch(What_FlexMF_plot, Hhat_FlexMF_plot, 'Data', Xpart, 'plotAll', plotAll); title('FlexMF factors, with raw data')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
@@ -135,7 +135,7 @@ set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
 %% Plot M, R
 figure;
 plot_MR(M,R)
-save2pdf(sprintf('FlexMF_participation_demo_MR_lambda=%1.1e_lambdaM=%1.1e_lambdaR=%1.1e.pdf', lambda, lambda_M, lambda_R))
+export_vector_pdf(sprintf('FlexMF_participation_demo_MR_lambda=%1.1e_lambdaM=%1.1e_lambdaR=%1.1e.pdf', lambda, lambda_M, lambda_R));
 
 %% Compare algorithms
 [coeffs_W_SeqNMF, coeffs_H_SeqNMF, ~] = helper.similarity_WH(Wpart, Hpart, What_SeqNMF, Hhat_SeqNMF);
@@ -152,7 +152,7 @@ figure; bar(1:K, emds_W_all);
 legend({'SeqNMF', 'FlexMF'}, 'Location', 'north')
 set(gca, 'FontSize', 14)
 title('EMDs of W', 'FontSize', 16)
-save2pdf('EMD_Simulated_participation_data_compare_W.pdf', gcf)
+export_vector_pdf('EMD_Simulated_participation_data_compare_W.pdf', gcf);
 
 emds_H_all = zeros(2,K);
 emds_H_all(1, ids_SeqNMF(matched_SeqNMF)) = emds_H_SeqNMF(matched_SeqNMF);
@@ -162,4 +162,4 @@ figure; bar(1:K, emds_H_all);
 legend({'SeqNMF', 'FlexMF'}, 'Location', 'north')
 set(gca, 'FontSize', 14)
 title('EMDs of H', 'FontSize', 16)
-save2pdf('EMD_Simulated_participation_data_compare_H.pdf', gcf)
+export_vector_pdf('EMD_Simulated_participation_data_compare_H.pdf', gcf);

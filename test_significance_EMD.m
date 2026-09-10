@@ -1,4 +1,4 @@
-function [pvals,is_significant,is_single] = test_significance_EMD(TestData, W, M, varargin)
+function [pvals,is_significant,is_single,figData] = test_significance_EMD(TestData, W, M, varargin)
 %
 % USAGE: 
 %
@@ -31,6 +31,7 @@ function [pvals,is_significant,is_single] = test_significance_EMD(TestData, W, M
 %                            is significant using the specified pvalue with correction
 % is_single                  A boolean vector (1xK) which is 1 if a factor 
 %                            only contains single neuron
+% figData                    Handle to the raw/corrected data figure (empty if plot=0)
 %
 % ------------------------------------------------------------------------
 % CREDITS:
@@ -68,19 +69,27 @@ end
 % Correct the temporal warpped/jittered part of TestData
 TestData_corr = helper.correct_warp(TestData,M);
 
+figData = [];
+vis_thresh = 1e-3*max([TestData_corr, TestData], [], 'all');
 if plot
-    cmap = flipud(gray); 
-    maxValue = max([TestData_corr, TestData], [], 'all')+eps;
-    figure;
-    ax1 = subplot('Position', [0.05, 0.55, 0.8, 0.4]);
-    imagesc(TestData, [0,maxValue])
-    set(ax1, 'XTickLabel', [], 'YTickLabel', []);
-    colormap(cmap)
-    ax2 = subplot('Position', [0.05, 0.05, 0.8, 0.4]);
-    imagesc(TestData_corr, [0,maxValue])
-    set(ax2, 'XTickLabel', [], 'YTickLabel', []);
-    colormap(cmap)
-    set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
+    % Vector per-neuron patches (vertical ticks), not imagesc/scatter,
+    % so 1-bin spikes survive PDF export (same style as SimpleWHPlot_patch / plot_MR).
+    [Nplot, Tplot] = size(TestData);
+    figData = figure;
+    ax1 = subplot('Position', [0.05, 0.55, 0.9, 0.4]);
+    plot_positive_rows(ax1, TestData, vis_thresh);
+    set(ax1, 'YDir', 'normal', 'Color', 'w', ...
+        'XTickLabel', [], 'YTickLabel', [], 'Box', 'on', ...
+        'XLim', [0.5, Tplot+0.5], 'YLim', [0.5, Nplot+0.5]);
+    title(ax1, 'Test data (raw)')
+    ax2 = subplot('Position', [0.05, 0.05, 0.9, 0.4]);
+    plot_positive_rows(ax2, TestData_corr, vis_thresh);
+    set(ax2, 'YDir', 'normal', 'Color', 'w', ...
+        'XTickLabel', [], 'YTickLabel', [], 'Box', 'on', ...
+        'XLim', [0.5, Tplot+0.5], 'YLim', [0.5, Nplot+0.5]);
+    title(ax2, 'Test data (warp/jitter corrected)')
+    set(figData, 'Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8], ...
+        'Color', 'w', 'InvertHardcopy', 'off', 'Renderer', 'painters')
 end
 
 WTX = helper.transconv(W,TestData_corr);
@@ -187,4 +196,22 @@ if plot
         hold on
         xline(WTX_large_mean(k_plot), 'Color', 'r', 'Linewidth', 2);
     end
+end
+end
+
+function plot_positive_rows(ax, Matrix, vis_thresh)
+% Per-neuron black patches (vertical ticks), neuron 1 at top.
+[N, T] = size(Matrix);
+Matrix = Matrix .* (Matrix > vis_thresh);
+dnX = max(prctile(Matrix(:), 99.9), eps);
+dn = 1;
+Xs = [1, 1:T, T];
+cla(ax);
+hold(ax, 'on');
+for ni = 1:N
+    base = dn * (N - ni + 1) - dn / 2;
+    Ys = [base, base + Matrix(ni, :) / dnX * dn, base];
+    patch(ax, Xs, Ys, 'k', 'EdgeColor', 'none');
+end
+hold(ax, 'off');
 end

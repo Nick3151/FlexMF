@@ -141,4 +141,4 @@ figure;
 plot(lambdas, errors(:,1), lambdas, L1Hs)
 legend('Recon', 'L1H')
 xlabel('Lambda')
-save2pdf('Error vs lambda')
+export_vector_pdf('Error vs lambda');

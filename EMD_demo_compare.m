@@ -3,8 +3,8 @@
 %   'clean' | 'noise' | 'participation' | 'jitter' | 'warp' |
 %   'jitter+noise' | 'warp+noise'
 %
-% FlexMF uses the same lambda as SeqNMF and is warm-started from the
-% SeqNMF factors. Running times are printed for SeqNMF, FlexMF, and matching.
+% FlexMF is warm-started from the SeqNMF factors.
+% Running times are printed for SeqNMF, FlexMF, and matching.
 clear all
 close all
 clc
@@ -15,7 +15,7 @@ rmpath(genpath(fullfile(root, 'seqNMF-master')));
 addpath(genpath(fullfile(root, 'FlexMF')));
 
 %% -------- User settings --------
-data_type = 'jitter+noise';   % choose one of the types listed above
+data_type = 'warp+noise';   % choose one of the types listed above
 do_choose_lambda = true;  % true: sweep lambdas for SeqNMF before fitting
 do_normalize = true;       % scale data Frobenius norm to Khat
 do_save = true;            % write PDFs
@@ -33,7 +33,7 @@ seed = 1;
 maxiter = 50;
 
 % Regularization
-lambda_SeqNMF = .1;    % warp_noise=0.05 jitter_noise=0.1
+lambda_SeqNMF = .05;    % warp_noise=0.05 jitter_noise=0.1
 lambda_FlexMF = .05;
 lambda_M = .05;
 lambda_R = 1;
@@ -71,7 +71,7 @@ figure; SimpleWHPlot_patch(W, H, 'Data', X, 'plotAll', plotAll);
 title(sprintf('Generated data (%s)', data_type), 'FontSize', 16)
 set(gcf, 'Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8])
 if do_save
-    save2pdf(sprintf('EMD_simulated_data_%s.pdf', helper.sanitize_name(data_type)))
+    export_vector_pdf(sprintf('EMD_simulated_data_%s.pdf', helper.sanitize_name(data_type)));
 end
 
 %% -------- Normalize --------
@@ -117,7 +117,7 @@ if do_choose_lambda
     set(gca, 'color', 'none', 'tickdir', 'out', 'ticklength', [0.025, 0.025])
     title(sprintf('SeqNMF lambda sweep (%s)', data_type))
     if do_save
-        save2pdf(sprintf('Simulate_%s_choose_lambda_SeqNMF', helper.sanitize_name(data_type)))
+        export_vector_pdf(sprintf('Simulate_%s_choose_lambda_SeqNMF', helper.sanitize_name(data_type)));
     end
 end
 
@@ -146,8 +146,8 @@ fprintf('FlexMF running time: %.2f s\n', time_FlexMF);
 figure;
 plot_MR(M, R)
 if do_save
-    save2pdf(sprintf('FlexMF_%s_demo_MR_lambda=%1.1e_lambdaM=%1.1e_lambdaR=%1.1e.pdf', ...
-    helper.sanitize_name(data_type), lambda_FlexMF, lambda_M, lambda_R))
+    export_vector_pdf(sprintf('FlexMF_%s_demo_MR_lambda=%1.1e_lambdaM=%1.1e_lambdaR=%1.1e.pdf', ...
+        helper.sanitize_name(data_type), lambda_FlexMF, lambda_M, lambda_R));
 end
 
 %% -------- Match factors to ground truth --------
@@ -166,7 +166,7 @@ figure; SimpleWHPlot_patch(What_SeqNMF_plot, Hhat_SeqNMF_plot, 'plotAll', plotAl
 title('SeqNMF reconstruction (ground-truth order)')
 set(gcf, 'Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8])
 if do_save
-    save2pdf(sprintf('Simulated_%s_result_SeqNMF.pdf', helper.sanitize_name(data_type)), gcf)
+    export_vector_pdf(sprintf('Simulated_%s_result_SeqNMF.pdf', helper.sanitize_name(data_type)), gcf);
 end
 
 figure; SimpleWHPlot_patch(What_SeqNMF_plot, Hhat_SeqNMF_plot, 'Data', X, 'plotAll', plotAll);
@@ -177,8 +177,8 @@ figure; SimpleWHPlot_patch(What_FlexMF_plot, Hhat_FlexMF_plot, 'plotAll', plotAl
 title('FlexMF reconstruction (ground-truth order)')
 set(gcf, 'Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8])
 if do_save
-    save2pdf(sprintf('EMD_Simulated_%s_data_FlexMF_lambda=%1.1e_lambdaM=%1.1e_lambdaR=%1.1e.pdf', ...
-    helper.sanitize_name(data_type), lambda_FlexMF, lambda_M, lambda_R), gcf)
+    export_vector_pdf(sprintf('EMD_Simulated_%s_data_FlexMF_lambda=%1.1e_lambdaM=%1.1e_lambdaR=%1.1e.pdf', ...
+        helper.sanitize_name(data_type), lambda_FlexMF, lambda_M, lambda_R), gcf);
 end
 
 figure; SimpleWHPlot_patch(What_FlexMF_plot, Hhat_FlexMF_plot, 'Data', X, 'plotAll', plotAll);
@@ -200,7 +200,7 @@ legend({'SeqNMF', 'FlexMF'}, 'Location', 'north')
 set(gca, 'FontSize', 14)
 title(sprintf('EMDs of W (%s)', data_type), 'FontSize', 16)
 if do_save
-    save2pdf(sprintf('EMD_Simulated_%s_data_compare_W.pdf', helper.sanitize_name(data_type)), gcf)
+    export_vector_pdf(sprintf('EMD_Simulated_%s_data_compare_W.pdf', helper.sanitize_name(data_type)), gcf);
 end
 
 figure; bar(1:K, emds_H_all');
@@ -208,7 +208,7 @@ legend({'SeqNMF', 'FlexMF'}, 'Location', 'north')
 set(gca, 'FontSize', 14)
 title(sprintf('EMDs of H (%s)', data_type), 'FontSize', 16)
 if do_save
-    save2pdf(sprintf('EMD_Simulated_%s_data_compare_H.pdf', helper.sanitize_name(data_type)), gcf)
+    export_vector_pdf(sprintf('EMD_Simulated_%s_data_compare_H.pdf', helper.sanitize_name(data_type)), gcf);
 end
 
 %% -------- Save results --------

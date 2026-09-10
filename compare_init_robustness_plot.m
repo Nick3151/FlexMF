@@ -170,7 +170,7 @@ ylabel('||Xcorr - R - W*H||_1 / ||X||_1')
 title('EMD constraint residual per run', 'FontSize', 14)
 legend('Location', 'best')
 set(gcf, 'Position', [100 100 700 420])
-save2pdf(fullfile(outDir, 'compare_init_constraint_validation.pdf'), gcf)
+export_vector_pdf(fullfile(outDir, 'compare_init_constraint_validation.pdf'), gcf);
 
 %% ------------------------------------------------------------------------
 %  One comparison figure per data type
@@ -215,7 +215,7 @@ for d = 1:nData
 
     linkaxes([ax1, ax2, ax3], 'x')
     set(gcf, 'Position', [100, 100, 600, 800])
-    save2pdf(fullfile(outDir, sprintf('compare_init_%s.pdf', results(d).name)), gcf)
+    export_vector_pdf(fullfile(outDir, sprintf('compare_init_%s.pdf', results(d).name)), gcf);
 end
 
 %% ------------------------------------------------------------------------
@@ -237,35 +237,35 @@ for dEx = 1:nData
     SimpleWHPlot(data(dEx).Wtrue, data(dEx).Htrue, 'Data', Xex, 'plotAll', plotAll);
     title(sprintf('%s: ground truth', data(dEx).label), 'FontSize', 16)
     set(gcf, 'Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8])
-    save2pdf(fullfile(outDir, sprintf('compare_init_example_%s_truth.pdf', data(dEx).name)), gcf)
+    export_vector_pdf(fullfile(outDir, sprintf('compare_init_example_%s_truth.pdf', data(dEx).name)), gcf);
 
     for m = 1:nMethod
         figure;
         SimpleWHPlot_patch(exW{m}, exH{m}, 'plotAll', plotAll);
         title(sprintf('%s: %s reconstruction', data(dEx).label, methodLabels{m}), 'FontSize', 16)
         set(gcf, 'Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8])
-        save2pdf(fullfile(outDir, sprintf('compare_init_example_%s_method%d_recon.pdf', ...
-            data(dEx).name, m)), gcf)
+        export_vector_pdf(fullfile(outDir, sprintf('compare_init_example_%s_method%d_recon.pdf', ...
+            data(dEx).name, m)), gcf);
 
         figure;
         SimpleWHPlot_patch(exW{m}, exH{m}, 'Data', Xex, 'plotAll', plotAll);
         title(sprintf('%s: %s factors, with raw data', data(dEx).label, methodLabels{m}), 'FontSize', 16)
         set(gcf, 'Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8])
-        save2pdf(fullfile(outDir, sprintf('compare_init_example_%s_method%d_data.pdf', ...
-            data(dEx).name, m)), gcf)
+        export_vector_pdf(fullfile(outDir, sprintf('compare_init_example_%s_method%d_data.pdf', ...
+            data(dEx).name, m)), gcf);
     end
 
     figure;
     plot_MR(info_warm.M_all{nWarm}, info_warm.R_all{nWarm})
     sgtitle(sprintf('%s: FlexMF SeqNMF init, M and R', data(dEx).label), 'FontSize', 16)
-    save2pdf(fullfile(outDir, sprintf('compare_init_example_%s_MR_seqnmfinit.pdf', ...
-        data(dEx).name)), gcf)
+    export_vector_pdf(fullfile(outDir, sprintf('compare_init_example_%s_MR_seqnmfinit.pdf', ...
+        data(dEx).name)), gcf);
 
     figure;
     plot_MR(info_rand.M_all{nRand}, info_rand.R_all{nRand})
     sgtitle(sprintf('%s: FlexMF rand init, M and R', data(dEx).label), 'FontSize', 16)
-    save2pdf(fullfile(outDir, sprintf('compare_init_example_%s_MR_randinit.pdf', ...
-        data(dEx).name)), gcf)
+    export_vector_pdf(fullfile(outDir, sprintf('compare_init_example_%s_MR_randinit.pdf', ...
+        data(dEx).name)), gcf);
 end
 
 fprintf('\nFigures written to %s/\n', outDir);

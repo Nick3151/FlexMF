@@ -32,7 +32,7 @@ plotAll = 1;
 
 figure; SimpleWHPlot_patch(W_hats{Li,j}, H_hats{Li,j}, 'plotAll', plotAll); title('FlexMF reconstruction')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-save2pdf(fullfile('Simulation_Results',sprintf('EMD_%s_results_lambda=%0.3e_lambdaM=%0.3e_lambdaR=%0.3e.pdf', data_type, lambdas(Li), lambda_M, lambda_R)))
+export_vector_pdf(fullfile('Simulation_Results',sprintf('EMD_%s_results_lambda=%0.3e_lambdaM=%0.3e_lambdaR=%0.3e.pdf', data_type, lambdas(Li), lambda_M, lambda_R)));
 
 figure; plot_MR(Ms{Li,j}, Rs{Li,j})
 
@@ -124,4 +124,4 @@ xlabel(ax4, 'lambda')
 linkaxes([ax1, ax2, ax3, ax4], 'x')
 set(gcf, 'Position', [100,100,400,800])
 
-save2pdf(fullfile('Simulation_Results', sprintf('Choose_lambda_%s_plot.pdf', data_type)))
+export_vector_pdf(fullfile('Simulation_Results', sprintf('Choose_lambda_%s_plot.pdf', data_type)));

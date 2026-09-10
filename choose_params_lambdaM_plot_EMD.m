@@ -25,7 +25,7 @@ Xtrain = X(:,1:round(T/2));
 plotAll = 1;
 figure; SimpleWHPlot(W,Htrain,'Data',Xtrain, 'plotAll', plotAll); title('generated data raw','Fontsize',16)
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-save2pdf(fullfile('Simulation_Results',sprintf('Synthetic_data_%s.pdf', data_type)))
+export_vector_pdf(fullfile('Simulation_Results',sprintf('Synthetic_data_%s.pdf', data_type)));
 %% Look at factors
 Mi = 2;
 j = 5;
@@ -33,7 +33,7 @@ plotAll = 1;
 
 figure; SimpleWHPlot_patch(W_hats{Mi,j}, H_hats{Mi,j}, 'plotAll', plotAll); title('FlexMF reconstruction')
 set(gcf,'Units','normalized','Position',[0.1 0.1 0.8 0.8])
-save2pdf(fullfile('Simulation_Results',sprintf('EMD_%s_results_lambda=%0.3e_lambdaM=%0.3e_lambdaR=%0.3e.pdf', data_type, lambda, lambda_Ms(Mi), lambda_R)))
+export_vector_pdf(fullfile('Simulation_Results',sprintf('EMD_%s_results_lambda=%0.3e_lambdaM=%0.3e_lambdaR=%0.3e.pdf', data_type, lambda, lambda_Ms(Mi), lambda_R)));
 figure; plot_MR(Ms{Mi,j}, Rs{Mi,j})
 
 %% Validate EMD
@@ -138,7 +138,7 @@ xlabel(ax4, 'lambda_M')
 linkaxes([ax1, ax2, ax3, ax4], 'x')
 set(gcf, 'Position', [100,100,400,800])
 
-save2pdf(fullfile('Simulation_Results', sprintf('Choose_lambdaM_%s_plot.pdf', data_type)))
+export_vector_pdf(fullfile('Simulation_Results', sprintf('Choose_lambdaM_%s_plot.pdf', data_type)));
 
 % % Average across simulations
 % K = 3;

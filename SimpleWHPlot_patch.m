@@ -56,6 +56,7 @@ color_palet = [[0 .6 .3]; [.7 0 .7]; [1 .6 0];  [.1 .3 .9];  [1 .1 .1];  [0 .9 .
 color_palet = repmat(color_palet, ceil(K/size(color_palet,1)),1); 
 kColors = color_palet(1:K,:); 
 epsilon = 1e-4;
+vis_frac = 1e-3; % zero-baseline fill only where |signal| exceeds this fraction of scale
 %% set widths of subplots
 m = .05; % margin
 ww = min(.05*K, .25); % width of W plot
@@ -79,14 +80,17 @@ axW = subplot('Position', [m m ww hdata]);
 hold on
 set(gca, 'ColorOrder', kColors); 
 
-dnW = prctile(W(:),99.9)+epsilon; 
+dnW = prctile(W(:),99.9)+epsilon;
+w_thresh = vis_frac * dnW;
 XsEdge = zeros(3,K); 
 YsEdge = [zeros(1,K); dnW*N*ones(2,K)];
 
 for ki=1:K
     for ni =1:N
         Xs = [(ki-1)*(L+sep)+1, (ki-1)*(L+sep)+1:(ki-1)*(L+sep)+L, (ki-1)*(L+sep)+L];
-        Ys = [dnW*(N-ni) dnW*(N-ni) + squeeze(W(ni,ki,:))' dnW*(N-ni)];
+        wrow = squeeze(W(ni,ki,:))';
+        wrow(abs(wrow) < w_thresh) = 0;
+        Ys = [dnW*(N-ni) dnW*(N-ni) + wrow dnW*(N-ni)];
         patch(Xs,Ys, 'k', 'edgecolor', 'none')
         hold on
     end
@@ -114,11 +118,15 @@ Dhat = helper.reconstruct(W,H);
 
 for ni=1:N
     hold on
+    base = dnW*(N-ni);
     if plotData
-        dnX = prctile(Data(:),99.9);
-        Ys = [dnW*(N-ni) dnW*(N-ni)+Data(ni,indplot)/dnX*dnW dnW*(N-ni)];
+        dnX = prctile(Data(:),99.9) + epsilon;
+        x_thresh = vis_frac * dnX;
+        row = Data(ni,indplot);
+        row(abs(row) < x_thresh) = 0;
+        Ys = [base base+row/dnX*dnW base];
         if compare
-            Dhat_pos = Dhat(ni,indplot)>0;
+            Dhat_pos = abs(Dhat(ni,indplot)) > x_thresh;
             D = diff([0, Dhat_pos]);
             first = find(D>0);  %  start values of consecutive blocks
             last = find(D<0);  % end values of consecutive blocks
@@ -126,14 +134,17 @@ for ni=1:N
             if length(last)<blocks
                 last(end+1) = length(indplot);
             end
-            Ys_hat = dnW*(N-ni)+Dhat(ni,indplot)/dnX*dnW;
+            Ys_hat = base + Dhat(ni,indplot)/dnX*dnW;
             for b=1:blocks
                 plot(Xs(1+first(b):1+last(b)), Ys_hat(first(b):last(b)), 'r');
             end
         end
     else
-        dnX = prctile(Dhat(:),99.9); 
-        Ys = [dnW*(N-ni) dnW*(N-ni)+Dhat(ni,indplot)/dnX*dnW dnW*(N-ni)];
+        dnX = prctile(Dhat(:),99.9) + epsilon;
+        x_thresh = vis_frac * dnX;
+        row = Dhat(ni,indplot);
+        row(abs(row) < x_thresh) = 0;
+        Ys = [base base+row/dnX*dnW base];
     end
     
     patch(Xs,Ys, 'k', 'edgecolor', 'none')
@@ -171,10 +182,13 @@ axis off
 %% plot H's
 axH = subplot('Position', [m+ww m+hdata wdata hh]);
 Hrescaled = repmat(squeeze(sum(sum(abs(W),1),3))',1,T).*H; % rescale by approximate loading
-dn = prctile(Hrescaled(:),100)/2; 
+dn = prctile(Hrescaled(:),100)/2;
+h_thresh = vis_frac * max(abs(Hrescaled(:)) + epsilon);
 for ki = K:-1:1
-    Xs = [1 1:length(indplot) length(indplot)]; 
-    Ys = [dn*ki (dn*ki + Hrescaled(K-ki+1,indplot)) dn*ki]-dn/2;
+    Xs = [1 1:length(indplot) length(indplot)];
+    hrow = Hrescaled(K-ki+1,indplot);
+    hrow(abs(hrow) < h_thresh) = 0;
+    Ys = [dn*ki (dn*ki + hrow) dn*ki]-dn/2;
     patch(Xs,Ys, kColors(K-ki+1,:), 'edgecolor', kColors(K-ki+1,:))
     hold on
 end

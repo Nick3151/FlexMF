@@ -23,7 +23,7 @@ use_dynamics = false;    % calcium / transient filter
 do_choose_lambda = true;  % true: sweep lambdas for SeqNMF before fitting
 do_reweight_tv = false;   % false: only SeqNMF + FlexMF (no Reweight, no TV)
 do_normalize = true;      % scale data Frobenius norm to Khat
-do_save = false;
+do_save = true;
 constraintTol = 0.05;   % flag if ||constraint||_1 / ||X||_1 exceeds this
 
 K = 3;
@@ -98,7 +98,7 @@ figure; SimpleWHPlot_patch(W, H, 'Data', X, 'plotAll', plotAll);
 title(sprintf('Generated data (%s)', data_tag), 'FontSize', 16)
 set(gcf, 'Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8])
 if do_save
-    save2pdf(sprintf('EMD_simulated_data_%s.pdf', data_file))
+    export_vector_pdf(sprintf('EMD_simulated_data_%s.pdf', data_file));
 end
 
 %% -------- Optional SeqNMF lambda sweep --------
@@ -137,7 +137,7 @@ if do_choose_lambda
     set(gca, 'color', 'none', 'tickdir', 'out', 'ticklength', [0.025, 0.025])
     title(sprintf('SeqNMF lambda sweep (%s)', data_tag))
     if do_save
-        save2pdf(sprintf('Simulate_%s_choose_lambda_SeqNMF', data_file))
+        export_vector_pdf(sprintf('Simulate_%s_choose_lambda_SeqNMF', data_file));
     end
 end
 
@@ -184,7 +184,7 @@ fprintf('  time: %.2f s\n', times(1));
 [What_plot, Hhat_plot] = helper.sort_matched_factors(What{1}, Hhat{1}, match_ids{1});
 plot_WH(What_plot, Hhat_plot, X, method_names{1}, plotAll);
 if do_save
-    save2pdf(sprintf('Simulated_%s_SeqNMF_WH.pdf', data_file), gcf)
+    export_vector_pdf(sprintf('Simulated_%s_SeqNMF_WH.pdf', data_file), gcf);
 end
 
 %% -------- 2+) FlexMF variants (SeqNMF warm-start) --------
@@ -224,19 +224,19 @@ for fi = 1:nFlex
     [What_plot, Hhat_plot] = helper.sort_matched_factors(What{m}, Hhat{m}, match_ids{m});
     plot_WH(What_plot, Hhat_plot, X, method_names{m}, plotAll);
     if do_save
-        save2pdf(sprintf('Simulated_%s_FlexMF_%s_WH.pdf', data_file, flex_labels_short{fi}), gcf)
+        export_vector_pdf(sprintf('Simulated_%s_FlexMF_%s_WH.pdf', data_file, flex_labels_short{fi}), gcf);
     end
 
     figure; plot_MR(Mhat{m}, Rhat{m}, method_names{m});
     if do_save
-        save2pdf(sprintf('Simulated_%s_FlexMF_%s_MR.pdf', data_file, flex_labels_short{fi}), gcf)
+        export_vector_pdf(sprintf('Simulated_%s_FlexMF_%s_MR.pdf', data_file, flex_labels_short{fi}), gcf);
     end
 
     figure; imagesc(constraint); colorbar
     title(sprintf('Constraint residual — %s (rel=%.3g)', method_names{m}, constraint_rel(m)))
     set(gca, 'XTickLabel', [], 'YTickLabel', [])
     if do_save
-        save2pdf(sprintf('Simulated_%s_FlexMF_%s_constraint.pdf', data_file, flex_labels_short{fi}), gcf)
+        export_vector_pdf(sprintf('Simulated_%s_FlexMF_%s_constraint.pdf', data_file, flex_labels_short{fi}), gcf);
     end
 end
 
@@ -286,7 +286,7 @@ set(gca, 'FontSize', 12)
 xlabel('Ground-truth sequence'); ylabel('EMD')
 title(sprintf('EMD of W (%s)', data_tag), 'FontSize', 14)
 if do_save
-    save2pdf(sprintf('Simulated_%s_compare_EMD_W.pdf', data_file), gcf)
+    export_vector_pdf(sprintf('Simulated_%s_compare_EMD_W.pdf', data_file), gcf);
 end
 
 figure;
@@ -296,7 +296,7 @@ set(gca, 'FontSize', 12)
 xlabel('Ground-truth sequence'); ylabel('EMD')
 title(sprintf('EMD of H (%s)', data_tag), 'FontSize', 14)
 if do_save
-    save2pdf(sprintf('Simulated_%s_compare_EMD_H.pdf', data_file), gcf)
+    export_vector_pdf(sprintf('Simulated_%s_compare_EMD_H.pdf', data_file), gcf);
 end
 
 figure;
@@ -305,7 +305,7 @@ set(gca, 'XTickLabel', method_names, 'XTickLabelRotation', 20, 'FontSize', 11)
 ylabel(sprintf('L0(H)  (# entries > %g)', H_nnz_tol))
 title(sprintf('Sparsity of H (%s)', data_tag), 'FontSize', 14)
 if do_save
-    save2pdf(sprintf('Simulated_%s_compare_L0H.pdf', data_file), gcf)
+    export_vector_pdf(sprintf('Simulated_%s_compare_L0H.pdf', data_file), gcf);
 end
 
 figure;
@@ -314,7 +314,7 @@ set(gca, 'XTickLabel', method_names, 'XTickLabelRotation', 20, 'FontSize', 11)
 ylabel('TV(W) = ||W D^T||_1')
 title(sprintf('TV norm of W (%s)', data_tag), 'FontSize', 14)
 if do_save
-    save2pdf(sprintf('Simulated_%s_compare_TV_W.pdf', data_file), gcf)
+    export_vector_pdf(sprintf('Simulated_%s_compare_TV_W.pdf', data_file), gcf);
 end
 
 figure;
@@ -324,7 +324,7 @@ ylabel('||constraint||_1 / ||X||_1')
 yline(constraintTol, 'k--', 'tolerance')
 title('EMD constraint validation', 'FontSize', 14)
 if do_save
-    save2pdf(sprintf('Simulated_%s_compare_constraint.pdf', data_file), gcf)
+    export_vector_pdf(sprintf('Simulated_%s_compare_constraint.pdf', data_file), gcf);
 end
 
 %% -------- Summary --------
