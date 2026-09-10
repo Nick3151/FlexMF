@@ -31,4 +31,5 @@ X = X_hat + (~X_hat).*X_noise;
 if dynamic
     filtbio = exp(-(0:8)/4);
     X = conv2(X, filtbio);
+    X = X(:,1:T);
 end

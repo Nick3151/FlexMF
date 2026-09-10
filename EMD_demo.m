@@ -27,7 +27,7 @@ set(gca, 'Position', [0.05 0.35 0.9 0.3], 'XTick', [], 'YTick', [], 'xlabel', []
 subplot('Position', [0.05 0.05 0.9 0.3])
 SimpleXplot(Xshift)
 set(gca, 'Position', [0.05 0.05 0.9 0.3], 'XTick', [], 'YTick', [], 'xlabel', [], 'ylabel', [])
-save2pdf('Sequence_simulated.pdf')
+export_vector_pdf('Sequence_simulated.pdf');
 
 figure; 
 subplot('Position', [0.05 0.65 0.9 0.3])
@@ -39,7 +39,7 @@ set(gca, 'Position', [0.05 0.35 0.9 0.3], 'XTick', [], 'YTick', [], 'xlabel', []
 subplot('Position', [0.05 0.05 0.9 0.3])
 SimpleXplot(Xshift_noise)
 set(gca, 'Position', [0.05 0.05 0.9 0.3], 'XTick', [], 'YTick', [], 'xlabel', [], 'ylabel', [])
-save2pdf('Sequence_simulated_noise.pdf')
+export_vector_pdf('Sequence_simulated_noise.pdf');
 
 %% Compute EMD demo
 opts_default = tfocs_SCD;
@@ -51,14 +51,14 @@ opts.maxIts = 500;
 % opts.alg = 'N83';
 
 tic
-[d, M, R, out] = compute_EMD(X, Xwarp, opts);
-% [d, M, R, out] = compute_EMD(X, Xshift, opts);
+% [d, M, R, out] = compute_EMD(X, Xwarp, opts);
+[d, M, R, out] = compute_EMD(X, Xshift, opts);
 toc
 
 figure;
-plot_MR(M,R)
-save2pdf('EMD_warp_demo_MR.pdf')
-% save2pdf('EMD_shift_demo_MR.pdf')
+plot_MR(M,R,[], 'imagesc')
+% export_vector_pdf('EMD_warp_demo_MR.pdf');
+export_vector_pdf('EMD_shift_demo_MR.pdf')
 
 figure;
 plot(out.f)
@@ -67,8 +67,8 @@ title('out.f')
 % Check constraint
 D = eye(T) - diag(ones(T-1,1),-1);
 D(T,T) = 0;
-% C = M*D'-R-(Xshift-X);
-C = M*D'-R-(Xwarp-X);
+C = M*D'-R-(Xshift-X);
+% C = M*D'-R-(Xwarp-X);
 figure;
 imagesc(C)
 set(gca, 'XTickLabel', [], 'YTickLabel', []);
@@ -81,33 +81,44 @@ lambdaRs = logspace(-1, 3, nlambdaRs);
 Ms = cell(nlambdaRs,1);
 Rs = cell(nlambdaRs,1);
 ds = cell(nlambdaRs,1);
+constraint_rel = zeros(nlambdaRs,1);
+Ddiff = eye(T) - diag(ones(T-1,1), -1);
+Ddiff(T,T) = 0;
+% X2 = Xshift_noise;
+X2 = Xwarp_noise;
+b = X2 - X;
 for n=1:nlambdaRs
     disp(n)
     tic
-%     [ds{n}, Ms{n}, Rs{n}, out] = compute_EMD(X, Xshift_noise, opts, 'lambdaR', lambdaRs(n));
-    [ds{n}, Ms{n}, Rs{n}, out] = compute_EMD(X, Xwarp_noise, opts, 'lambdaR', lambdaRs(n));
+    [ds{n}, Ms{n}, Rs{n}, out] = compute_EMD(X, X2, opts, 'lambdaR', lambdaRs(n));
     toc
+    C = Ms{n}*Ddiff' - Rs{n} - b;
+    constraint_rel(n) = norm(C(:),1) / max(norm(b(:),1), eps);
 end
 M_norms = cellfun(@(x) norm(x(:),1), Ms);
 R_norms = cellfun(@(x) norm(x(:),1), Rs);
-% Err = X-Xshift_noise;
-Err = X-Xwarp_noise;
+Err = X - X2;
 
 figure;
-plot(lambdaRs, M_norms, 'r', lambdaRs, R_norms, 'b')
-set(gca, 'XScale', 'log')
+yyaxis left
+plot(lambdaRs, M_norms, 'r-', lambdaRs, R_norms, 'b-')
 hold on
-yline(norm(Err(:),1), 'k')
+yline(norm(Err(:),1), 'k--')
+ylabel('L1')
+yyaxis right
+plot(lambdaRs, constraint_rel, 'g-', 'LineWidth', 1.5)
+ylabel('||constraint||_1 / ||X2-X1||_1')
+set(gca, 'XScale', 'log')
 xlabel('lambdaR')
-legend('L1M', 'L1R', 'L1Err', 'Location', 'best')
-save2pdf('EMD_Choose_lambdaR_warp_noise')
-% save2pdf('EMD_Choose_lambdaR_shift_noise')
+legend('L1M', 'L1R', 'L1Err', 'constraint_{rel}', 'Location', 'best')
+export_vector_pdf('EMD_Choose_lambdaR_warp_noise');
+% export_vector_pdf('EMD_Choose_lambdaR_shift_noise')
 
 figure;
 n = 10;
-plot_MR(Ms{n},Rs{n})
-% save2pdf(sprintf('EMD_shift_noise_demo_lambdaR=%0.1f_MR.pdf', lambdaRs(n)))
-save2pdf(sprintf('EMD_warp_noise_demo_lambdaR=%0.1f_MR.pdf', lambdaRs(n)))
+plot_MR(Ms{n},Rs{n}, [], 'imagesc')
+% export_vector_pdf(sprintf('EMD_shift_noise_demo_lambdaR=%0.1f_MR.pdf', lambdaRs(n)))
+export_vector_pdf(sprintf('EMD_warp_noise_demo_lambdaR=%0.1f_MR.pdf', lambdaRs(n)));
 
 %% EMD vs different levels of warping/shift
 T = 100;
@@ -145,7 +156,7 @@ plot(0:4, L2_shift, 'LineWidth',2)
 ylabel('Distance')
 xlabel('Shift step')
 legend({'Temporal transport', 'L2-square'})
-save2pdf('EMD_vs_shift.pdf')
+export_vector_pdf('EMD_vs_shift.pdf');
 
 figure;
 plot(0:4, transport_warp, 'LineWidth',2)
@@ -154,4 +165,4 @@ plot(0:4, L2_warp, 'LineWidth',2)
 ylabel('Distance')
 xlabel('Warp step')
 legend({'Temporal transport', 'L2-square'})
-save2pdf('EMD_vs_warp.pdf')
+export_vector_pdf('EMD_vs_warp.pdf');
