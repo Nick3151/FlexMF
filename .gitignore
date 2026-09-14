@@ -4,6 +4,7 @@
 *.pdf
 *.mat
 *.sh
+!run-simulations.sh
 OTSU_thresh.m
 profile_results/
 
