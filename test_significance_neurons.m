@@ -8,7 +8,7 @@ nNull = p.Results.nNull;
 seed = p.Results.seed;
 rng(seed)
 
-assert(size(Xall,1)==size(Wk,1) && size(X_tmp,1)==size(Wk,1), 'Neurons do not meatch!')
+assert(size(Xall,1)==size(Wk,1) && size(X_tmp,1)==size(Wk,1), 'Neurons do not match!')
 [N,T] = size(Xall);
 [~,L] = size(Wk);
 R = size(X_tmp,2);  % number of motif occurrences
