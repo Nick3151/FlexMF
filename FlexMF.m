@@ -58,6 +58,10 @@ function [W, H, cost, errors, loadings, power, M, R] = FlexMF(X, varargin)
 % 'lambda_R'        1                                   Penalty coefficient on residual term for unbalanced EMD
 % 'lambda_M'        1e-1                                Penalty coefficient on motion field for unbalanced EMD
 % 'homotopy'        10                                  # iters to ramp lambda_M from lambda_M/homotopy to lambda_M (0=off)
+% 'reseedEmpty'     5                                   Reseed unused (near-empty) factors for first N iters; 0=off
+% 'reseedThresh'    1e-3                                Relative ||W_k(*)H_k|| threshold vs max(factor recon, ||X||)
+% 'reseedScale'     1e-3                                Amplitude of reinjected random W/H vs max(X)
+% 'reseedNzProp'    0.2                                 Fraction of nonzeros in each reinjected W_k (sprand density)
 % 'lambda_TV'       0                                   TV norm of W parmater; Increase to make W more smooth along the time dimension
 % 'mu'              1e-1                                TFOCS SCD smoothing parameter (larger => easier dual)
 % 'muDecrement'     1                                   Continuation: mu <- mu*muDecrement each step (1=fixed mu)
@@ -164,6 +168,29 @@ for iter = 1 : params.maxiter
 %         if iter>1
 %             params.lambda = 0; % Do one final CNMF iteration (no regularization, just prioritize reconstruction)
 %         end
+    end
+
+    % Reseed unused (near-empty) factors with small random W/H early in fitting.
+    % Unused = small ||W_k (*) H_k|| relative to max(factor recon norms, ||X||).
+    % Prefer reconstruction energy over ||W||||H||: SeqNMF warm-starts and
+    % FlexMF's H row-renormalization leave spare factors as W≈0 with ||H_k||≈1.
+    if params.reseedEmpty > 0 && iter <= params.reseedEmpty && ~params.W_fixed
+        reconNorms = zeros(1, K);
+        for kk = 1:K
+            Xk = helper.reconstruct(W(:, kk, :), H(kk, :));
+            reconNorms(kk) = norm(Xk(:));
+        end
+        unused = reconNorms < params.reseedThresh * max([max(reconNorms), norm(X(:))]);
+        if any(unused)
+            amp = params.reseedScale * max(X(:));
+            for kk = find(unused)
+                W(:, kk, :) = amp * reshape(full(sprand(N, L, params.reseedNzProp)), [N, 1, L]);
+                H(kk, :) = amp * rand(1, T) ./ sqrt(T/3);
+            end
+            if params.verbal
+                fprintf('Reseeded %d unused factors at iter %d\n', nnz(unused), iter);
+            end
+        end
     end
 
     if params.verbal
@@ -348,6 +375,10 @@ end
         addOptional(p, 'lambda_R', 1); % Penalty coefficient on residual term for unbalanced EMD
         addOptional(p, 'lambda_M', 1e-1); % Penalty coefficient on motion field for unbalanced EMD
         addOptional(p, 'homotopy', 10); % Ramp lambda_M over this many iters (0 disables)
+        addOptional(p, 'reseedEmpty', 5); % Reseed unused factors for first N iters (0 disables)
+        addOptional(p, 'reseedThresh', 1e-3); % Relative ||W_k(*)H_k|| vs max(factor recon, ||X||)
+        addOptional(p, 'reseedScale', 1e-3); % Amplitude of reinjected random W/H vs max(X)
+        addOptional(p, 'reseedNzProp', 0.2); % Fraction of nonzeros in reinjected W_k
         addOptional(p, 'lambda_TV', 0); % TV norm of W along the time dimension
         addOptional(p, 'mu', 1e-1); % TFOCS SCD smoothing parameter
         addOptional(p, 'muDecrement', 1); % Continuation mu multiplier per step
