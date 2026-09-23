@@ -271,9 +271,9 @@ end
 %% ------------------------------------------------------------------------
 %  Example run visualization (one selected data type)
 %  -------------------------------------------------------------------------
-exampleDataType = 'jitternoise';   % must be among loaded results
-exampleRunId = 8;           % [] => each method's best_idx; else fixed restart index
-saveExampleFigs = true;       % false: plot only, skip PDF export
+exampleDataType = 'participation';   % must be among loaded results
+exampleRunId = 2;           % [] => each method's best_idx; else fixed restart index
+saveExampleFigs = false;       % false: plot only, skip PDF export
 
 [exKnown, dEx] = ismember(exampleDataType, {results.name});
 assert(exKnown, 'exampleDataType ''%s'' not among loaded results: %s', ...
@@ -334,7 +334,7 @@ fprintf('\nExample: %s, run ids [SeqNMF=%d, rand=%d, warm=%d, warm+reseed=%d]\n'
     data(dEx).label, nWarm, nRand, nWarm, nWarmR);
 
 figure;
-SimpleWHPlot(data(dEx).Wtrue, data(dEx).Htrue, 'Data', Xex, ...
+SimpleWHPlot_patch(data(dEx).Wtrue, data(dEx).Htrue, 'Data', Xex, ...
     'is_significant', ones(1, size(data(dEx).Wtrue, 2)), 'plotAll', plotAll);
 title(sprintf('%s: ground truth (train)', data(dEx).label), 'FontSize', 16)
 set(gcf, 'Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8])
@@ -343,9 +343,23 @@ if saveExampleFigs
 end
 
 for m = 1:nMethod
+    if isfield(results(dEx), 'ids_match') && ~isempty(results(dEx).ids_match) ...
+            && ~isempty(results(dEx).ids_match{exRunIds(m), m})
+        ids = results(dEx).ids_match{exRunIds(m), m};
+    else
+        [~, ~, ids] = helper.similarity_WH_EMD( ...
+            data(dEx).Wtrue, data(dEx).Htrue, exW{m}, exH{m});
+    end
+    [Wp, Hp, factorOrder] = helper.sort_matched_factors(exW{m}, exH{m}, ids);
+    if ~isempty(exSig{m})
+        sigPlot = exSig{m}(factorOrder);
+    else
+        sigPlot = [];
+    end
+
     figure;
-    SimpleWHPlot_patch(exW{m}, exH{m}, 'is_significant', exSig{m}, 'plotAll', plotAll);
-    title(sprintf('%s: %s reconstruction (run %d)', ...
+    SimpleWHPlot_patch(Wp, Hp, 'is_significant', sigPlot, 'plotAll', plotAll);
+    title(sprintf('%s: %s reconstruction (run %d, GT order)', ...
         data(dEx).label, methodLabels{m}, exRunIds(m)), 'FontSize', 16)
     set(gcf, 'Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8])
     if saveExampleFigs
@@ -353,16 +367,6 @@ for m = 1:nMethod
             data(dEx).name, methodFileTags{m})), gcf);
     end
 
-    figure;
-    SimpleWHPlot_patch(exW{m}, exH{m}, 'Data', Xex, ...
-        'is_significant', exSig{m}, 'plotAll', plotAll);
-    title(sprintf('%s: %s factors, with raw data (run %d)', ...
-        data(dEx).label, methodLabels{m}, exRunIds(m)), 'FontSize', 16)
-    set(gcf, 'Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8])
-    if saveExampleFigs
-        export_vector_pdf(fullfile(outDir, sprintf('compare_init_example_%s_%s_data.pdf', ...
-            data(dEx).name, methodFileTags{m})), gcf);
-    end
 end
 
 figure;

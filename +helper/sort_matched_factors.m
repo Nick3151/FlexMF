@@ -1,8 +1,10 @@
-function [W_sorted, H_sorted] = sort_matched_factors(W, H, ids)
+function [W_sorted, H_sorted, factor_order] = sort_matched_factors(W, H, ids)
 %SORT_MATCHED_FACTORS  Put matched estimates at their ground-truth indices.
 %
 %   ids(j) = i means estimated factor j matched ground-truth factor i (0 = none).
 %   Matched estimates are placed at position i; unmatched ones fill the rest.
+%   Optional third output factor_order is the permutation applied to factors
+%   (also use it to reorder is_significant, etc.).
 Khat = numel(ids);
 factor_order = zeros(1, Khat);
 used = false(1, Khat);

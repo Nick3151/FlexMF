@@ -36,10 +36,10 @@ T = 4000; % length of data to generate
 Nneurons = 5*ones(K,1); % number of neurons in each sequence
 Dt = 3.*ones(K,1); % gap between each member of the sequence
 neg = 0;
-noise = .001;
+noise = .005;
 participation = .8.*ones(K,1); 
 jitter = 5*ones(K,1);
-warp = 2;
+warp = 5;
 gap = 100;
 
 %% Run simulation on different combinations of lambda_M, lambda_R

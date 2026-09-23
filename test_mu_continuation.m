@@ -9,7 +9,7 @@ function results = test_mu_continuation(varargin)
 %   1) Probe one updateH_EMD + updateW_EMD from a shared SeqNMF warm-start
 %      (constraint residual, niter, status / iteration-limit flag)
 %   2) Run a short FlexMF fit (no Reweight / no TV) and record constraint,
-%      L1(M)/||X||_1, mean EMD(W), and wall time
+%      L1(M)/||X||_1, mean EMD(W), mean EMD(H), and wall time
 %
 % Scores candidates (lower better) and prints the optimal (mu, muDecrement).
 
@@ -37,14 +37,13 @@ if exist(fullfile(root, 'seqNMF-master'), 'dir')
 end
 addpath(genpath(thisDir));
 
-%% -------- Data / FlexMF settings (match dynamic demo; no Reweight/TV) --------
+%% -------- Data / FlexMF settings (warp+noise; no Reweight/TV) --------
 K = 3;
 Khat = 3;
 Nneurons = 10*ones(K,1);
 Dt = 3.*ones(K,1);
 noise = 0.001;
 warp = 2;
-len_burst = 5;
 Lhat_min = 50;
 lambda = 1e-2;
 lambda_M = 0.1;
@@ -67,9 +66,9 @@ else
 end
 
 %% -------- Generate data + SeqNMF warm-start (once) --------
-fprintf('Generating warp+noise+burst+dynamics data...\n');
+fprintf('Generating warp+noise data...\n');
 [X, Wtrue, Htrue, ~] = generate_data(T, Nneurons, Dt, ...
-    'noise', noise, 'warp', warp, 'len_burst', len_burst, 'dynamic', 1, ...
+    'noise', noise, 'warp', warp, 'len_burst', 1, 'dynamic', 0, ...
     'seed', opt.seed);
 [N, T] = size(X);
 L = size(Wtrue, 3);
@@ -105,6 +104,7 @@ hit_limit_W = false(nMu, nDec);
 status_H = cell(nMu, nDec);
 status_W = cell(nMu, nDec);
 emds_W_mean = nan(nMu, nDec);
+emds_H_mean = nan(nMu, nDec);
 
 normX1 = norm(X(:), 1);
 flexBase = {'K', K, 'L', Lhat, 'EMD', 1, ...
@@ -160,10 +160,12 @@ for i = 1:nMu
         constraint_rel(i,j) = norm(resid(:), 1) / normX1;
         L1M_rel(i,j) = norm(M(:), 1) / normX1;
         cost_final(i,j) = cost(end);
-        [eW, ~, ids] = helper.similarity_WH_EMD(Wtrue, Htrue, What, Hhat);
+        [eW, eH, ids] = helper.similarity_WH_EMD(Wtrue, Htrue, What, Hhat);
         emds_W_mean(i,j) = mean(eW, 'omitnan');
-        fprintf('  FlexMF: constr_rel=%.3g  L1M/X=%.3g  EMD_W=%.3g  n_det=%d  time=%.1fs\n', ...
-            constraint_rel(i,j), L1M_rel(i,j), emds_W_mean(i,j), sum(ids > 0), time_s(i,j));
+        emds_H_mean(i,j) = mean(eH, 'omitnan');
+        fprintf('  FlexMF: constr_rel=%.3g  L1M/X=%.3g  EMD_W=%.3g  EMD_H=%.3g  n_det=%d  time=%.1fs\n', ...
+            constraint_rel(i,j), L1M_rel(i,j), emds_W_mean(i,j), emds_H_mean(i,j), ...
+            sum(ids > 0), time_s(i,j));
     end
 end
 
@@ -180,6 +182,8 @@ mu_star = mus(iBest);
 muDec_star = muDecrements(jBest);
 
 fprintf('\n========== RESULTS ==========\n');
+fprintf('EMD_W:\n'); disp(emds_W_mean);
+fprintf('EMD_H:\n'); disp(emds_H_mean);
 fprintf('constraint_rel:\n'); disp(constraint_rel);
 fprintf('hit iteration limit (H|W):\n'); disp(hit_limit_H | hit_limit_W);
 fprintf('L1_M / ||X||_1:\n'); disp(L1M_rel);
@@ -187,9 +191,9 @@ fprintf('time (s):\n'); disp(time_s);
 fprintf('score (lower better):\n'); disp(score);
 fprintf('OPTIMAL: mu = %g, muDecrement = %g  (score=%.3g)\n', ...
     mu_star, muDec_star, bestScore);
-fprintf('  constraint_rel=%.4g  L1M/X=%.4g  EMD_W=%.4g  time=%.1fs\n', ...
+fprintf('  constraint_rel=%.4g  L1M/X=%.4g  EMD_W=%.4g  EMD_H=%.4g  time=%.1fs\n', ...
     constraint_rel(iBest,jBest), L1M_rel(iBest,jBest), ...
-    emds_W_mean(iBest,jBest), time_s(iBest,jBest));
+    emds_W_mean(iBest,jBest), emds_H_mean(iBest,jBest), time_s(iBest,jBest));
 fprintf('  probe H status: %s\n', status_H{iBest,jBest});
 fprintf('  probe W status: %s\n', status_W{iBest,jBest});
 fprintf('==============================\n');
@@ -225,37 +229,22 @@ if opt.do_save
     export_vector_pdf(fullfile(opt.outDir, sprintf('test_mu_opt_MR_mu=%g_muDec=%g.pdf', mu_star, muDec_star)), gcf);
 end
 
-%% -------- Plots --------
+%% -------- Evaluation plot --------
+evalMaps = {emds_W_mean, emds_H_mean, log10(constraint_rel + 1e-12)};
+evalTitles = {'mean EMD\_W', 'mean EMD\_H', 'log_{10}(constraint\_rel)'};
 figure;
-imagesc(log10(constraint_rel + 1e-12)); colorbar
-set(gca, 'XTick', 1:nDec, 'XTickLabel', muDecrements, ...
-    'YTick', 1:nMu, 'YTickLabel', mus);
-xlabel('muDecrement'); ylabel('mu');
-title('log_{10}(constraint\_rel)'); hold on
-plot(jBest, iBest, 'w*', 'MarkerSize', 14, 'LineWidth', 1.5);
-if opt.do_save
-    export_vector_pdf(fullfile(opt.outDir, 'test_mu_constraint_rel.pdf'), gcf);
+for p = 1:3
+    subplot(1, 3, p);
+    imagesc(evalMaps{p}); colorbar
+    set(gca, 'XTick', 1:nDec, 'XTickLabel', muDecrements, ...
+        'YTick', 1:nMu, 'YTickLabel', mus);
+    xlabel('muDecrement'); ylabel('mu');
+    title(evalTitles{p}); hold on
+    plot(jBest, iBest, 'w*', 'MarkerSize', 14, 'LineWidth', 1.5);
 end
-
-figure;
-imagesc(double(hit_limit_H | hit_limit_W)); colorbar
-set(gca, 'XTick', 1:nDec, 'XTickLabel', muDecrements, ...
-    'YTick', 1:nMu, 'YTickLabel', mus, 'CLim', [0 1]);
-xlabel('muDecrement'); ylabel('mu');
-title('Inner solve hit iteration limit (H or W)');
+set(gcf, 'Units', 'normalized', 'Position', [0.05 0.2 0.9 0.45])
 if opt.do_save
-    export_vector_pdf(fullfile(opt.outDir, 'test_mu_hit_limit.pdf'), gcf);
-end
-
-figure;
-imagesc(score); colorbar
-set(gca, 'XTick', 1:nDec, 'XTickLabel', muDecrements, ...
-    'YTick', 1:nMu, 'YTickLabel', mus);
-xlabel('muDecrement'); ylabel('mu');
-title(sprintf('Score (best: mu=%g, muDec=%g)', mu_star, muDec_star));
-hold on; plot(jBest, iBest, 'w*', 'MarkerSize', 14, 'LineWidth', 1.5);
-if opt.do_save
-    export_vector_pdf(fullfile(opt.outDir, 'test_mu_score.pdf'), gcf);
+    export_vector_pdf(fullfile(opt.outDir, 'test_mu_eval_EMD_constraint.pdf'), gcf);
 end
 
 %% -------- Pack / save --------
@@ -275,6 +264,7 @@ results.hit_limit_W = hit_limit_W;
 results.status_H = status_H;
 results.status_W = status_W;
 results.emds_W_mean = emds_W_mean;
+results.emds_H_mean = emds_H_mean;
 results.score = score;
 results.mu_star = mu_star;
 results.muDecrement_star = muDec_star;
