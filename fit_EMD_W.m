@@ -1,8 +1,8 @@
-function y = constraint_EMD_W(H, N, L, W_, mode)
-% linear constraint operator on W_
-% W_ = [W_flat M R]
-% f(W_) = div(M)-R-conv(W,H)
-% f*(Y) = [-flatten(Y*H(-->l)'), Y*D, -Y]
+function y = fit_EMD_W(H, N, L, W_, mode)
+% Unbalanced-EMD residual operator on W_
+% W_ = [W_flat M]
+% f(W_) = div(M)-conv(W,H), so that the residual is R = X + f(W_)
+% f*(Y) = [-flatten(Y*H(-->l)'), Y*D]
 
 [K,T] = size(H);
 % divergence matrix
@@ -11,13 +11,12 @@ D(T,T) = 0;
 
 switch mode
     case 0
-        y = {[N,(K*L+2*T)], [N,T]};
+        y = {[N,(K*L+T)], [N,T]};
     case 1
         W_flat = W_(:,1:K*L);
-        W = reshape(W_flat, [N,K,L]);   
+        W = reshape(W_flat, [N,K,L]);
         M = W_(:,K*L+(1:T));
-        R = W_(:,K*L+T+(1:T));
-        y = M*D'-R-helper.reconstruct(W,H);
+        y = M*D'-helper.reconstruct(W,H);
     case 2
         y_tmp = zeros([N,K,L]);
         H_pad = [zeros(K,L),H,zeros(K,L)];
@@ -25,5 +24,5 @@ switch mode
         for l = 1 : L
             y_tmp(:,:,l) = W_pad * circshift(H_pad, [0,l-1])';
         end
-        y = [-reshape(y_tmp, [N,K*L]), W_*D, -W_];
+        y = [-reshape(y_tmp, [N,K*L]), W_*D];
 end

@@ -1,6 +1,6 @@
 function op = proj_Rplus_H(K)
 % Projection of H to the nonnegative orthant
-% x = [H; M; R]
+% x = [H; M]
 % H: K*T
 
 narginchk(1,1)

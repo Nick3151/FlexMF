@@ -21,19 +21,12 @@ M = rand(N, T);
 op = @(H_, mode)M_EMD_H(M, K, H_, mode);
 linop_test(op, 'R2R');
 
-R = rand(N, T);
-op = @(H_, mode)R_EMD_H(R, K, H_, mode);
-linop_test(op, 'R2R');
-
 op = @(H_, mode)H_EMD_H(M, K, H_, mode);
-linop_test(op, 'R2R');
-
-op = @(H_, mode)obj_EMD_H(M, K, mu, H_, mode);
 linop_test(op, 'R2R');
 
 L = 50;
 W = rand(N,K,L);
-op = @(H_, mode)constraint_EMD_H(W, T, H_, mode);
+op = @(H_, mode)fit_EMD_H(W, T, H_, mode);
 linop_test(op, 'R2R');
 
 op = @(W, mode)total_variation_W(N, K, L, W, mode);
@@ -48,11 +41,8 @@ linop_test(op, 'R2R');
 op = @(W_, mode)M_EMD_W(M, K, L, W_, mode);
 linop_test(op, 'R2R');
 
-op = @(W_, mode)R_EMD_W(R, K, L, W_, mode);
-linop_test(op, 'R2R');
-
 op = @(W_, mode)W_EMD_W(M, K, L, W_, mode);
 linop_test(op, 'R2R');
 
-op = @(W_, mode)constraint_EMD_W(H, N, L, W_, mode);
+op = @(W_, mode)fit_EMD_W(H, N, L, W_, mode);
 linop_test(op, 'R2R');

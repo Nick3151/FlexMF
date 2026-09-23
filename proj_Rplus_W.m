@@ -1,6 +1,6 @@
 function op = proj_Rplus_W(KL)
 % Projection of W_flat to the nonnegative orthant
-% x = [W_flat M R]
+% x = [W_flat M]
 % W_flat: N*KL
 
 narginchk(1,1)

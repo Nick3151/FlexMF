@@ -1,9 +1,9 @@
 function y = cross_orth_EMD_W(X, H, L, W_, mode)
 % off-diagnal part of the smooth cross orthogonal operator on W
-% W_ = [W_flat M R]
+% W_ = [W_flat M]
 % W_flat: N*(KL)
 % f(W_) = Q.*(transconv(W,X)*S*H')
-% f*(Y) = [flatten(X(<--l)*S*H'*(Y.*Q)'); zeros(N,2T)]
+% f*(Y) = [flatten(X(<--l)*S*H'*(Y.*Q)'); zeros(N,T)]
 
 [N, T] = size(X);
 [K, ~] = size(H);
@@ -16,7 +16,7 @@ smoothkernel = ones(1,(2*L)-1);
 
 switch mode
     case 0
-        y = {[N,(K*L+2*T)], [K,K]};
+        y = {[N,(K*L+T)], [K,K]};
     case 1
         W_flat = W_(:,1:K*L);
         W = reshape(W_flat, [N,K,L]);       
@@ -31,5 +31,5 @@ switch mode
         for l = 1 : L
             y_tmp(:,:,l) = circshift(X, [0,-l+1])*SHT*(Q.*W_)';
         end
-        y = [reshape(y_tmp, [N,K*L]), zeros(N,2*T)];
+        y = [reshape(y_tmp, [N,K*L]), zeros(N,T)];
 end

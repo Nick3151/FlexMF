@@ -1,5 +1,7 @@
-function [H, M, R, out] = updateH_EMD(W, H0, X, M0, R0, params)
+function [H, M, R, out] = updateH_EMD(W, H0, X, M0, ~, params)
 % Update H with Earth-mover's distance(EMD) and smooth-orthogonal regularization
+% The residual R = X + div(M) - conv(W,H) is eliminated from the solve and
+% penalized as lambda_R*||R||_1, so the transport constraint holds exactly.
 
 [N, K, L] = size(W);
 [~, T] = size(X);
@@ -23,7 +25,7 @@ if ~params.verbal
 end
 
 %% Initialization
-H0_ = [H0; M0; R0];
+H0_ = [H0; M0];
 
 %% Linear operators
 Xcorr = helper.correct_warp(X,M0);    % Correct data with warping/jitering
@@ -33,23 +35,17 @@ WTXS = conv2(abs(WTX), smoothkernel, 'same');
 A = WTXS;
 op_cross_orth_H = @(H_, mode)cross_orth_EMD_H(A, N, H_, mode);
 op_M = @(H_, mode)M_EMD_H(M0, K, H_, mode);
-op_R = @(H_, mode)R_EMD_H(R0, K, H_, mode);
 op_H = @(H_, mode)H_EMD_H(M0, K, H_, mode);
-lambda_R = params.lambda_R;
-op_obj = @(H_, mode)obj_EMD_H(M0, K, lambda_R, H_, mode);
-op_constraint = @(H_, mode)constraint_EMD_H(W, T, H_, mode);
-
+op_fit = @(H_, mode)fit_EMD_H(W, T, H_, mode);
 
 norm_cross_orth2 = linop_normest(op_cross_orth_H).^2;
 norm_M2 = linop_normest(op_M).^2;
-norm_R2 = linop_normest(op_R).^2;
 norm_H2 = linop_normest(op_H).^2;
-norm_constraint2 = linop_normest(op_constraint).^2;
+norm_fit2 = linop_normest(op_fit).^2;
 
-proxScale_cross_orth = sqrt(norm_cross_orth2/norm_constraint2);
-proxScale_M = sqrt(norm_M2/norm_constraint2);
-proxScale_R = sqrt(norm_R2/norm_constraint2);
-proxScale_H = sqrt(norm_H2/norm_constraint2);
+proxScale_cross_orth = sqrt(norm_cross_orth2/norm_fit2);
+proxScale_M = sqrt(norm_M2/norm_fit2);
+proxScale_H = sqrt(norm_H2/norm_fit2);
 %% Optimize with tfocs
 lambda = params.lambda;
 lambda_R = params.lambda_R;
@@ -61,26 +57,11 @@ if isfield(params, 'mu') && ~isempty(params.mu)
 else
     mu = 1e-1;
 end
+assert(lambda_R > 0, 'updateH_EMD requires lambda_R > 0.');
 
-% affineF = {linop_compose(op_M, 1/proxScale_M), 0; ...
-%            linop_compose(op_R, 1/proxScale_R), 0; ...
-%            op_constraint, X};
-% conjnegF = {proj_linf(proxScale_M), proj_linf(lambda_R*proxScale_R), proj_Rn};
-% 
-% if lambda>0
-%     affineF(end+1,:) = {linop_compose(op_cross_orth_H, 1/proxScale_cross_orth), 0};
-%     conjnegF{end+1} = proj_linf(lambda*proxScale_cross_orth);
-% end
-% 
-% if lambdaL1H>0
-%     affineF(end+1,:) = {linop_compose(op_H, 1/proxScale_H), 0};
-%     conjnegF{end+1} = proj_linf(lambdaL1H*proxScale_H);
-% end
-% 
-% [H_, out] = tfocs_SCD(proj_Rplus_H(K), affineF, conjnegF, mu, H0_, [], opts);
-
-conjnegF = {proj_Rn};
-affineF = {op_constraint, X};
+% lambda_R*||X + div(M) - conv(W,H)||_1
+affineF = {op_fit, X};
+conjnegF = {proj_linf(lambda_R)};
 
 if lambda_M>0
     % Homotopy: linearly ramp lambda_M from lambda_M/homotopy to lambda_M
@@ -93,11 +74,6 @@ if lambda_M>0
     end
     affineF(end+1,:) = {linop_compose(op_M, 1/proxScale_M), 0};
     conjnegF{end+1} = proj_linf(lambda_M_eff*proxScale_M);
-end
-
-if lambda_R>0
-    affineF(end+1,:) = {linop_compose(op_R, 1/proxScale_R), 0};
-    conjnegF{end+1} = proj_linf(lambda_R*proxScale_R);
 end
 
 if lambda>0 && proxScale_cross_orth>0
@@ -118,18 +94,11 @@ end
 
 [H_, out] = tfocs_SCD(proj_Rplus_H(K), affineF, conjnegF, mu, H0_, [], opts, continue_opts);
 
-% [H_, out] = solver_sBPDN_W(op_constraint,op_obj,-X,0,mu,[],[],opts);
-
-
 H = H_(1:K,:);
 M = H_(K+(1:N),:);
-R = H_(K+N+(1:N),:);
+R = helper.correct_warp(X,M) - helper.reconstruct(W,H);
 dH = norm(H(:)-H0(:));
 dM = norm(M(:)-M0(:));
-dR = norm(R(:)-R0(:));
-
-Xcorr = helper.correct_warp(X,M);
-constraint = Xcorr-R-helper.reconstruct(W,H);
 
 %% Print intermediate results
 if params.verbal
@@ -139,17 +108,9 @@ if params.verbal
     Xhat = helper.reconstruct(W, H);
     fprintf('reg=%f\n',sum(Q(:).*AH(:)));
     fprintf('recon=%f\n',sum((X(:)-Xhat(:)).^2)/2);
-%     fprintf('L1_H=%f\n',sum(abs(H(:))));
-%     fprintf('L1_M=%f\n',sum(abs(M(:))));
-%     fprintf('L1_R=%f\n',sum(abs(R(:))));
     fprintf('L1_H/X=%f\n',norm(H(:),1)/norm(X(:),1));
     fprintf('L1_M/X=%f\n',norm(M(:),1)/norm(X(:),1));
     fprintf('L1_R/X=%f\n',norm(R(:),1)/norm(X(:),1));
-    fprintf('Constraint/X=%f\n', norm(constraint(:),1)/norm(X(:),1))
-%     fprintf('dH=%f\n', dH);
-%     fprintf('dM=%f\n', dM);
-%     fprintf('dR=%f\n', dR);
     fprintf('dH/X=%f\n', dH/norm(X(:)));
     fprintf('dM/X=%f\n', dM/norm(X(:)));
-    fprintf('dR/X=%f\n', dR/norm(X(:)));
 end
