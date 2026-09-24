@@ -1,4 +1,4 @@
-function [W, H, cost, errors, loadings, power, M, R] = FlexMF(X, varargin)
+function [W, H, cost, errors, loadings, power, M, R, EMD_objs] = FlexMF(X, varargin)
 %
 % USAGE: 
 %
@@ -65,6 +65,7 @@ function [W, H, cost, errors, loadings, power, M, R] = FlexMF(X, varargin)
 % 'lambda_TV'       0                                   TV norm of W parmater; Increase to make W more smooth along the time dimension
 % 'mu'              1e-1                                TFOCS SCD smoothing parameter (larger => easier dual)
 % 'muDecrement'     1                                   Continuation: mu <- mu*muDecrement each step (1=fixed mu)
+% 'warmDual'        1                                   Warm-start TFOCS duals from the previous H/W update (EMD only)
 % 'verbal'          1                                   Print intermediate output?
 % ------------------------------------------------------------------------
 % OUTPUTS:
@@ -86,6 +87,8 @@ function [W, H, cost, errors, loadings, power, M, R] = FlexMF(X, varargin)
 %                               the cost and power do not include masked
 %                               (M==0) test set elements
 % M,R                       M and R for EMD optimization
+% EMD_objs                  #Iterations x 2 EMD objective after updating H / W
+%                               (empty if EMD=0)
 % ------------------------------------------------------------------------
 % CREDITS:
 %   Emily Mackevicius and Andrew Bahle, 2/1/2018
@@ -132,7 +135,9 @@ if params.EMD
     L1_Ws = zeros(params.maxiter, 2); % L1 norms of W after updating W/H
     L1_Hs = zeros(params.maxiter, 2); % L1 norms of H after updating W/H
     EMD_objs = zeros(params.maxiter, 2); % EMD obj after updating H/W
+    params.dual = struct(); % TFOCS duals carried across H/W updates (warm start)
 else
+    EMD_objs = [];
 %     cost(1) = sqrt(mean((X(:)-Xhat(:)).^2));
     cost(1) = norm(X(:)-Xhat(:));
 end
@@ -204,6 +209,9 @@ for iter = 1 : params.maxiter
 %     M0 = zeros(N,T);
 %     R0 = zeros(N,T);
         [H, M, R, out] = updateH_EMD(W, H0, X, M0, R0, params);
+        if params.warmDual
+            params.dual = out.dual_unscaled;
+        end
         L1_Ms(iter,1) = norm(M(:),1)/norm(X(:),1);
         L1_Rs(iter,1) = norm(R(:),1)/norm(X(:),1);
         L1_Ws(iter,1) = norm(W(:),1)/norm(X(:),1);
@@ -248,6 +256,9 @@ for iter = 1 : params.maxiter
     %     M0 = zeros(N,T);
     %     R0 = zeros(N,T);
             [W, M, R, out] = updateW_EMD(W0, H, X, M0, R0, params);
+            if params.warmDual
+                params.dual = out.dual_unscaled;
+            end
             L1_Ms(iter,2) = norm(M(:),1)/norm(X(:),1);
             L1_Rs(iter,2) = norm(R(:),1)/norm(X(:),1);
             L1_Ws(iter,2) = norm(W(:),1)/norm(X(:),1);
@@ -382,6 +393,7 @@ end
         addOptional(p, 'lambda_TV', 0); % TV norm of W along the time dimension
         addOptional(p, 'mu', 1e-1); % TFOCS SCD smoothing parameter
         addOptional(p, 'muDecrement', 1); % Continuation mu multiplier per step
+        addOptional(p, 'warmDual', 1); % Warm-start TFOCS duals from the previous H/W update
         parse(p,inputs{:});
         L = p.Results.L; 
         K = p.Results.K; 

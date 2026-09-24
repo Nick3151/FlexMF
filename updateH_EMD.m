@@ -62,6 +62,8 @@ assert(lambda_R > 0, 'updateH_EMD requires lambda_R > 0.');
 % lambda_R*||X + div(M) - conv(W,H)||_1
 affineF = {op_fit, X};
 conjnegF = {proj_linf(lambda_R)};
+dualNames = {'fit'};
+dualScales = 1;
 
 if lambda_M>0
     % Homotopy: linearly ramp lambda_M from lambda_M/homotopy to lambda_M
@@ -74,15 +76,21 @@ if lambda_M>0
     end
     affineF(end+1,:) = {linop_compose(op_M, 1/proxScale_M), 0};
     conjnegF{end+1} = proj_linf(lambda_M_eff*proxScale_M);
+    dualNames{end+1} = 'M';
+    dualScales(end+1) = proxScale_M;
 end
 
 if lambda>0 && proxScale_cross_orth>0
     affineF(end+1,:) = {linop_compose(op_cross_orth_H, 1/proxScale_cross_orth), 0};
     conjnegF{end+1} = proj_linf(lambda*proxScale_cross_orth);
+    dualNames{end+1} = 'cross_H';
+    dualScales(end+1) = proxScale_cross_orth;
 end
 
 if lambdaL1H>0
     affineF(end+1,:) = {linop_compose(op_H, 1/proxScale_H), 0};
+    dualNames{end+1} = 'L1_H';
+    dualScales(end+1) = proxScale_H;
     % IRL1 from iter 2 onward (after FlexMF row-normalizes H); iter 1 uses uniform L1
     if Reweight && params.currentiter > 1
         epsilon = 1e-2;
@@ -92,7 +100,15 @@ if lambdaL1H>0
     end
 end
 
-[H_, out] = tfocs_SCD(proj_Rplus_H(K), affineF, conjnegF, mu, H0_, [], opts, continue_opts);
+if isfield(params, 'dual')
+    dual0 = params.dual;
+else
+    dual0 = struct();
+end
+z0 = helper.dual_warm_start(dual0, dualNames, dualScales, affineF);
+
+[H_, out] = tfocs_SCD(proj_Rplus_H(K), affineF, conjnegF, mu, H0_, z0, opts, continue_opts);
+out.dual_unscaled = helper.dual_unscale(dual0, out.dual, dualNames, dualScales);
 
 H = H_(1:K,:);
 M = H_(K+(1:N),:);

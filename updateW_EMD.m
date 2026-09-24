@@ -65,6 +65,8 @@ assert(lambda_R > 0, 'updateW_EMD requires lambda_R > 0.');
 % lambda_R*||X + div(M) - conv(W,H)||_1
 affineF = {op_fit, X};
 conjnegF = {proj_linf(lambda_R)};
+dualNames = {'fit'};
+dualScales = 1;
 
 if lambda_M>0
     % Homotopy: linearly ramp lambda_M from lambda_M/homotopy to lambda_M
@@ -77,24 +79,40 @@ if lambda_M>0
     end
     affineF(end+1,:) = {linop_compose(op_M, 1/proxScale_M), 0};
     conjnegF{end+1} = proj_linf(lambda_M_eff*proxScale_M);
+    dualNames{end+1} = 'M';
+    dualScales(end+1) = proxScale_M;
 end
 
 if lambda>0 && proxScale_cross_orth>0
     affineF(end+1,:) = {linop_compose(op_cross_orth_W, 1/proxScale_cross_orth), 0};
     conjnegF{end+1} = proj_linf(lambda*proxScale_cross_orth);
+    dualNames{end+1} = 'cross_W';
+    dualScales(end+1) = proxScale_cross_orth;
 end
 
 if lambdaL1W>0 
     affineF(end+1,:) = {linop_compose(op_W, 1/proxScale_W), 0};
     conjnegF{end+1} = proj_linf(lambdaL1W*proxScale_W);
+    dualNames{end+1} = 'L1_W';
+    dualScales(end+1) = proxScale_W;
 end
 
 if lambda_TV>0
     affineF(end+1,:) = {linop_compose(op_TV, op_W, 1/(proxScale_TV*proxScale_W)), 0};
     conjnegF{end+1} = proj_linf(lambda_TV*proxScale_TV*proxScale_W);
+    dualNames{end+1} = 'TV_W';
+    dualScales(end+1) = proxScale_TV*proxScale_W;
 end
 
-[W_, out] = tfocs_SCD(proj_Rplus_W(K*L), affineF, conjnegF, mu, W0_, [], opts, continue_opts);
+if isfield(params, 'dual')
+    dual0 = params.dual;
+else
+    dual0 = struct();
+end
+z0 = helper.dual_warm_start(dual0, dualNames, dualScales, affineF);
+
+[W_, out] = tfocs_SCD(proj_Rplus_W(K*L), affineF, conjnegF, mu, W0_, z0, opts, continue_opts);
+out.dual_unscaled = helper.dual_unscale(dual0, out.dual, dualNames, dualScales);
 
 Wflat = W_(:,1:K*L);
 W = reshape(Wflat, [N,K,L]);
