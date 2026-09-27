@@ -2,6 +2,8 @@ function [d, M, R, out] = compute_EMD(X1, X2, opts, varargin)
 % Unbalanced EMD between two matrices, or two 1d sequences, 
 % along the time dimension. d is the full UOT objective
 % ||M||_1 + lambdaR*||R||_1.
+% R = X1 + M*D' - X2 is eliminated from the solve and penalized as
+% lambdaR*||R||_1, so the transport constraint holds exactly.
 
 p  = inputParser;
 addOptional(p, 'lambdaR', 1e1);
@@ -23,12 +25,9 @@ else
         continuationOptions = continuation();
     end
     
-    A = @(Y, mode)Beckmann_UOT_constraint(N, T, Y, mode);
-    W = @(Y, mode)Beckmann_UOT_obj(N, T, lambdaR, Y, mode);
+    op_fit = @(Y, mode)fit_EMD(N, T, Y, mode);
     
-    b = X2-X1;
-    [Y, out] = solver_sBPDN_W(A,W,b,0,.1,[],[],opts, continuationOptions);
-    M = Y(1:N,:);
-    R = Y(N+1:2*N,:);
+    [M, out] = tfocs_SCD(prox_l1, {op_fit, X1-X2}, proj_linf(lambdaR), .1, [], [], opts, continuationOptions);
+    R = helper.correct_warp(X1, M) - X2;
     d = norm(M(:),1) + lambdaR*norm(R(:),1);
 end
