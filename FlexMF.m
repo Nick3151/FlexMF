@@ -312,14 +312,25 @@ if params.SortFactors
 end
 
 if params.verbal && params.EMD && params.showPlot
-    t_half = 1:.5:iter+.5;
     figure;
+    if params.W_fixed
+        t_plot = 1:iter;
+        yyaxis left
+        plot(t_plot, L1_Ms(:,1), t_plot, L1_Rs(:,1), ...
+             t_plot, L1_Ws(:,1), t_plot, L1_Hs(:,1))
+        yyaxis right
+        plot(t_plot, EMD_objs(:,1), 'k-', 'LineWidth', 1.5)
+    else
+        t_half = 1:.5:iter+.5;
+        yyaxis left
+        plot(t_half, reshape(L1_Ms', 1, []), t_half, reshape(L1_Rs', 1, []), ...
+             t_half, reshape(L1_Ws', 1, []), t_half, reshape(L1_Hs', 1, []))
+        yyaxis right
+        plot(t_half, reshape(EMD_objs', 1, []), 'k-', 'LineWidth', 1.5)
+    end
     yyaxis left
-    plot(t_half, reshape(L1_Ms', 1, []), t_half, reshape(L1_Rs', 1, []), ...
-         t_half, reshape(L1_Ws', 1, []), t_half, reshape(L1_Hs', 1, []))
     ylabel('||·||_1 / ||X||_1')
     yyaxis right
-    plot(t_half, reshape(EMD_objs', 1, []), 'k-', 'LineWidth', 1.5)
     ylabel('EMD objective')
     xlabel('Iteration')
     legend('||M||_1', '||R||_1', '||W||_1', '||H||_1', ...
