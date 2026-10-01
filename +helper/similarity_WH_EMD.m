@@ -18,8 +18,15 @@ function [emds_W, emds_H, ids, details] = similarity_WH_EMD(W, H, W_hat, H_hat, 
 %   H_hat  : Khat x T
 %
 % Options
-%   LambdaR    price of unmatched mass inside compute_EMD (default 1e3)
-%   Tol        opts.tol handed to the TFOCS solve (default 1e-6)
+%   LambdaR    price of unmatched mass inside compute_EMD. Empty (default)
+%              sets it to 2*max(L, Lhat): with unit-mass profiles that is
+%              the cost of displacing a unit of mass across the whole window,
+%              beyond which discarding is cheaper. Pass a scalar to override.
+%   Tol        opts.tol handed to the TFOCS solve (default 1e-5). With the
+%              exact-constraint compute_EMD this no longer has to track
+%              LambdaR. 1e-4 is enough on motif-sized (L~35) pairs for ||M||_1
+%              within ~0.1%, but on the small L=7 fixtures it can mis-rank
+%              neighbouring lags; 1e-5 keeps both regimes correct.
 %   Rejection  'reference' to discard a pair costing more than RejectFrac of
 %              what it costs to explain the estimate from an empty profile,
 %              or 'none' to keep every pair and let greedy assign blindly
@@ -71,16 +78,20 @@ function [emds_W, emds_H, ids, details] = similarity_WH_EMD(W, H, W_hat, H_hat, 
 % to 2.00; the default sits in that gap, nearer the wrong pairs because a
 % false rejection surfaces as NaN and reads downstream as total failure.
 %
-% compute_EMD returns ||M||_1 + lambdaR*||R||_1. Matching uses that whole
-% objective, because the unmatched-mass term is what makes an incompatible
-% pairing expensive. The reported EMDs are the transport term ||M||_1 on its
-% own, since lambdaR multiplies the solver's residual as well as any real
-% unmatched mass. The unmatched-mass part of each matched pair is in details.
+% compute_EMD returns ||M||_1 + lambdaR*||R||_1, with R rebuilt exactly from
+% M so the transport constraint holds. Matching uses that whole objective,
+% because the unmatched-mass term is what makes an incompatible pairing
+% expensive. The reported EMDs are the transport term ||M||_1 on its own.
+% The unmatched-mass part of each matched pair is in details. Note that the
+% same LambdaR is reused for the loading comparison: event offsets larger than
+% LambdaR bins are charged as residual rather than transport, so raise it if
+% emds_H should count long temporal misalignments.
 
 p = inputParser;
 p.FunctionName = 'helper.similarity_WH_EMD';
-addParameter(p, 'LambdaR', 1e3, @(x) isscalar(x) && isnumeric(x) && x > 0);
-addParameter(p, 'Tol', 1e-6, @(x) isscalar(x) && isnumeric(x) && x > 0);
+addParameter(p, 'LambdaR', [], ...
+    @(x) isempty(x) || (isscalar(x) && isnumeric(x) && x > 0));
+addParameter(p, 'Tol', 1e-5, @(x) isscalar(x) && isnumeric(x) && x > 0);
 addParameter(p, 'Rejection', 'reference', ...
     @(x) any(strcmpi(x, {'reference', 'none'})));
 addParameter(p, 'RejectFrac', 0.7, @(x) isscalar(x) && isnumeric(x) && x > 0);
@@ -90,7 +101,6 @@ addParameter(p, 'SupportTol', 0.01, ...
     @(x) isscalar(x) && isnumeric(x) && x >= 0 && x < 0.5);
 parse(p, varargin{:});
 
-lambdaR = p.Results.LambdaR;
 rejectFrac = p.Results.RejectFrac;
 maxShift = p.Results.MaxShift;
 supportTol = p.Results.SupportTol;
@@ -134,6 +144,15 @@ assert(size(H_hat, 1) == Khat, 'helper:similarity_WH_EMD:InvalidHhat', ...
     'H_hat must have one row per estimated motif.');
 assert(size(H, 2) == size(H_hat, 2), 'helper:similarity_WH_EMD:TimeMismatch', ...
     'H and H_hat must have the same number of time bins.');
+
+% Default LambdaR = 2*max(L, Lhat): with unit mass, the cost of sliding a unit
+% of mass across the whole profile window. Matching separation is stable from
+% ~10 up to 1e3 (sweep_similarity_emd_params); this sits on the natural scale.
+if isempty(p.Results.LambdaR)
+    lambdaR = 2 * max(L, Lhat);
+else
+    lambdaR = p.Results.LambdaR;
+end
 
 %% Zero factors, found before normalising while the masses are comparable
 massW = sum(W, [1, 3]);

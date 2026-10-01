@@ -293,12 +293,10 @@ function tol = solver_rel_tol()
 % Relative slack for the TFOCS solve that compute_EMD runs.  This is the only
 % tolerance in this file that is not derived from a fixture.
 %
-% similarity_WH_EMD reports ||M||_1 rather than the full objective, so the
-% amplified residual lambdaR*||R||_1 no longer sits on top of the asserted
-% values.  What is left is the accuracy of the transport term itself, which at
-% the default opts.tol = 1e-6 is good: a 3-bin displacement of a unit-mass
-% profile comes back as 3.0003, and the worst relative error measured over the
-% loading rows of both fixtures is 0.17%.
+% similarity_WH_EMD reports ||M||_1 rather than the full objective. With the
+% exact-constraint compute_EMD and the default opts.tol = 1e-5, a 3-bin
+% displacement of a unit-mass profile comes back within ~0.1%, well inside
+% this band.
 tol = 5e-2;
 end
 
@@ -320,11 +318,10 @@ end
 function fx = disjoint_fixture()
 % Each motif recruits a single, private neuron.  Transport moves mass only
 % along time within a neuron, so a wrong pairing has no shared support to
-% transport along and has to discard both motifs' mass, which with
-% lambdaR = 1e3 makes the cross-pair EMD huge -- larger than the cost of
-% explaining the estimate from an empty profile, so the rejection rule
-% discards it.  Cross pairs are failed matches, which makes the expected ids
-% unambiguous.
+% transport along and has to discard both motifs' mass. With the default
+% LambdaR = 2*L that costs about twice the empty-profile reference, so the
+% rejection rule discards it. Cross pairs are failed matches, which makes
+% the expected ids unambiguous.
 %
 % The profiles sit at lags 3:4 of 7 so a shift of +/-2 bins and a residual
 % displaced by 2 bins both stay inside the window.  The loading events sit
