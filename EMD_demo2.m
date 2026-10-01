@@ -28,7 +28,7 @@ opts = opts_default;
 opts.continuation = 1;
 opts.tol = 1e-6;
 opts.stopCrit = 4;
-opts.maxIts = 500;
+opts.maxIts = 2000;
 % opts.alg = 'N83';
 
 nlambdaRs = 20;
@@ -53,17 +53,17 @@ R_norms = cellfun(@(x) norm(x(:),1), Rs);
 Err = X1-X2;
 
 figure;
-yyaxis left
+% yyaxis left
 plot(lambdaRs, M_norms, 'r-', lambdaRs, R_norms, 'b-')
 hold on
 yline(norm(Err(:),1), 'k--')
-ylabel('L1')
-yyaxis right
-plot(lambdaRs, constraint_rel, 'g-', 'LineWidth', 1.5)
-ylabel('||constraint||_1 / ||X2-X1||_1')
+ylabel('L1 norm')
+% yyaxis right
+% plot(lambdaRs, constraint_rel, 'g-', 'LineWidth', 1.5)
+% ylabel('||constraint||_1 / ||X2-X1||_1')
 set(gca, 'XScale', 'log')
 xlabel('lambdaR')
-legend('L1M', 'L1R', 'L1Err', 'constraint_{rel}', 'Location', 'best')
+legend('L1M', 'L1R', 'L1Err', 'Location', 'best')
 export_vector_pdf('EMD_Choose_lambdaR_diff_seq');
 
 figure;
@@ -101,17 +101,17 @@ R_norms = cellfun(@(x) norm(x(:),1), Rs);
 Err = X-Xrev;
 
 figure;
-yyaxis left
+% yyaxis left
 plot(lambdaRs, M_norms, 'r-', lambdaRs, R_norms, 'b-')
 hold on
 yline(norm(Err(:),1), 'k--')
-ylabel('L1')
-yyaxis right
-plot(lambdaRs, constraint_rel, 'g-', 'LineWidth', 1.5)
-ylabel('||constraint||_1 / ||X2-X1||_1')
+ylabel('L1 norm')
+% yyaxis right
+% plot(lambdaRs, constraint_rel, 'g-', 'LineWidth', 1.5)
+% ylabel('||constraint||_1 / ||X2-X1||_1')
 set(gca, 'XScale', 'log')
 xlabel('lambdaR')
-legend('L1M', 'L1R', 'L1Err', 'constraint_{rel}', 'Location', 'best')
+legend('L1M', 'L1R', 'L1Err', 'Location', 'best')
 export_vector_pdf('EMD_Choose_lambdaR_rev_seq');
 
 figure;
@@ -145,17 +145,17 @@ R_norms = cellfun(@(x) norm(x(:),1), Rs);
 Err = X-X_noise;
 
 figure;
-yyaxis left
+% yyaxis left
 plot(lambdaRs, M_norms, 'r-', lambdaRs, R_norms, 'b-')
 hold on
 yline(norm(Err(:),1), 'k--')
-ylabel('L1')
-yyaxis right
-plot(lambdaRs, constraint_rel, 'g-', 'LineWidth', 1.5)
-ylabel('||constraint||_1 / ||X2-X1||_1')
+ylabel('L1 norm')
+% yyaxis right
+% plot(lambdaRs, constraint_rel, 'g-', 'LineWidth', 1.5)
+% ylabel('||constraint||_1 / ||X2-X1||_1')
 set(gca, 'XScale', 'log')
 xlabel('lambdaR')
-legend('L1M', 'L1R', 'L1Err', 'constraint_{rel}', 'Location', 'best')
+legend('L1M', 'L1R', 'L1Err', 'Location', 'best')
 export_vector_pdf('EMD_Choose_lambdaR_same_seq_noise');
 
 figure;
