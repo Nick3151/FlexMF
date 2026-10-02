@@ -6,62 +6,76 @@ addpath(fullfile(root, 'TFOCS'))
 
 data_types = {'warp', 'jitter', 'participation', 'noise', 'warpnoise', 'jitternoise'};
 
-% Load the cluster profile
-rf = parcluster('rockfish');
-
-% Set SLURM resource parameters
-rf.AdditionalProperties.Partition = 'parallel';  % Specify partition
-rf.AdditionalProperties.WallTime = '72:00:00';   % Wall time must match SLURM script
-rf.AdditionalProperties.AdditionalSubmitArgs = '--nodes=1 --ntasks-per-node=32 --cpus-per-task=1';
-
-% Display properties (optional)
-disp(rf.AdditionalProperties);
-
-% Start parallel pool
-disp('Starting a parallel pool...');
-parpool(rf, 32);  % 1 nodes × 32 tasks
+% Start a local pool inside the CPUs allocated by the SLURM job.
+nWorkers = str2double(getenv('SLURM_CPUS_PER_TASK'));
+if isnan(nWorkers) || nWorkers < 1
+    nWorkers = 1;
+end
+pool = gcp('nocreate');
+if isempty(pool)
+    fprintf('Starting local parallel pool (%d workers)...\n', nWorkers);
+    parpool('local', nWorkers);
+else
+    fprintf('Using existing parallel pool (%d workers).\n', pool.NumWorkers);
+end
 
 %% Generate some synthetic data
 id = str2double(getenv("SLURM_ARRAY_TASK_ID"));
 data_type = data_types{id}
 
 K = 3;
+Khat = 5;
 T = 4000; % length of data to generate
-Nneurons = 5*ones(K,1); % number of neurons in each sequence
-Dt = 5.*ones(K,1); % gap between each member of the sequence
+Nneurons = 10*ones(K,1); % number of neurons in each sequence
+Dt = 3.*ones(K,1); % gap between each member of the sequence
 neg = 0;
-noise_levels = 0:.0005:.002;
-participation_levels = 1:-0.1:.6; 
-jitter_levels = 0:4;
-warp_levels = 0:4;
+noise_levels = 0:.001:.01;
+participation_levels = 1:-0.1:.1; 
+jitter_levels = 0:9;
+warp_levels = 0:9;
 gap = 100;
+
+switch data_type
+    case {'warp', 'warpnoise'}
+        nLevels = numel(warp_levels);
+    case {'jitter', 'jitternoise'}
+        nLevels = numel(jitter_levels);
+    case 'participation'
+        nLevels = numel(participation_levels);
+    case 'noise'
+        nLevels = numel(noise_levels);
+end
 
 nSim = 10;
 rng(1)
 seeds = randperm(1000, nSim);
+nTotal = nLevels*nSim;
 
-emds_W_SeqNMF = cell(5,nSim);
-emds_H_SeqNMF = cell(5,nSim);
-emds_W_FlexMF = cell(5,nSim);
-emds_H_FlexMF = cell(5,nSim);
-ids_SeqNMF = cell(5,nSim);
-ids_FlexMF = cell(5,nSim);
-pvals_SeqNMF = cell(5,nSim);
-pvals_FlexMF = cell(5,nSim);
-is_significant_SeqNMF = cell(5,nSim);
-is_significant_FlexMF = cell(5,nSim);
-Ws = cell(5,nSim);
-Hs_train = cell(5,nSim);
-Whats_SeqNMF = cell(5,nSim);
-Hhats_train_SeqNMF = cell(5,nSim);
-Whats_FlexMF = cell(5,nSim);
-Hhats_train_FlexMF = cell(5,nSim);
-Xs_train = cell(5,nSim);
-Xs_test = cell(5,nSim);
+emds_W_SeqNMF_flat = cell(nTotal,1);
+emds_H_SeqNMF_flat = cell(nTotal,1);
+emds_W_FlexMF_flat = cell(nTotal,1);
+emds_H_FlexMF_flat = cell(nTotal,1);
+ids_SeqNMF_flat = cell(nTotal,1);
+ids_FlexMF_flat = cell(nTotal,1);
+pvals_SeqNMF_flat = cell(nTotal,1);
+pvals_FlexMF_flat = cell(nTotal,1);
+is_significant_SeqNMF_flat = cell(nTotal,1);
+is_significant_FlexMF_flat = cell(nTotal,1);
+Ws_flat = cell(nTotal,1);
+Hs_train_flat = cell(nTotal,1);
+Whats_SeqNMF_flat = cell(nTotal,1);
+Hhats_train_SeqNMF_flat = cell(nTotal,1);
+Whats_FlexMF_flat = cell(nTotal,1);
+Hhats_train_FlexMF_flat = cell(nTotal,1);
+Xs_train_flat = cell(nTotal,1);
+Xs_test_flat = cell(nTotal,1);
+times_train = zeros(nTotal,1);
+times_match = zeros(nTotal,1);
+times_test = zeros(nTotal,1);
 
-parfor n = 1:nSim
-    display(['n=' num2str(n)])
-    for l=1:5
+parfor g = 1:nTotal
+    [l, n] = ind2sub([nLevels, nSim], g);
+    display(['n=' num2str(n) ', level=' num2str(l)])
         switch data_type
             case 'warp'
                 [X, W, H, ~] = generate_data(T,Nneurons,Dt, 'noise',0, 'warp', warp_levels(l), 'seed', seeds(n), 'len_burst', 1, 'dynamic', 0);
@@ -91,52 +105,80 @@ parfor n = 1:nSim
         
         % Split into training and test set, normalize data
         frob_norm = norm(X_train(:));
-        X_train = X_train/frob_norm*K;
-        W = W/frob_norm*K;
+        X_train = X_train/frob_norm*Khat;
+        W = W/frob_norm*Khat;
         frob_norm = norm(X_test(:));
-        X_test = X_test/frob_norm*K;
+        X_test = X_test/frob_norm*Khat;
 
         % Run SeqNMF
-        lambda = .05;
-        [What_SeqNMF, Hhat_train_SeqNMF]= seqNMF(X_train,'K',K,'L',L,...
-                    'lambda', lambda, 'maxiter', 50, 'showPlot', 0); 
+        lambda_SeqNMF = .05;
+        [What_SeqNMF, Hhat_train_SeqNMF]= seqNMF(X_train,'K',Khat,'L',L,...
+                'lambda', lambda_SeqNMF, 'maxiter', 50, 'showPlot', 0); 
 
         % Run FlexMF
-        lambda = .05;
-        lambda_M = .01;
+        lambda_FlexMF = 1;
+        lambda_M = .1;
         lambda_R = 1;
-        [What_FlexMF, Hhat_train_FlexMF, ~, ~, loadings, power, M_train, R_train] = FlexMF(X_train, 'K', K, 'L', L, ...
-        'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50, 'showPlot', 0, 'verbal', 0);
+        tic
+        [What_FlexMF, Hhat_train_FlexMF, ~, ~, loadings, power, M_train, R_train] = FlexMF(X_train, 'K', Khat, 'L', L, ...
+        'EMD',1, 'lambda', lambda_FlexMF, 'lambda_R', lambda_R, 'lambda_M', lambda_M, ...
+        'W_init', What_SeqNMF, 'H_init', Hhat_train_SeqNMF, ...
+        'maxiter', 50, 'showPlot', 0, 'verbal', 0);
+        times_train(g) = toc;
 
         % Compare algorithms
         disp('Evaluate EMDs of results')
         tic
-        [emds_W_SeqNMF{l,n}, emds_H_SeqNMF{l,n}, ids_SeqNMF{l,n}] = helper.similarity_WH_EMD(W, H_train, What_SeqNMF, Hhat_train_SeqNMF);
-        [emds_W_FlexMF{l,n}, emds_H_FlexMF{l,n}, ids_FlexMF{l,n}] = helper.similarity_WH_EMD(W, H_train, What_FlexMF, Hhat_train_FlexMF);
-        toc
+        [emds_W_SeqNMF_flat{g}, emds_H_SeqNMF_flat{g}, ids_SeqNMF_flat{g}] = helper.similarity_WH_EMD(W, H_train, What_SeqNMF, Hhat_train_SeqNMF);
+        [emds_W_FlexMF_flat{g}, emds_H_FlexMF_flat{g}, ids_FlexMF_flat{g}] = helper.similarity_WH_EMD(W, H_train, What_FlexMF, Hhat_train_FlexMF);
+        times_match(g) = toc;
         
         % Test significance
         disp('Test Significance')
-        [pvals_SeqNMF{l,n},is_significant_SeqNMF{l,n}] = test_significance(X_test, What_SeqNMF);
-        [What_FlexMF, Hhat_test_FlexMF, cost_test, errors_test, ~, ~, M_test, R_test] = FlexMF(X_test, 'K', K, 'L', L, 'W_fixed', 1, 'W_init', What_FlexMF,...
-            'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 1, 'showPlot', 0, 'verbal', 0);
-        [pvals_FlexMF{l,n},is_significant_FlexMF{l,n},~] = test_significance_EMD(X_test, What_FlexMF, M_test, 'plot', 0);
+        [pvals_SeqNMF_flat{g},is_significant_SeqNMF_flat{g}] = test_significance(X_test, What_SeqNMF);
+        tic
+        [What_FlexMF, Hhat_test_FlexMF, cost_test, errors_test, ~, ~, M_test, R_test] = FlexMF(X_test, 'K', Khat, 'L', L, 'W_fixed', 1, 'W_init', What_FlexMF,...
+            'EMD',1, 'lambda', lambda_FlexMF, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50, 'showPlot', 0, 'verbal', 0);
+        times_test(g) = toc;
+        [pvals_FlexMF_flat{g},is_significant_FlexMF_flat{g},~] = test_significance_EMD(X_test, What_FlexMF, M_test, 'plot', 0);
         
-        Ws{l,n} = W;
-        Hs_train{l,n} = H_train;
-        Whats_SeqNMF{l,n} = What_SeqNMF;
-        Hhats_train_SeqNMF{l,n} = Hhat_train_SeqNMF;
-        Whats_FlexMF{l,n} = What_FlexMF;
-        Hhats_train_FlexMF{l,n} = Hhat_train_FlexMF;
-        Xs_train{l,n} = X_train;
-        Xs_test{l,n} = X_test;
-    end
+        Ws_flat{g} = W;
+        Hs_train_flat{g} = H_train;
+        Whats_SeqNMF_flat{g} = What_SeqNMF;
+        Hhats_train_SeqNMF_flat{g} = Hhat_train_SeqNMF;
+        Whats_FlexMF_flat{g} = What_FlexMF;
+        Hhats_train_FlexMF_flat{g} = Hhat_train_FlexMF;
+        Xs_train_flat{g} = X_train;
+        Xs_test_flat{g} = X_test;
 end
+
+emds_W_SeqNMF = reshape(emds_W_SeqNMF_flat, [nLevels, nSim]);
+emds_H_SeqNMF = reshape(emds_H_SeqNMF_flat, [nLevels, nSim]);
+emds_W_FlexMF = reshape(emds_W_FlexMF_flat, [nLevels, nSim]);
+emds_H_FlexMF = reshape(emds_H_FlexMF_flat, [nLevels, nSim]);
+ids_SeqNMF = reshape(ids_SeqNMF_flat, [nLevels, nSim]);
+ids_FlexMF = reshape(ids_FlexMF_flat, [nLevels, nSim]);
+pvals_SeqNMF = reshape(pvals_SeqNMF_flat, [nLevels, nSim]);
+pvals_FlexMF = reshape(pvals_FlexMF_flat, [nLevels, nSim]);
+is_significant_SeqNMF = reshape(is_significant_SeqNMF_flat, [nLevels, nSim]);
+is_significant_FlexMF = reshape(is_significant_FlexMF_flat, [nLevels, nSim]);
+Ws = reshape(Ws_flat, [nLevels, nSim]);
+Hs_train = reshape(Hs_train_flat, [nLevels, nSim]);
+Whats_SeqNMF = reshape(Whats_SeqNMF_flat, [nLevels, nSim]);
+Hhats_train_SeqNMF = reshape(Hhats_train_SeqNMF_flat, [nLevels, nSim]);
+Whats_FlexMF = reshape(Whats_FlexMF_flat, [nLevels, nSim]);
+Hhats_train_FlexMF = reshape(Hhats_train_FlexMF_flat, [nLevels, nSim]);
+Xs_train = reshape(Xs_train_flat, [nLevels, nSim]);
+Xs_test = reshape(Xs_test_flat, [nLevels, nSim]);
+times_train = reshape(times_train, [nLevels, nSim]);
+times_match = reshape(times_match, [nLevels, nSim]);
+times_test = reshape(times_test, [nLevels, nSim]);
 
 save(fullfile('Simulation_Results', sprintf('Compare_FlexMF_SeqNMF_%s.mat', data_type)), ...
 "emds_W_FlexMF", "emds_H_FlexMF", "emds_H_SeqNMF", "emds_W_SeqNMF", "ids_SeqNMF", "ids_FlexMF",...,
 "pvals_SeqNMF", "pvals_FlexMF", "is_significant_SeqNMF", "is_significant_FlexMF", "Ws", "Hs_train",...
-"Whats_SeqNMF", "Hhats_train_SeqNMF", "Whats_FlexMF", "Hhats_train_FlexMF", "Xs_train", "Xs_test")
+"Whats_SeqNMF", "Hhats_train_SeqNMF", "Whats_FlexMF", "Hhats_train_FlexMF", "Xs_train", "Xs_test",...
+"times_train", "times_match", "times_test")
 
 % Shut down the parallel pool
 delete(gcp('nocreate'));

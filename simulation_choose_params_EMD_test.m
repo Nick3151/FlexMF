@@ -82,7 +82,6 @@ W_hats = cell(nSim, nLambdas, nMs);
 H_hats = cell(nSim, nLambdas, nMs);
 Ms = cell(nSim, nLambdas, nMs);
 Rs = cell(nSim, nLambdas, nMs);
-constraints_rel = nan(nSim, nLambdas, nMs);
 reg_costs = nan(nSim, nLambdas, nMs);
 What_SeqNMFs = cell(nSim, 1);
 Hhat_SeqNMFs = cell(nSim, 1);
@@ -146,7 +145,6 @@ for n = 1:nSim
     H_hats_n = cell(nGrid, 1);
     Ms_n = cell(nGrid, 1);
     Rs_n = cell(nGrid, 1);
-    constraints_rel_n = nan(nGrid, 1);
     reg_costs_n = nan(nGrid, 1);
 
     parfor g = 1:nGrid
@@ -167,9 +165,6 @@ for n = 1:nSim
         H_hats_n{g} = H_hat;
         Ms_n{g} = M;
         Rs_n{g} = R;
-        Xcorr = helper.correct_warp(Xtrain, M);
-        constraint = Xcorr - R - helper.reconstruct(W_hat, H_hat);
-        constraints_rel_n(g) = norm(constraint(:), 1) / L1_n;
         [~, reg_cross, ~, ~] = helper.get_FlexMF_cost(Xtrain, W_hat, H_hat);
         reg_costs_n(g) = reg_cross;
 
@@ -208,7 +203,6 @@ for n = 1:nSim
     H_hats(n, :, :) = reshape(H_hats_n, sz);
     Ms(n, :, :) = reshape(Ms_n, sz);
     Rs(n, :, :) = reshape(Rs_n, sz);
-    constraints_rel(n, :, :) = reshape(constraints_rel_n, sz);
     reg_costs(n, :, :) = reshape(reg_costs_n, sz);
 end
 
@@ -228,7 +222,7 @@ settings = struct('data_type', data_type, 'K', K, 'Khat', Khat, 'T', T, ...
 save(results_file, 'times', 'times_emd', 'times_test', ...
     'lambdas', 'lambda_Ms', 'lambda_R', ...
     'W_hats', 'H_hats', 'What_SeqNMFs', 'Hhat_SeqNMFs', 'ids_match_SeqNMF', ...
-    'Ws', 'Hs', 'Xs', 'L1_Xtrain', 'Ms', 'Rs', 'constraints_rel', 'reg_costs', 'ids_match', 'emds_W', 'emds_H', ...
+    'Ws', 'Hs', 'Xs', 'L1_Xtrain', 'Ms', 'Rs', 'reg_costs', 'ids_match', 'emds_W', 'emds_H', ...
     'num_detected', 'num_significant', 'pvals_all', 'is_significant_all', ...
     'settings');
 fprintf('Saved results: %s\n', results_file);
