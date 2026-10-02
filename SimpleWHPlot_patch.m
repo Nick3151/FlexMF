@@ -15,6 +15,8 @@ addOptional(p, 'is_significant', [])
 addOptional(p, 'Data', [])
 addOptional(p, 'plotAll',0)
 addOptional(p, 'compare', false)
+addOptional(p, 'center', false)
+addOptional(p, 'plot_range', [])
 parse(p, varargin{:});
 trials = p.Results.trials;
 frames = p.Results.frames;
@@ -23,6 +25,12 @@ is_significant = p.Results.is_significant;
 Data = p.Results.Data;
 plotAll = p.Results.plotAll;
 compare = p.Results.compare;
+center = p.Results.center;
+plot_range = p.Results.plot_range;
+
+if center
+    [W, H] = helper.shiftFactors(W, H); % center factors, as in FlexMF's 'shift' option
+end
 
 [N,K,L] = size(W); 
 [~,T] = size(H);
@@ -69,6 +77,9 @@ sep = ceil(L*.1);
 %% crop data, unless plotAll
 if plotAll
     indplot = 1:T;
+elseif ~isempty(plot_range)
+    assert(numel(plot_range)==2 && plot_range(1)<=plot_range(2), 'plot_range must be [start, end]')
+    indplot = max(1,plot_range(1)):min(T,plot_range(2));
 else
     indplot = 2*L+(1:ceil((K*(L+sep))/ww*wdata)); % so that data and W's are on same scale
     indplot(indplot>T) = [];

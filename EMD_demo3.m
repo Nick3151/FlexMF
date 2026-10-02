@@ -14,9 +14,11 @@ addpath(genpath(fullfile(root, 'FlexMF')));
 
 %% -------- User settings --------
 data_type = 'warp+noise';   % 'jitter+noise' | 'warp+noise'
-do_choose_lambda = true;  % true: sweep lambdas for SeqNMF before fitting
+do_choose_lambda = false;  % true: sweep lambdas for SeqNMF before fitting
 do_normalize = true;       % scale data Frobenius norm to Khat
 do_save = true;            % write PDFs
+plot_range = [];            % [] selects a range covering about 5 occurrences; or use [start, end]
+n_occurrences = 5;
 
 K = 3;                     % number of ground-truth sequences
 Khat = 5;                  % number of factors to fit (overcomplete so SeqNMF can split)
@@ -32,7 +34,7 @@ maxiter = 50;
 
 % Regularization
 lambda_SeqNMF = .05;
-lambda_FlexMF = .05;
+lambda_FlexMF = 1;
 lambda_M = .05;
 lambda_R = 1;
 lambdaL1H = 0;
@@ -52,11 +54,19 @@ end
 
 [X, W, H, ~] = generate_data(T, Nneurons, Dt, gen_args{:});
 L = size(W, 3);
+if isempty(plot_range)
+    plot_range = helper.estimate_plot_range(H, n_occurrences);
+else
+    assert(numel(plot_range) == 2 && plot_range(1) <= plot_range(2), ...
+        'plot_range must be [start, end].')
+    plot_range = max(1, plot_range(1)):min(T, plot_range(2));
+    assert(~isempty(plot_range), 'plot_range does not overlap the data.')
+end
 fprintf('Data type: %s  |  size(X)=[%d %d]  L=%d  K=%d  Khat=%d\n', ...
     data_type, size(X,1), size(X,2), L, K, Khat);
 
-plotAll = 1;
-figure; SimpleWHPlot_patch(W, H, 'Data', X, 'plotAll', plotAll);
+plotAll = 0;
+figure; SimpleWHPlot_patch(W, H, 'Data', X, 'plotAll', plotAll, 'plot_range', plot_range, 'center', true);
 title(sprintf('Generated data (%s, extreme)', data_type), 'FontSize', 16)
 set(gcf, 'Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8])
 if do_save
@@ -135,7 +145,7 @@ time_FlexMF = toc(t_flex);
 fprintf('FlexMF running time: %.2f s\n', time_FlexMF);
 
 figure;
-plot_MR(M, R)
+plot_MR(M, R, [], 'patch', plot_range)
 if do_save
     export_vector_pdf(sprintf('FlexMF_%s_extreme_demo_MR_lambda=%1.1e_lambdaM=%1.1e_lambdaR=%1.1e.pdf', ...
         helper.sanitize_name(data_type), lambda_FlexMF, lambda_M, lambda_R));
@@ -153,18 +163,21 @@ t_match = tic;
 time_match = toc(t_match);
 fprintf('Matching running time: %.2f s\n', time_match);
 
-figure; SimpleWHPlot_patch(What_SeqNMF_plot, Hhat_SeqNMF_plot, 'plotAll', plotAll);
+figure; SimpleWHPlot_patch(What_SeqNMF_plot, Hhat_SeqNMF_plot, ...
+    'plotAll', plotAll, 'plot_range', plot_range);
 title('SeqNMF reconstruction (ground-truth order)')
 set(gcf, 'Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8])
 if do_save
     export_vector_pdf(sprintf('Simulated_%s_extreme_result_SeqNMF.pdf', helper.sanitize_name(data_type)), gcf);
 end
 
-figure; SimpleWHPlot_patch(What_SeqNMF_plot, Hhat_SeqNMF_plot, 'Data', X, 'plotAll', plotAll);
+figure; SimpleWHPlot_patch(What_SeqNMF_plot, Hhat_SeqNMF_plot, 'Data', X, ...
+    'plotAll', plotAll, 'plot_range', plot_range);
 title('SeqNMF factors, with raw data (ground-truth order)')
 set(gcf, 'Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8])
 
-figure; SimpleWHPlot_patch(What_FlexMF_plot, Hhat_FlexMF_plot, 'plotAll', plotAll);
+figure; SimpleWHPlot_patch(What_FlexMF_plot, Hhat_FlexMF_plot, ...
+    'plotAll', plotAll, 'plot_range', plot_range);
 title('FlexMF reconstruction (ground-truth order)')
 set(gcf, 'Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8])
 if do_save
@@ -172,7 +185,8 @@ if do_save
         helper.sanitize_name(data_type), lambda_FlexMF, lambda_M, lambda_R), gcf);
 end
 
-figure; SimpleWHPlot_patch(What_FlexMF_plot, Hhat_FlexMF_plot, 'Data', X, 'plotAll', plotAll);
+figure; SimpleWHPlot_patch(What_FlexMF_plot, Hhat_FlexMF_plot, 'Data', X, ...
+    'plotAll', plotAll, 'plot_range', plot_range);
 title('FlexMF factors, with raw data (ground-truth order)')
 set(gcf, 'Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8])
 

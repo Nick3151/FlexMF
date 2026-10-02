@@ -1,14 +1,16 @@
-function plot_MR(M, R, title_suffix, style)
+function plot_MR(M, R, title_suffix, style, plot_range)
 %PLOT_MR  Display residual R (top) and motion field M (bottom).
 %   plot_MR(M, R)
 %   plot_MR(M, R, title_suffix)
 %   plot_MR(M, R, title_suffix, style)
+%   plot_MR(M, R, title_suffix, style, plot_range)
 %
 % title_suffix : appended to subplot titles as 'R — …' / 'M — …'
 % style        : 'patch' (default) | 'imagesc'
 %   'patch'   — per-neuron vector patches (good for FlexMF M/R on data X)
 %   'imagesc' — classic heatmap with colorbar (good for EMD between two
 %               short simulated sequences, e.g. EMD_demo / EMD_demo2)
+% plot_range   : [start, end] time-bin range to display (default: all bins)
 
 if nargin < 3 || isempty(title_suffix)
     title_R = 'R';
@@ -23,6 +25,20 @@ end
 style = lower(char(style));
 assert(ismember(style, {'patch', 'imagesc'}), ...
     'plot_MR: style must be ''patch'' or ''imagesc''.');
+if nargin < 5
+    plot_range = [];
+end
+
+[~, T] = size(R);
+assert(isequal(size(M), size(R)), 'plot_MR: M and R must have the same size.');
+if ~isempty(plot_range)
+    assert(numel(plot_range) == 2 && plot_range(1) <= plot_range(2), ...
+        'plot_MR: plot_range must be [start, end].');
+    indplot = max(1, plot_range(1)):min(T, plot_range(2));
+    assert(~isempty(indplot), 'plot_MR: plot_range does not overlap the data.');
+    M = M(:, indplot);
+    R = R(:, indplot);
+end
 
 cmap_red = [ones(128,1),linspace(1,0,128)',linspace(1,0,128)'];
 cmap_blue = [linspace(0,1,128)',linspace(0,1,128)',ones(128,1)];
