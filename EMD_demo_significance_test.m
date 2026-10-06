@@ -178,8 +178,10 @@ end
 fprintf('\n=== FlexMF test (W fixed) ===\n');
 figure;
 t_test = tic;
-[What, Hhat_test, cost_test, errors_test, ~, ~, M_test, R_test] = FlexMF(Xtest, 'K', Khat, 'L', L, 'W_fixed', 1, 'W_init', What,...
-    'EMD',1, 'lambda', lambda_FlexMF, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50);
+% SortFactors 0 keeps Hhat_test aligned with What / Hhat_train / ids_FlexMF
+[~, Hhat_test, cost_test, errors_test, ~, ~, M_test, R_test] = FlexMF(Xtest, 'K', Khat, 'L', L, 'W_fixed', 1, 'W_init', What,...
+    'EMD',1, 'lambda', lambda_FlexMF, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50, ...
+    'SortFactors', 0);
 time_test = toc(t_test);
 fprintf('FlexMF test time: %.2f s\n', time_test);
 [What_plot, Hhat_test_plot] = helper.sort_matched_factors(What, Hhat_test, ids_FlexMF);

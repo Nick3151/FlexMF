@@ -137,8 +137,10 @@ parfor g = 1:nTotal
         disp('Test Significance')
         [pvals_SeqNMF_flat{g},is_significant_SeqNMF_flat{g}] = test_significance(X_test, What_SeqNMF);
         tic
-        [What_FlexMF, Hhat_test_FlexMF, cost_test, errors_test, ~, ~, M_test, R_test] = FlexMF(X_test, 'K', Khat, 'L', L, 'W_fixed', 1, 'W_init', What_FlexMF,...
-            'EMD',1, 'lambda', lambda_FlexMF, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50, 'showPlot', 0, 'verbal', 0);
+        % SortFactors 0 keeps significance aligned with What_FlexMF / Hhat_train_FlexMF
+        [~, Hhat_test_FlexMF, cost_test, errors_test, ~, ~, M_test, R_test] = FlexMF(X_test, 'K', Khat, 'L', L, 'W_fixed', 1, 'W_init', What_FlexMF,...
+            'EMD',1, 'lambda', lambda_FlexMF, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50, 'showPlot', 0, 'verbal', 0, ...
+            'SortFactors', 0);
         times_test(g) = toc;
         [pvals_FlexMF_flat{g},is_significant_FlexMF_flat{g},~] = test_significance_EMD(X_test, What_FlexMF, M_test, 'plot', 0);
         

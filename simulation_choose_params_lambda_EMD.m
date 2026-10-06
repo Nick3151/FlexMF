@@ -121,8 +121,10 @@ parfor g = 1:nTotal
     ids_match_flat{g} = ids;
 
     disp('Test Significance')
-    [W_hat, Hhat_test, cost_test, errors_test, ~, ~, M_test, R_test] = FlexMF(Xtest, 'K', Khat, 'L', L, 'W_fixed', 1, 'W_init', W_hat,...
-    'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50, 'showPlot', 0, 'verbal', 0);
+    % SortFactors 0 keeps is_significant aligned with W_hats / ids_match
+    [~, Hhat_test, cost_test, errors_test, ~, ~, M_test, R_test] = FlexMF(Xtest, 'K', Khat, 'L', L, 'W_fixed', 1, 'W_init', W_hat,...
+    'EMD',1, 'lambda', lambda, 'lambda_R', lambda_R, 'lambda_M', lambda_M, 'maxiter', 50, 'showPlot', 0, 'verbal', 0, ...
+    'SortFactors', 0);
     [pvals,is_significant,is_single] = test_significance_EMD(Xtest, W_hat, M_test, 'plot', 0);
     num_significant_flat{g} = sum(is_significant);
     is_significant_flat{g} = is_significant;
