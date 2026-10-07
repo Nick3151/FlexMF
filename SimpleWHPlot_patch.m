@@ -17,6 +17,7 @@ addOptional(p, 'plotAll',0)
 addOptional(p, 'compare', false)
 addOptional(p, 'center', false)
 addOptional(p, 'plot_range', [])
+addOptional(p, 'sigFontSize', 14)  % significance '*' size (points)
 parse(p, varargin{:});
 trials = p.Results.trials;
 frames = p.Results.frames;
@@ -27,6 +28,7 @@ plotAll = p.Results.plotAll;
 compare = p.Results.compare;
 center = p.Results.center;
 plot_range = p.Results.plot_range;
+sigFontSize = p.Results.sigFontSize;
 
 if center
     [W, H] = helper.shiftFactors(W, H); % center factors, as in FlexMF's 'shift' option
@@ -114,11 +116,17 @@ xlim([1 K*(L+sep)]);ylim([0 dnW*N])
 axis off
 
 %% Plot significance of each factor
-pos = [(m+(0:K-1)/K*ww)', repmat(m+hdata,K,1), repmat(ww/K,K,1), repmat(0.05,K,1)];
+% Place '*' just above each W column; use a tall enough box for large fonts
+starH = max(0.08, sigFontSize / 350);  % ~normalized height for the font
+pos = [(m + ((0:K-1)+0.05)/K*ww)', repmat(m+hdata - 0.01, K, 1), ...
+    repmat(0.9*ww/K, K, 1), repmat(starH, K, 1)];
 for k=1:K
     if is_significant(k)
-        annotation('textbox', pos(k,:), 'string', '*', 'HorizontalAlignment', 'center', 'VerticalAlignment', 'bottom',...
-            'Color', kColors(k,:), 'LineStyle', 'none', 'FontWeight', 'bold', 'FontSize', 14)
+        annotation('textbox', pos(k,:), 'string', '*', ...
+            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', ...
+            'Color', kColors(k,:), 'LineStyle', 'none', ...
+            'FontWeight', 'bold', 'FontSize', sigFontSize, ...
+            'FitBoxToText', 'off', 'Margin', 0);
     end
 end
 
