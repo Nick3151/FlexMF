@@ -329,12 +329,12 @@ if params.verbal && params.EMD && params.showPlot
         plot(t_half, reshape(EMD_objs', 1, []), 'k-', 'LineWidth', 1.5)
     end
     yyaxis left
-    ylabel('||·||_1 / ||X||_1')
+    ylabel('$\|\cdot\|_1 / \|X\|_1$', 'Interpreter', 'latex')
     yyaxis right
     ylabel('EMD objective')
     xlabel('Iteration')
-    legend('||M||_1', '||R||_1', '||W||_1', '||H||_1', ...
-        'EMD obj', 'Location', 'best')
+    legend('$\|M\|_1$', '$\|R\|_1$', '$\|W\|_1$', '$\|H\|_1$', ...
+        'EMD obj', 'Location', 'best', 'Interpreter', 'latex')
 end
 
     function obj = compute_EMD_obj(X, W, H, M, R, params, H_prev)

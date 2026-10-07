@@ -21,7 +21,7 @@ end
 addpath(genpath(this_dir))
 
 %% Configuration
-data_type = 'jitter';
+data_type = 'participation';
 selected_levels = 5;  % [] selects the last level
 output_dir = 'Simulation_EMD';
 save_figure = true;
@@ -137,19 +137,19 @@ for li = 1:numel(selected_levels)
 
     figure('Color', 'w', 'Name', sprintf('%s - ground truth', level_label));
     SimpleWHPlot_patch(W_true, H_true, 'Data', X_true, 'plot_range', plot_range, ...
-        'is_significant', ones(1, size(W_true, 2)));
+        'is_significant', ones(1, size(W_true, 2)), 'center', true);
     sgtitle(sprintf('Ground truth (%s)', level_label), 'Interpreter', 'none')
     save_example_figure(save_figure, this_dir, output_dir, data_type, level, 'groundtruth')
 
     figure('Color', 'w', 'Name', sprintf('%s - SeqNMF', level_label));
     SimpleWHPlot_patch(What_seq_plot, Hhat_seq_plot, 'plot_range', plot_range, ...
-        'is_significant', is_sig_seq_plot);
+        'is_significant', is_sig_seq_plot, 'center', true);
     sgtitle(sprintf('SeqNMF reconstruction (%s)', level_label), 'Interpreter', 'none')
     save_example_figure(save_figure, this_dir, output_dir, data_type, level, 'SeqNMF')
 
     figure('Color', 'w', 'Name', sprintf('%s - FlexMF', level_label));
     SimpleWHPlot_patch(What_flex_plot, Hhat_flex_plot, 'plot_range', plot_range, ...
-        'is_significant', is_sig_flex_plot);
+        'is_significant', is_sig_flex_plot, 'center', true);
     sgtitle(sprintf('FlexMF reconstruction (%s)', level_label), 'Interpreter', 'none')
     save_example_figure(save_figure, this_dir, output_dir, data_type, level, 'FlexMF')
 end

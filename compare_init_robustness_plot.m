@@ -203,7 +203,7 @@ for mi = 1:nFlex
 end
 yline(constraintTol, 'k--', 'tolerance', 'HandleVisibility', 'off');
 set(gca, 'XTick', 1:nData, 'XTickLabel', {results.label}, 'YScale', 'log')
-ylabel('||Xcorr - R - W*H||_1 / ||X||_1')
+ylabel('$\|X_{\mathrm{corr}} - R - W \ast H\|_1 / \|X\|_1$', 'Interpreter', 'latex')
 title('EMD constraint residual per run', 'FontSize', 14)
 legend('Location', 'best')
 set(gcf, 'Position', [100 100 800 420])
@@ -215,11 +215,10 @@ export_vector_pdf(fullfile(outDir, 'compare_init_constraint_validation.pdf'), gc
 for d = 1:nData
     emds_W = results(d).emds_W;
     emds_H = results(d).emds_H;
-    nDetected = results(d).nDetected;
     nSignificant = results(d).nSignificant;
 
     figure;
-    ax1 = subplot('Position', [0.13 0.74 0.8 0.20]);
+    ax1 = subplot('Position', [0.13 0.70 0.8 0.24]);
     hold on
     for m = 1:nMethod
         swarmchart(m*ones(nSim,1), emds_W(:,m), 30, 'filled')
@@ -230,7 +229,7 @@ for d = 1:nData
     title(sprintf('%s  (K=%d, Khat=%d, %d restarts)', ...
         results(d).label, K, Khat, nSim), 'FontSize', 14)
 
-    ax2 = subplot('Position', [0.13 0.52 0.8 0.20]);
+    ax2 = subplot('Position', [0.13 0.42 0.8 0.24]);
     hold on
     for m = 1:nMethod
         swarmchart(m*ones(nSim,1), emds_H(:,m), 30, 'filled')
@@ -239,19 +238,7 @@ for d = 1:nData
     xlim([0.5, nMethod+0.5])
     ylabel(ax2, 'EMD of H')
 
-    ax3 = subplot('Position', [0.13 0.30 0.8 0.18]);
-    hold on
-    errorbar(1:nMethod, median(nDetected), ...
-        median(nDetected)-prctile(nDetected,25), ...
-        prctile(nDetected,75)-median(nDetected), ...
-        '-', 'Marker', '.', 'MarkerSize', 14, 'Color', 'k');
-    yline(K, 'r--', 'true K', 'LabelHorizontalAlignment', 'left');
-    set(gca, 'XTickLabel', [])
-    xlim([0.5, nMethod+0.5])
-    ylim([0, Khat])
-    ylabel('#Sequences')
-
-    ax4 = subplot('Position', [0.13 0.08 0.8 0.18]);
+    ax3 = subplot('Position', [0.13 0.10 0.8 0.24]);
     hold on
     errorbar(1:nMethod, median(nSignificant), ...
         median(nSignificant)-prctile(nSignificant,25), ...
@@ -263,8 +250,8 @@ for d = 1:nData
     ylim([0, Khat])
     ylabel('#Significant')
 
-    linkaxes([ax1, ax2, ax3, ax4], 'x')
-    set(gcf, 'Position', [100, 100, 700, 900])
+    linkaxes([ax1, ax2, ax3], 'x')
+    set(gcf, 'Position', [100, 100, 700, 700])
     export_vector_pdf(fullfile(outDir, sprintf('compare_init_%s.pdf', results(d).name)), gcf);
 end
 

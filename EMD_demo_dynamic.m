@@ -57,7 +57,7 @@ yline(norm(Err(:),1), 'k--')
 ylabel('L1')
 yyaxis right
 plot(lambdaRs, constraint_rel, 'g-', 'LineWidth', 1.5)
-ylabel('||constraint||_1 / ||X2-X1||_1')
+ylabel('$\|\mathrm{constraint}\|_1 / \|X_2 - X_1\|_1$', 'Interpreter', 'latex')
 set(gca, 'XScale', 'log')
 xlabel('lambdaR')
 legend('L1M', 'L1R', 'L1Err', 'constraint_{rel}', 'Location', 'best')

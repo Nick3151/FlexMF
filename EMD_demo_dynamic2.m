@@ -311,7 +311,7 @@ end
 figure;
 bar(TV_W);
 set(gca, 'XTickLabel', method_names, 'XTickLabelRotation', 20, 'FontSize', 11)
-ylabel('TV(W) = ||W D^T||_1')
+ylabel('$\mathrm{TV}(W) = \|W D^T\|_1$', 'Interpreter', 'latex')
 title(sprintf('TV norm of W (%s)', data_tag), 'FontSize', 14)
 if do_save
     export_vector_pdf(sprintf('Simulated_%s_compare_TV_W.pdf', data_file), gcf);
@@ -320,7 +320,7 @@ end
 figure;
 bar(constraint_rel(2:end));
 set(gca, 'XTickLabel', method_names(2:end), 'XTickLabelRotation', 20, 'FontSize', 11)
-ylabel('||constraint||_1 / ||X||_1')
+ylabel('$\|\mathrm{constraint}\|_1 / \|X\|_1$', 'Interpreter', 'latex')
 yline(constraintTol, 'k--', 'tolerance')
 title('EMD constraint validation', 'FontSize', 14)
 if do_save

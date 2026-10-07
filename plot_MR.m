@@ -52,30 +52,30 @@ switch style
     case 'imagesc'
         ax_res = subplot('Position', [0.05, 0.55, 0.8, 0.4]);
         imagesc(R, clims)
-        title(title_R, 'FontSize', 16, 'Interpreter', 'none')
+        title(title_R, 'FontSize', 20, 'Interpreter', 'none')
         set(ax_res, 'XTickLabel', [], 'YTickLabel', []);
         colormap(ax_res, cmap);
-        colorbar('Position', [0.9 0.55 0.05 0.4], 'FontSize', 14);
+        colorbar('Position', [0.9 0.55 0.05 0.4], 'FontSize', 16);
 
         ax_flux = subplot('Position', [0.05, 0.05, 0.8, 0.4]);
         imagesc(M, clims)
-        title(title_M, 'FontSize', 16, 'Interpreter', 'none')
+        title(title_M, 'FontSize', 20, 'Interpreter', 'none')
         set(ax_flux, 'XTickLabel', [], 'YTickLabel', []);
         colormap(ax_flux, cmap);
-        colorbar('Position', [0.9 0.05 0.05 0.4], 'FontSize', 14);
+        colorbar('Position', [0.9 0.05 0.05 0.4], 'FontSize', 16);
 
         set(gcf, 'Units', 'normalized', 'Position', [0.1 0.1 0.8 0.8])
 
     case 'patch'
         ax_res = subplot('Position', [0.05, 0.55, 0.9, 0.4]);
         plot_signed_rows(ax_res, R, maxValue);
-        title(title_R, 'FontSize', 16, 'Interpreter', 'none')
+        title(title_R, 'FontSize', 20, 'Interpreter', 'none')
         set(ax_res, 'XTickLabel', [], 'YTickLabel', [], 'Box', 'on', ...
             'XLim', [0.5, T+0.5], 'YLim', [0, N+1], 'YDir', 'normal');
 
         ax_flux = subplot('Position', [0.05, 0.05, 0.9, 0.4]);
         plot_signed_rows(ax_flux, M, maxValue);
-        title(title_M, 'FontSize', 16, 'Interpreter', 'none')
+        title(title_M, 'FontSize', 20, 'Interpreter', 'none')
         set(ax_flux, 'XTickLabel', [], 'YTickLabel', [], 'Box', 'on', ...
             'XLim', [0.5, T+0.5], 'YLim', [0, N+1], 'YDir', 'normal');
 
