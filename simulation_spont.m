@@ -16,7 +16,7 @@ addOptional(p, 'participation', .7.*ones(K, 1), validArrayK)
 addOptional(p, 'additional_neurons', 50, @isscalar)
 addOptional(p, 'spontaneous_rate', .001, @isscalar)
 addOptional(p, 'nSim', 100, @isscalar)
-addOptional(p, 'thresh_active_freq_all', 0:.05:1)
+addOptional(p, 'thresh_part_prob_all', 0:.05:1)
 parse(p, varargin{:})
 
 noise = p.Results.noise;
@@ -24,7 +24,7 @@ participation = p.Results.participation;
 additional_neurons = p.Results.additional_neurons;
 spontaneous_rate = p.Results.spontaneous_rate;
 nSim = p.Results.nSim;
-thresh_active_freq_all = p.Results.thresh_active_freq_all;
+thresh_part_prob_all = p.Results.thresh_part_prob_all;
 
 %%
 warp = 0; % the maximum warping time
@@ -35,7 +35,7 @@ overlap_t = 0;
 overlap_n = 0;
 seeds = randperm(1000, nSim);
 
-n_thresh = length(thresh_active_freq_all);
+n_thresh = length(thresh_part_prob_all);
 true_pos_rates = zeros(K,n_thresh,nSim);
 false_pos_rates = zeros(K,n_thresh,nSim);
 Ws = cell(nSim,1);
@@ -144,11 +144,11 @@ parfor n=1:nSim
         j = j+Nneurons(k)-num_overlap(k);
     end
     neurons_spont = j:N;
-%% Plot ROC for different neurons active frequency threshold
+%% Plot ROC for different neurons participation probability threshold
     for i=1:n_thresh
-        thresh_active_freq = thresh_active_freq_all(i);
+        thresh_part_prob = thresh_part_prob_all(i);
         [active_time_motifs_all, magnitudes_motifs_all, neurons_active_motifs, onsets_motifs] = ...
-        analyze_motifs_activation([TrainingData, TestData], [Hhat_train,Hhat_test], What, 'thresh_active_freq', thresh_active_freq);
+        analyze_motifs_activation([TrainingData, TestData], [Hhat_train,Hhat_test], What, 'thresh_part_prob', thresh_part_prob);
         [true_pos_rates_tmp, false_pos_rates_tmp, ids] = ...
             helper.match_motif_neurons_overlap(neurons_active_true, neurons_active_motifs, neurons_spont);
         for k=1:K
