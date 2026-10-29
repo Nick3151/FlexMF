@@ -2,8 +2,8 @@ function [f1,f2,f3] = simulation_compare_algorithm_plot(file_name, noise_levels,
 p = inputParser;
 addOptional(p, 'nSim', 50);
 addOptional(p, 'K', 10);
-addOptional(p, 'c1', [0 0.4549 0.2902]);
-addOptional(p, 'c2', [0.9020 0 0.7843]);
+addOptional(p, 'colors_MUR', ["81e28d", "8bdf75", "5ddb5c", "43d860", "26d96d", "1ec583", "14b394", "0a9fa1", "036c89", "003d69"]);
+addOptional(p, 'colors_SBI', ["bf94e8", "b975e8", "b854e3", "c130e5", "ce12e2", "ce09ca", "b5039a", "95046a", "75084a", "570a26"]);
 addOptional(p, "linestyles", [repmat("-",1,6), repmat("--",1,6)]);
 addOptional(p, "markers", repmat(["o", "x", "s", "d", ">", "p"],1,2));
 addOptional(p, 'thresh_x', 3.5)
@@ -15,8 +15,8 @@ addOptional(p, 'metric', 'corr')
 parse(p, varargin{:});
 nSim = p.Results.nSim;
 K = p.Results.K;
-c1 = p.Results.c1;
-c2 = p.Results.c2;
+colors_MUR = p.Results.colors_MUR;
+colors_SBI = p.Results.colors_SBI;
 linestyles = p.Results.linestyles;
 markers = p.Results.markers;
 thresh_x = p.Results.thresh_x;
@@ -33,6 +33,15 @@ if isnumeric(noise_levels)
 else
     xticklabels = noise_levels;
 end
+
+% One color per noise level (palette interpolated to nCond); ax3/ax4 show only the sel level and use its color
+hex2rgb = @(hex) reshape(sscanf(char(join(hex, '')), '%2x'), 3, [])'/255;
+if ~isnumeric(colors_MUR); colors_MUR = hex2rgb(colors_MUR); end
+if ~isnumeric(colors_SBI); colors_SBI = hex2rgb(colors_SBI); end
+colors_MUR = interp1(linspace(0,1,size(colors_MUR,1)), colors_MUR, linspace(0,1,nCond));
+colors_SBI = interp1(linspace(0,1,size(colors_SBI,1)), colors_SBI, linspace(0,1,nCond));
+c1 = colors_MUR(sel,:);
+c2 = colors_SBI(sel,:);
 
 num_success_SeqNMF = zeros(K,nCond);
 num_success_SBI = zeros(K,nCond);
@@ -166,7 +175,7 @@ legends_SB = cellfun(@(x) [noise_type, '=', x ' SBI'], xticklabels,'UniformOutpu
 ax1 = subplot('Position', [0.1 0.75 0.6 0.2]);
 hold on
 for j=1:nCond
-    p1(j) = plot(2*(1:K), num_success_SeqNMF(:,j)./nSim, 'LineStyle', linestyles(j), 'Marker', markers(j), 'LineWidth',2,'Color',c1);
+    p1(j) = plot(2*(1:K), num_success_SeqNMF(:,j)./nSim, 'LineStyle', linestyles(j), 'Marker', markers(j), 'LineWidth',2,'Color',colors_MUR(j,:));
 %     p2(j) = plot(2*(1:K), num_success_SBI(:,j)./nSim, 'LineStyle', linestyles(j), 'Marker', markers(j), 'LineWidth',2,'Color',c2);
 %     lh(j).Color(4) = alphas(j);
 end
@@ -177,7 +186,7 @@ ax2 = subplot('Position', [0.1 0.5 0.6 0.2]);
 hold on
 for j=1:nCond
 %     p1(j) = plot(2*(1:K), num_success_SeqNMF(:,j)./nSim, 'LineStyle', linestyles(j), 'Marker', markers(j), 'LineWidth',2,'Color',c1);
-    p2(j) = plot(2*(1:K), num_success_SBI(:,j)./nSim, 'LineStyle', linestyles(j), 'Marker', markers(j), 'LineWidth',2,'Color',c2);
+    p2(j) = plot(2*(1:K), num_success_SBI(:,j)./nSim, 'LineStyle', linestyles(j), 'Marker', markers(j), 'LineWidth',2,'Color',colors_SBI(j,:));
 %     lh(j).Color(4) = alphas(j);
 end
 
@@ -234,8 +243,8 @@ f2 = figure;
 subplot(211)
 hold on
 x = repmat(2*(1:nCond), [nSim,1]);
-swarmchart(x-.25, sparsity_H_SeqNMF, 12, c1, 'filled', 'XJitterWidth', .2);
-swarmchart(x+.25, sparsity_H_SBI, 12, c2, 'filled', 'XJitterWidth', .2);
+swarmchart(x-.25, sparsity_H_SeqNMF, 12, colors_MUR, 'filled', 'XJitterWidth', .2);
+swarmchart(x+.25, sparsity_H_SBI, 12, colors_SBI, 'filled', 'XJitterWidth', .2);
 % boxplot(sparsity_H_SeqNMF, 'Colors', c1, 'Positions', 2*(1:nCond)-.25, 'Jitter', .2, 'Widths',.2);
 % boxplot(sparsity_H_FlexMF, 'Colors', c2, 'Positions', 2*(1:nCond)+.25, 'Jitter', .2, 'Widths',.2);
 title('Sparsity of H')
@@ -247,8 +256,8 @@ subplot(212)
 hold on
 % boxplot(sparsity_W_SeqNMF, 'Colors', c1, 'Positions', 2*(1:nCond)-.25, 'Jitter', .2, 'Widths',.2);
 % boxplot(sparsity_W_FlexMF, 'Colors', c2, 'Positions', 2*(1:nCond)+.25, 'Jitter', .2, 'Widths',.2);
-s1 = swarmchart(x-.25, sparsity_W_SeqNMF, 12, c1, 'filled', 'XJitterWidth', .2);
-s2 = swarmchart(x+.25, sparsity_W_SBI, 12, c2, 'filled', 'XJitterWidth', .2);
+swarmchart(x-.25, sparsity_W_SeqNMF, 12, colors_MUR, 'filled', 'XJitterWidth', .2);
+swarmchart(x+.25, sparsity_W_SBI, 12, colors_SBI, 'filled', 'XJitterWidth', .2);
 xlabel(noise_type)
 title('Sparsity of W')
 ylim([0,.2])
@@ -266,27 +275,25 @@ xtickangle(45)
 
 % s1 = findobj(gca,'Tag','Scatter','Color',c1);
 % s2 = findobj(gca,'Tag','Scatter','Color',c2);
-legend([s1(1), s2(1)], {'MUR', 'SBI'}, 'box','off')
 set(f2, 'Position', [100, 100, 1000, 800])
 
 %% Compare cost functions
 f3 = figure; 
 ax1 = subplot(211);
 hold on
-swarmchart(x-.25, recon_errors_SeqNMF, 12, c1, 'filled', 'XJitterWidth', .2);
-swarmchart(x+.25, recon_errors_SBI, 12, c2, 'filled', 'XJitterWidth', .2);
+swarmchart(x-.25, recon_errors_SeqNMF, 12, colors_MUR, 'filled', 'XJitterWidth', .2);
+swarmchart(x+.25, recon_errors_SBI, 12, colors_SBI, 'filled', 'XJitterWidth', .2);
 title('Reconstruction Costs')
 set(gca, 'FontSize', 12, 'XTickLabel', xticklabels, 'XTick', 2*(1:nCond), 'box','off')
 
 ax2 = subplot(212);
 hold on
-s1 = swarmchart(x-.25, reg_costs_SeqNMF, 12, c1, 'filled', 'XJitterWidth', .2);
-s2 = swarmchart(x+.25, reg_costs_SBI, 12, c2, 'filled', 'XJitterWidth', .2);
+swarmchart(x-.25, reg_costs_SeqNMF, 12, colors_MUR, 'filled', 'XJitterWidth', .2);
+swarmchart(x+.25, reg_costs_SBI, 12, colors_SBI, 'filled', 'XJitterWidth', .2);
 xlabel(noise_type)
 title('Regularization Costs')
 set(gca, 'FontSize', 12, 'XTickLabel', xticklabels, 'XTick', 2*(1:nCond), 'box','off')
 linkaxes([ax1, ax2], 'y')
-legend([s1(1), s2(1)], {'MUR', 'SBI'}, 'box','off')
 set(f3, 'Position', [100, 100, 1000, 800])
 
 %% Minimum motif occurrence for reliable detection

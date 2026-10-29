@@ -19,20 +19,20 @@ sel = 1;
 noise_levels = {'Calcium transients', 'Bursts', 'Single spikes'};
 noise_type = 'Motif shape';
 [f1, f2, f3] = simulation_compare_algorithm_plot('simulate_results_shape.mat', noise_levels, noise_type, sel, 'lambda', .005);
-save2pdf(fullfile(outdir, 'Simulation_results_shape'), f1);
-save2pdf(fullfile(outdir, 'Simulation_results_sparsity_shape'), f2);
-save2pdf(fullfile(outdir, 'Simulation_results_error_shape'), f3);
-% save2pdf(fullfile(outdir, 'Simulation_results_min_motif_occur_shape'), f4);
+exportgraphics(f1, fullfile(outdir, 'Simulation_results_shape.pdf'), 'ContentType', 'vector');
+exportgraphics(f2, fullfile(outdir, 'Simulation_results_sparsity_shape.pdf'), 'ContentType', 'vector');
+exportgraphics(f3, fullfile(outdir, 'Simulation_results_error_shape.pdf'), 'ContentType', 'vector');
+% exportgraphics(f4, fullfile(outdir, 'Simulation_results_min_motif_occur_shape.pdf'), 'ContentType', 'vector');
 
 %% Noise conditions
 sel = 5;
 noise_levels = 100*(0:0.01:0.1); % probability of added noise in each bin
 noise_type = '% Additive Noise';
 [f1, f2, f3] = simulation_compare_algorithm_plot("simulate_results_noise.mat", noise_levels, noise_type, sel, 'lambda', .003);
-save2pdf(fullfile(outdir, 'Simulation_results_noise'), f1);
-save2pdf(fullfile(outdir, 'Simulation_results_sparsity_noise'), f2);
-save2pdf(fullfile(outdir, 'Simulation_results_error_noise'), f3);
-% save2pdf(fullfile(outdir, 'Simulation_results_min_motif_occur_noise'), f4);
+exportgraphics(f1, fullfile(outdir, 'Simulation_results_noise.pdf'), 'ContentType', 'vector');
+exportgraphics(f2, fullfile(outdir, 'Simulation_results_sparsity_noise.pdf'), 'ContentType', 'vector');
+exportgraphics(f3, fullfile(outdir, 'Simulation_results_error_noise.pdf'), 'ContentType', 'vector');
+% exportgraphics(f4, fullfile(outdir, 'Simulation_results_min_motif_occur_noise.pdf'), 'ContentType', 'vector');
 
 %% Participation conditions
 sel = 5;
@@ -42,36 +42,36 @@ noise_type = '% Dropout';
 [f1, f2, f3] = simulation_compare_algorithm_plot("simulate_results_participate.mat", dropout_rates, noise_type, sel);
 % [f1, f2, f3] = simulation_compare_algorithm_plot("simulate_results_participate.mat", dropout_rates, noise_type, sel, 'metric', 'F1');
 
-save2pdf(fullfile(outdir, 'Simulation_results_participate'), f1);
-save2pdf(fullfile(outdir, 'Simulation_results_sparsity_participate'), f2);
-save2pdf(fullfile(outdir, 'Simulation_results_error_participate'), f3);
-% save2pdf(fullfile(outdir, 'Simulation_results_min_motif_occur_participate'), f4);
+exportgraphics(f1, fullfile(outdir, 'Simulation_results_participate.pdf'), 'ContentType', 'vector');
+exportgraphics(f2, fullfile(outdir, 'Simulation_results_sparsity_participate.pdf'), 'ContentType', 'vector');
+exportgraphics(f3, fullfile(outdir, 'Simulation_results_error_participate.pdf'), 'ContentType', 'vector');
+% exportgraphics(f4, fullfile(outdir, 'Simulation_results_min_motif_occur_participate.pdf'), 'ContentType', 'vector');
 
 %% Jittering conditions
 sel = 5;
 jitter_stds = 0:9; % Jitter time std
 noise_type = 'Jittering Std';
-% [f1, f2, f3] = simulation_compare_algorithm_plot("simulate_results_jitter.mat", jitter_stds, noise_type, sel);
-[f1, f2, f3] = simulation_compare_algorithm_plot("simulate_results_jitter.mat", jitter_stds, noise_type, sel, 'metric', 'F1');
+[f1, f2, f3] = simulation_compare_algorithm_plot("simulate_results_jitter.mat", jitter_stds, noise_type, sel);
+f1_F1 = simulation_compare_algorithm_plot("simulate_results_jitter.mat", jitter_stds, noise_type, sel, 'metric', 'F1');
 
-% save2pdf(fullfile(outdir, 'Simulation_results_jittering'), f1);
-save2pdf(fullfile(outdir, 'Simulation_F1_results_jittering'), f1);
-save2pdf(fullfile(outdir, 'Simulation_results_sparsity_jittering'), f2);
-save2pdf(fullfile(outdir, 'Simulation_results_error_jittering'), f3);
-% save2pdf(fullfile(outdir, 'Simulation_results_min_motif_occur_jittering'), f4);
+exportgraphics(f1, fullfile(outdir, 'Simulation_results_jittering.pdf'), 'ContentType', 'vector');
+exportgraphics(f1_F1, fullfile(outdir, 'Simulation_F1_results_jittering.pdf'), 'ContentType', 'vector');
+exportgraphics(f2, fullfile(outdir, 'Simulation_results_sparsity_jittering.pdf'), 'ContentType', 'vector');
+exportgraphics(f3, fullfile(outdir, 'Simulation_results_error_jittering.pdf'), 'ContentType', 'vector');
+% exportgraphics(f4, fullfile(outdir, 'Simulation_results_min_motif_occur_jittering.pdf'), 'ContentType', 'vector');
 
 %% Warping conditions
 sel = 5;
 warp_levels = 0:9; % the maximum warping time
 noise_type = 'Warping Level';
-% [f1, f2, f3] = simulation_compare_algorithm_plot("simulate_results_warp.mat", warp_levels, noise_type, sel);
-[f1, f2, f3] = simulation_compare_algorithm_plot("simulate_results_warp.mat", warp_levels, noise_type, sel, 'metric', 'F1');
+[f1, f2, f3] = simulation_compare_algorithm_plot("simulate_results_warp.mat", warp_levels, noise_type, sel);
+f1_F1 = simulation_compare_algorithm_plot("simulate_results_warp.mat", warp_levels, noise_type, sel, 'metric', 'F1');
 
-% save2pdf(fullfile(outdir, 'Simulation_results_warping'), f1);
-save2pdf(fullfile(outdir, 'Simulation_F1_results_warping'), f1);
-save2pdf(fullfile(outdir, 'Simulation_results_sparsity_warping'), f2);
-save2pdf(fullfile(outdir, 'Simulation_results_error_warping'), f3);
-% save2pdf(fullfile(outdir, 'Simulation_results_min_motif_occur_warping'), f4);
+exportgraphics(f1, fullfile(outdir, 'Simulation_results_warping.pdf'), 'ContentType', 'vector');
+exportgraphics(f1_F1, fullfile(outdir, 'Simulation_F1_results_warping.pdf'), 'ContentType', 'vector');
+exportgraphics(f2, fullfile(outdir, 'Simulation_results_sparsity_warping.pdf'), 'ContentType', 'vector');
+exportgraphics(f3, fullfile(outdir, 'Simulation_results_error_warping.pdf'), 'ContentType', 'vector');
+% exportgraphics(f4, fullfile(outdir, 'Simulation_results_min_motif_occur_warping.pdf'), 'ContentType', 'vector');
 
 %% Overlapping conditions
 sel = 5;
@@ -79,7 +79,7 @@ overlaps_n = 0:0.1:0.9; % Neuron overlap rate
 noise_type = 'Neurons Overlap Ratio';
 [f1, f2, f3] = simulation_compare_algorithm_plot("simulate_results_overlap.mat", overlaps_n, noise_type, sel);
 
-save2pdf(fullfile(outdir, 'Simulation_results_overlap'), f1);
-save2pdf(fullfile(outdir, 'Simulation_results_sparsity_overlap'), f2);
-save2pdf(fullfile(outdir, 'Simulation_results_error_overlap'), f3);
-% save2pdf(fullfile(outdir, 'Simulation_results_min_motif_occur_overlap'), f4);
+exportgraphics(f1, fullfile(outdir, 'Simulation_results_overlap.pdf'), 'ContentType', 'vector');
+exportgraphics(f2, fullfile(outdir, 'Simulation_results_sparsity_overlap.pdf'), 'ContentType', 'vector');
+exportgraphics(f3, fullfile(outdir, 'Simulation_results_error_overlap.pdf'), 'ContentType', 'vector');
+% exportgraphics(f4, fullfile(outdir, 'Simulation_results_min_motif_occur_overlap.pdf'), 'ContentType', 'vector');
